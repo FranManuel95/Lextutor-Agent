@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Mic, Trash2, SendHorizontal, Loader2, Pause, AlertCircle } from "lucide-react"
+import { Mic, Trash2, SendHorizontal, Loader2, Pause } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AudioRecorderProps {
@@ -11,13 +11,10 @@ interface AudioRecorderProps {
     isProcessing?: boolean
 }
 
-type ErrorType = 'permission' | 'not-found' | 'not-supported' | 'unknown' | null
-
 export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: AudioRecorderProps) {
     const [isRecording, setIsRecording] = useState(false)
     const [duration, setDuration] = useState(0)
     const [isPaused, setIsPaused] = useState(false)
-    const [errorType, setErrorType] = useState<ErrorType>(null)
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
     const chunksRef = useRef<Blob[]>([])
@@ -39,14 +36,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
     }, [duration])
 
     const startRecording = async () => {
-        setErrorType(null)
         try {
-            if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.error("Media Devices API not supported (Check HTTPS/Localhost)")
-                setErrorType('not-supported')
-                return
-            }
-
             // Optimized for Voice Message Quality (Clear Speech)
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -87,16 +77,9 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
             setIsRecording(true)
             startTimer()
 
-        } catch (err: any) {
-            console.error("Microphone access error:", err)
-            // Error names can vary by browser, checking common ones
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                setErrorType('permission')
-            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                setErrorType('not-found')
-            } else {
-                setErrorType('unknown')
-            }
+        } catch (err) {
+            console.error("Microphone access denied:", err)
+            onCancel()
         }
     }
 
@@ -159,52 +142,6 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
         const m = Math.floor(seconds / 60)
         const s = seconds % 60
         return `${m}:${s.toString().padStart(2, '0')}`
-    }
-
-    if (errorType) {
-        let errorMsg = "Error desconocido."
-        let actionMsg = "Reintentar"
-
-        if (errorType === 'permission') {
-            errorMsg = "Acceso denegado. Revisa el icono de candado en la barra de direcccion."
-            actionMsg = "Volver a pedir"
-        } else if (errorType === 'not-found') {
-            errorMsg = "No se detecta ningún micrófono."
-        } else if (errorType === 'not-supported') {
-            errorMsg = "Navegador no soportado o contexto inseguro (falta HTTPS)."
-        }
-
-        return (
-            <div className="flex items-center gap-3 w-full animate-in fade-in slide-in-from-bottom-2 bg-red-950/90 p-2 rounded-2xl border border-red-500/50">
-                <div className="flex items-center gap-2 px-3 text-red-200">
-                    <AlertCircle className="h-5 w-5 text-red-400" />
-                    <span className="text-sm font-medium">{errorMsg}</span>
-                </div>
-
-                <div className="flex-1" />
-
-                <div className="flex gap-2">
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => startRecording()}
-                        className="bg-red-900/50 hover:bg-red-900 text-red-100 border border-red-800"
-                    >
-                        {actionMsg}
-                    </Button>
-                    <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        onClick={onCancel}
-                        className="h-9 w-9 text-red-200 hover:text-white hover:bg-red-900/50 rounded-full"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-        )
     }
 
     return (
