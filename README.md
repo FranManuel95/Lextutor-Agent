@@ -145,7 +145,7 @@ Cada operación IA emite logs financieros en tiempo real:
 Acceso exclusivo para rol `admin` en `/admin`
 
 ### 1. Dashboard de Estadísticas
-![Dashboard](public/assets/admin-dashboard.jpg)
+![Dashboard](public/assets/admin.jpg)
 *Métricas de usuarios, chats activos y uso del sistema*
 
 ### 2. Gestión RAG (Biblioteca de Documentos)
