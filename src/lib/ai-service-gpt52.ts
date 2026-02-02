@@ -132,10 +132,53 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
             });
         }
 
-        // Extract citations from file_search results
+        // Extract sources from file_search results
+        const sources: string[] = [];
+
+        // CORRECT LOCATION: GPT-5.2 returns file_search results in output[] array
+        if ((response as any).output && Array.isArray((response as any).output)) {
+            (response as any).output.forEach((item: any) => {
+                // Method 1: Extract from file_search_call results
+                if (item.type === 'file_search_call' && item.results) {
+                    item.results.forEach((result: any) => {
+                        if (result.filename) {
+                            // Clean filename (remove extension)
+                            let clean = result.filename.replace(/\.(pdf|docx?|txt)$/i, "");
+                            clean = clean.replace(/[_-]/g, " ").trim();
+                            sources.push(clean);
+                        }
+                    });
+                }
+
+                // Method 2: Also extract from message annotations
+                if (item.type === 'message' && item.content) {
+                    item.content.forEach((content: any) => {
+                        if (content.annotations) {
+                            content.annotations.forEach((ann: any) => {
+                                if (ann.type === 'file_citation' && ann.filename) {
+                                    let clean = ann.filename.replace(/\.(pdf|docx?|txt)$/i, "");
+                                    clean = clean.replace(/[_-]/g, " ").trim();
+                                    sources.push(clean);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        // Get unique sources
+        const uniqueSources = Array.from(new Set(sources));
+
+        console.log("📚 [GPT-5.2] Sources found:", uniqueSources.length);
+        if (uniqueSources.length > 0) {
+            console.log("📚 [GPT-5.2] Source filenames:", uniqueSources.join(", "));
+        }
+
+        // Format citations
         let citations: string | null = null;
-        if ((response as any).file_search_call?.results) {
-            citations = formatGPT52Citations((response as any).file_search_call.results);
+        if (uniqueSources.length > 0) {
+            citations = `_(🔍 Fuente: Documentos de Estudiante Elite → ${uniqueSources.join(", ")})_`;
         }
 
         return citations ? `${text}\n\n${citations}` : text;

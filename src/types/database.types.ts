@@ -15,6 +15,7 @@ export interface Database {
                     full_name: string | null
                     role: 'user' | 'admin'
                     study_mode: string | null
+                    birthdate: string | null
                     avatar_url: string | null
                     tutor_prefs?: Json | null
                     created_at: string
@@ -25,6 +26,7 @@ export interface Database {
                     full_name?: string | null
                     role?: 'user' | 'admin'
                     study_mode?: string | null
+                    birthdate?: string | null
                     avatar_url?: string | null
                     tutor_prefs?: Json | null
                     created_at?: string
@@ -35,6 +37,7 @@ export interface Database {
                     full_name?: string | null
                     role?: 'user' | 'admin'
                     study_mode?: string | null
+                    birthdate?: string | null
                     avatar_url?: string | null
                     tutor_prefs?: Json | null
                     created_at?: string

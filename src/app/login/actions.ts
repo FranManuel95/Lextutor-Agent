@@ -38,13 +38,31 @@ export async function signup(formData: FormData) {
 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
     const fullName = formData.get('fullName') as string
-    const age = Number(formData.get('age'))
+    const birthdate = formData.get('birthdate') as string
     const avatar = formData.get('avatar') as File
 
-    // Simple validation (Zod would be better but keeping deps minimal if not installed)
-    if (age < 13 || age > 120) {
-        return redirect('/login?message=Edad inválida (13-120)')
+    // Validate password confirmation
+    if (password !== confirmPassword) {
+        return redirect('/login?message=Las contraseñas no coinciden')
+    }
+
+    // Calculate age from birthdate
+    const birthdateObj = new Date(birthdate)
+    const today = new Date()
+    let age = today.getFullYear() - birthdateObj.getFullYear()
+    const monthDiff = today.getMonth() - birthdateObj.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdateObj.getDate())) {
+        age--
+    }
+
+    // Validate age (must be at least 13 years old)
+    if (!birthdate || isNaN(birthdateObj.getTime())) {
+        return redirect('/login?message=Fecha de nacimiento inválida')
+    }
+    if (age < 13) {
+        return redirect('/login?message=Debes tener al menos 13 años para registrarte')
     }
 
     const { data: authData, error } = await supabase.auth.signUp({
@@ -83,11 +101,11 @@ export async function signup(formData: FormData) {
         }
     }
 
-    // Update Profile (Upsert to handle trigger vs no-trigger cases safely)
+    // Update Profile with birthdate
     await adminSupabase.from('profiles').upsert({
         id: authData.user.id,
         full_name: fullName,
-        age: age,
+        birthdate: birthdate,  // Store birthdate instead of age
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString()
     })

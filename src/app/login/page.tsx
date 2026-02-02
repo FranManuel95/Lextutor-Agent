@@ -8,6 +8,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Copyright } from '@/components/copyright'
 import { AuthSubmitButton } from '@/components/auth-submit-button'
+import { PasswordMatchValidator } from '@/components/password-match-validator'
+
 
 export default function LoginPage({
     searchParams,
@@ -68,6 +70,8 @@ export default function LoginPage({
                                         type="email"
                                         placeholder="tu@email.com"
                                         required
+                                        title="Ingresa tu dirección de correo electrónico"
+                                        aria-label="Correo electrónico para iniciar sesión"
                                         className="bg-gem-mist/50 border-law-accent/30 text-white placeholder:text-white/20 focus:border-law-gold focus:ring-law-gold/20"
                                     />
                                 </div>
@@ -77,7 +81,11 @@ export default function LoginPage({
                                         id="password"
                                         name="password"
                                         type="password"
+                                        placeholder="••••••••"
                                         required
+                                        title="Ingresa tu contraseña"
+                                        aria-label="Contraseña para iniciar sesión"
+                                        minLength={6}
                                         className="bg-gem-mist/50 border-law-accent/30 text-white focus:border-law-gold focus:ring-law-gold/20"
                                     />
                                 </div>
@@ -95,8 +103,11 @@ export default function LoginPage({
                                         id="fullName"
                                         name="fullName"
                                         type="text"
-                                        placeholder="Juan Pérez"
+                                        placeholder="Ej: Juan Pérez García"
                                         required
+                                        title="Ingresa tu nombre completo"
+                                        aria-label="Nombre completo del usuario"
+                                        minLength={3}
                                         className="bg-gem-mist/50 border-law-accent/30 text-white placeholder:text-white/20 focus:border-law-gold focus:ring-law-gold/20"
                                     />
                                 </div>
@@ -108,6 +119,8 @@ export default function LoginPage({
                                         type="email"
                                         placeholder="tu@email.com"
                                         required
+                                        title="Ingresa tu correo electrónico"
+                                        aria-label="Correo electrónico del usuario"
                                         className="bg-gem-mist/50 border-law-accent/30 text-white placeholder:text-white/20 focus:border-law-gold focus:ring-law-gold/20"
                                     />
                                 </div>
@@ -117,23 +130,43 @@ export default function LoginPage({
                                         id="password"
                                         name="password"
                                         type="password"
+                                        placeholder="Mínimo 6 caracteres"
                                         required
+                                        title="Crea una contraseña segura (mínimo 6 caracteres)"
+                                        aria-label="Contraseña del usuario"
+                                        minLength={6}
+                                        className="bg-gem-mist/50 border-law-accent/30 text-white focus:border-law-gold focus:ring-law-gold/20"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword" className="text-gem-offwhite/80">Confirmar Contraseña</Label>
+                                    <Input
+                                        id="confirmPassword"
+                                        name="confirmPassword"
+                                        type="password"
+                                        placeholder="Confirma tu contraseña"
+                                        required
+                                        title="Confirma tu contraseña"
+                                        aria-label="Confirmar contraseña del usuario"
+                                        minLength={6}
                                         className="bg-gem-mist/50 border-law-accent/30 text-white focus:border-law-gold focus:ring-law-gold/20"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2 col-span-2">
-                                        <Label htmlFor="age" className="text-gem-offwhite/80">Edad</Label>
+                                        <Label htmlFor="birthdate" className="text-gem-offwhite/80">Fecha de Nacimiento</Label>
                                         <Input
-                                            id="age"
-                                            name="age"
-                                            type="number"
-                                            min="13"
-                                            max="120"
+                                            id="birthdate"
+                                            name="birthdate"
+                                            type="date"
                                             required
-                                            placeholder="25"
+                                            max={new Date().toISOString().split('T')[0]}
+                                            title="Selecciona tu fecha de nacimiento"
+                                            aria-label="Fecha de nacimiento del usuario"
+                                            aria-describedby="birthdate-hint"
                                             className="bg-gem-mist/50 border-law-accent/30 text-white placeholder:text-white/20 focus:border-law-gold focus:ring-law-gold/20"
                                         />
+                                        <p id="birthdate-hint" className="text-xs text-gem-offwhite/40">Debes ser mayor de 13 años</p>
                                     </div>
                                     <div className="space-y-2 col-span-2 flex flex-col items-center">
                                         <Label htmlFor="avatar" className="text-gem-offwhite/80 cursor-pointer group relative">
@@ -154,6 +187,7 @@ export default function LoginPage({
                                         </Label>
                                     </div>
                                 </div>
+                                <PasswordMatchValidator />
                                 <AuthSubmitButton>
                                     REGISTRARSE
                                 </AuthSubmitButton>
