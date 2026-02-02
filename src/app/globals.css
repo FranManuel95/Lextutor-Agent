@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222.2 84% 4.9%;
+  /* Dark navy */
+  --foreground: 210 40% 98%;
+  /* Off-white */
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+}
+
+body {
+  background-color: #020617;
+  /* gem-onyx / law-dark */
+  color: #f8fafc;
+  /* gem-offwhite */
+}
+
+/* Custom Scrollbar - Minimalist */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  /* Thinner */
+}
+
+
+
+
+
+
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+  /* Slightly visible on hover */
+}
+
+/* Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}

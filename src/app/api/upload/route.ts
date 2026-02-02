@@ -1,0 +1,234 @@
+import { NextRequest, NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
+import { createClient } from "@/utils/supabase/server";
+import { writeFile, unlink } from "fs/promises";
+import path from "path";
+import os from "os";
+import OpenAI from "openai";
+import fs from "fs";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const STORE_ID = process.env.GEMINI_FILESEARCH_STORE_ID!; // fileSearchStores/...
+
+function safeBaseName(input: string) {
+    const base = input.toLowerCase().replace(/\.[a-z0-9]+$/i, "");
+    let slug = base.replace(/[^a-z0-9]+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+    if (!slug) slug = "document";
+    if (slug.length > 60) slug = slug.slice(0, 60).replace(/-+$/, "");
+    return slug;
+}
+
+function normalizeArea(area: string) {
+    const a = (area || "").toLowerCase().trim();
+    const allowed = new Set(["laboral", "civil", "mercantil", "procesal", "otro", "general"]);
+    return allowed.has(a) ? a : "general";
+}
+
+async function sleep(ms: number) {
+    return new Promise((r) => setTimeout(r, ms));
+}
+
+import { requireAdmin } from "@/server/security/requireAdmin";
+
+// ... existing imports ...
+
+export async function POST(request: NextRequest) {
+    // 1. Admin Verification
+    let user;
+    let supabase;
+    try {
+        const result = await requireAdmin();
+        user = result.user;
+        supabase = result.supabase;
+    } catch (e: any) {
+        return NextResponse.json({ error: e.message || "Forbidden" }, { status: 403 });
+    }
+
+    if (!STORE_ID?.startsWith("fileSearchStores/")) {
+        return NextResponse.json({ error: "Missing/invalid GEMINI_FILESEARCH_STORE_ID" }, { status: 500 });
+    }
+
+
+    const formData = await request.formData();
+    const file = formData.get("file") as File | null;
+    const displayName = (formData.get("displayName") as string) || file?.name || "document";
+    const area = normalizeArea((formData.get("area") as string) || "general");
+
+    if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+
+    // 🛡️ File Validation
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // 1. Size limit: 10MB
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (buffer.length > MAX_SIZE) {
+        return NextResponse.json({
+            error: "El archivo es demasiado grande. Máximo 10MB permitido."
+        }, { status: 400 });
+    }
+
+    // 2. Extension whitelist
+    const ext = path.extname(file.name || "").toLowerCase();
+    const ALLOWED_EXTENSIONS = ['.pdf', '.docx', '.doc', '.txt'];
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return NextResponse.json({
+            error: `Tipo de archivo no permitido. Solo se aceptan: ${ALLOWED_EXTENSIONS.join(', ')}`
+        }, { status: 400 });
+    }
+
+    // 3. Magic bytes verification (PDF only for now)
+    if (ext === '.pdf') {
+        const isPDF = buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46; // "%PDF"
+        if (!isPDF) {
+            return NextResponse.json({
+                error: "El archivo no es un PDF válido."
+            }, { status: 400 });
+        }
+    }
+
+    // Temp file
+    const tempPath = path.join(os.tmpdir(), `${safeBaseName(displayName)}-${Date.now().toString(36)}${ext}`);
+    await writeFile(tempPath, buffer);
+
+
+    try {
+        // Upload & ingest to File Search Store (Gemini)
+        console.log("🟢 Iniciando upload a Gemini File Search...");
+        console.log("🟢 Store ID:", STORE_ID);
+        console.log("🟢 Display Name:", displayName);
+
+        let operation = await ai.fileSearchStores.uploadToFileSearchStore({
+            file: tempPath,
+            fileSearchStoreName: STORE_ID,
+            config: {
+                displayName,
+                mimeType: file.type || "application/pdf",
+                customMetadata: [{ key: "area", stringValue: area }],
+            },
+        } as any);
+
+        console.log("🟢 Esperando procesamiento de Gemini...");
+        while (!operation.done) {
+            await sleep(1500);
+            operation = await ai.operations.get({ operation } as any);
+        }
+        console.log("🟢 Procesamiento completado");
+
+        // Encontrar doc creado en el store por displayName (V1)
+        const docs = await ai.fileSearchStores.documents.list({ parent: STORE_ID } as any);
+
+        let createdDocName: string | null = null;
+        for await (const d of docs as any) {
+            if (d.displayName === displayName) {
+                createdDocName = d.name; // fileSearchStores/.../documents/...
+                break;
+            }
+        }
+
+        if (!createdDocName) {
+            return NextResponse.json({ error: "Upload completed but document not found in store list." }, { status: 500 });
+        }
+
+        console.log(`✅ Document uploaded to Gemini: ${createdDocName}`);
+
+        // NUEVO: También subir a OpenAI si está configurado
+        let openaiFileId: string | null = null;
+
+        if (process.env.OPENAI_API_KEY && process.env.OPENAI_VECTOR_STORE_ID) {
+            try {
+                console.log("🔵 Iniciando upload a OpenAI...");
+                console.log("🔵 API Key presente:", !!process.env.OPENAI_API_KEY);
+                console.log("🔵 Vector Store ID:", process.env.OPENAI_VECTOR_STORE_ID);
+
+                const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+                console.log("🔵 OpenAI instance creada:", !!openai);
+                console.log("🔵 openai.files existe:", !!openai?.files);
+
+                // Subir archivo a OpenAI usando Buffer para SDK v4+
+                const fileBuffer = Buffer.from(await file.arrayBuffer());
+                console.log("🔵 Buffer creado, tamaño:", fileBuffer.length);
+
+                const blob = new Blob([fileBuffer], { type: file.type || "application/pdf" });
+                console.log("🔵 Blob creado");
+
+                const fileObj = new File([blob], file.name || "document.pdf", {
+                    type: file.type || "application/pdf"
+                });
+                console.log("🔵 File object creado:", fileObj.name);
+
+                console.log("🔵 Llamando a openai.files.create...");
+                const openaiFile = await openai.files.create({
+                    file: fileObj,
+                    purpose: "assistants"
+                });
+                console.log("🔵 Archivo subido a OpenAI:", openaiFile.id);
+
+                // Añadir al Vector Store usando API directa (SDK tiene problemas de tipos)
+                console.log("🔵 Añadiendo al Vector Store...");
+                const vectorStoreResponse = await fetch(
+                    `https://api.openai.com/v1/vector_stores/${process.env.OPENAI_VECTOR_STORE_ID}/files`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                            'Content-Type': 'application/json',
+                            'OpenAI-Beta': 'assistants=v2'
+                        },
+                        body: JSON.stringify({ file_id: openaiFile.id })
+                    }
+                );
+
+                if (!vectorStoreResponse.ok) {
+                    const errorData = await vectorStoreResponse.json();
+                    throw new Error(`Vector Store API error: ${JSON.stringify(errorData)}`);
+                }
+
+                const vectorStoreFile = await vectorStoreResponse.json();
+                console.log("🔵 Archivo añadido al Vector Store:", vectorStoreFile.id);
+
+                openaiFileId = openaiFile.id;
+                console.log(`✅ Document also uploaded to OpenAI: ${openaiFile.id}`);
+            } catch (e: any) {
+                console.error("⚠️ OpenAI upload failed (non-critical):", e?.message || e);
+                console.error("Stack:", e?.stack);
+                console.error("Error completo:", JSON.stringify(e, null, 2));
+                // No bloqueamos si OpenAI falla
+            }
+        }
+
+        // Evitar duplicado si ya existe
+        const { data: existing } = await supabase
+            .from("rag_documents")
+            .select("id")
+            .eq("document_name", createdDocName)
+            .maybeSingle();
+
+        if (!existing) {
+            const { error: dbError } = await supabase.from("rag_documents").insert({
+                store_name: STORE_ID,
+                document_name: createdDocName,
+                display_name: displayName,
+                area,
+                openai_file_id: openaiFileId  // NUEVO: Guardar ID de OpenAI
+            } as any);
+
+            if (dbError) throw dbError;
+        }
+
+        return NextResponse.json({
+            success: true,
+            document_name: createdDocName,
+            display_name: displayName,
+            area,
+            openai_synced: !!openaiFileId
+        });
+    } catch (error: any) {
+        console.error("Upload error:", error?.status, error?.message || error);
+        return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+    } finally {
+        try { await unlink(tempPath); } catch { }
+    }
+}
