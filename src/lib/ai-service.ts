@@ -509,9 +509,10 @@ export async function generateAudioResponse(params: {
 }) {
     const { base64Audio, prompt } = params;
 
-    if (!isGemini) {
-        throw new Error("Audio processing is only supported with Gemini provider");
-    }
+    // Hybrid Mode: Always allow Gemini for audio, even if AI_PROVIDER is openai.
+    // if (!isGemini) {
+    //    throw new Error("Audio processing is only supported with Gemini provider");
+    // }
 
     const res = await geminiClient.models.generateContent({
         model: "gemini-flash-latest",

@@ -22,7 +22,7 @@ export async function createChat() {
         .single()
 
     const settings = (profile as any)?.tutor_prefs || { area: 'general', modes: [], detailLevel: 'normal' }
-    const userName = (profile as any)?.full_name?.split(' ')[0] || "Estudiante"
+    const userName = (profile as any)?.full_name?.split(' ')[0] || ""
 
     // 2. Create Chat
     const { data, error } = await supabase
@@ -44,16 +44,20 @@ export async function createChat() {
     // 3. Proactive Agent Greeting (Generate & Save)
     try {
         // OPTIMIZATION: Use static instant greeting instead of waiting for AI generation (saves 5-8s)
-        const welcomeMessage = `Hola ${userName}, soy tu tutor legal inteligente. ⚖️
+        const activeMode = settings.modes?.length > 0 ? settings.modes.join(', ') : 'Tutor General';
+        const activeArea = settings.area || 'General';
 
-Estoy aquí para ayudarte a dominar el Derecho, resolver dudas complejas o preparar tus exámenes con casos prácticos. 
+        const welcomeMessage = `Hola ${userName}, soy Lextutor tu tutor pedagógico inteligente. ⚖️
+        
+Veo que quieres practicar sobre derecho **${activeArea.toUpperCase()}** usando el modo **${activeMode.toUpperCase()}**.
 
-Puedes pedirme que:
+Estoy aquí para ayudarte a dominar todas las áreas del derecho. Puedes pedirme que:
+
 1.  Resuma una normativa específica.
-2.  Genere un examen de autoevaluación.
-3.  Te explique un concepto con ejemplos reales.
+2.  Te explique un concepto con ejemplos reales.
+3.  Guiarte paso a paso.
 
-¿Por qué materia o tema te gustaría empezar hoy?`
+¿Con qué tema o materia quieres empezar?`
 
         await supabase.from('messages').insert({
             chat_id: chatId,
@@ -118,11 +122,21 @@ export async function sendMessage(
         content: m.content
     }));
 
+    // Fetch profile for personalization
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+    const userName = (profile as any)?.full_name || "";
+
     try {
         aiResponse = await generateResponse({
             message: content,
             history,
-            settings: settings as any
+            settings: settings as any,
+            options: { userName }
         })
     } catch (error) {
         console.error("AI Service Error:", error)

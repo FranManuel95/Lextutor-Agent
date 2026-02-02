@@ -38,14 +38,17 @@ export const POST = createApiHandler(
         };
 
         // 3. Download Audio
+        console.log(`[AudioAPI] Downloading: ${audioPath}`);
         const { data: fileData, error: downloadError } = await adminSupabase
             .storage
             .from('audio-notes')
             .download(audioPath);
 
         if (downloadError || !fileData) {
+            console.error(`[AudioAPI] Download Error:`, downloadError);
             throw new Error(`Audio download failed: ${downloadError?.message}`);
         }
+        console.log(`[AudioAPI] Downloaded size: ${fileData.size} bytes`);
 
         const arrayBuffer = await fileData.arrayBuffer();
         const base64Audio = Buffer.from(arrayBuffer).toString('base64');
@@ -60,15 +63,21 @@ export const POST = createApiHandler(
         } as any).select().single();
 
         const userMsg = userMsgData as Database['public']['Tables']['messages']['Row'] | null;
-
-        if (userMsgError) {
-            console.error("Failed to save user audio message:", userMsgError);
-        }
+        if (userMsgError) console.error("[AudioAPI] DB Insert Error:", userMsgError);
 
         // 5. Build System Prompt & Parsing Instruction
+        // Fetch profile name for personalization
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .single();
+
+        const userName = profile?.full_name || ""; // Default to empty if no name (neutral addressing)
+
         const modes = new Set<string>(effectiveSettings.modes || []);
         const system = constructEliteSystemPrompt({
-            userName: "Estudiante", // Logic to get name from profile could be added if needed
+            userName,
             modes,
             area: effectiveSettings.area,
             isFirstInteraction: false
@@ -78,21 +87,24 @@ export const POST = createApiHandler(
         const prompt = `${system}\n\nÁREA SUGERIDA: ${effectiveSettings.area?.toUpperCase() || 'GENERAL'}\nINSTRUCCIÓN TÉCNICA (IMPORTANTE): Primero, transcribe el audio del usuario literalmente comenzando con "TRANSCRIPT: " y terminando con "|||". Después, responde a la consulta del estudiante siguiendo tu personalidad.`;
 
         // 6. Generate Response via AI Service
-        // Note: generateAudioResponse handles the Gemini call and citations format
-        const responseText = await generateAudioResponse({
-            base64Audio,
-            prompt
-        });
+        console.log(`[AudioAPI] Sending to Gemini...`);
+        let responseText = "";
+        try {
+            responseText = await generateAudioResponse({
+                base64Audio,
+                prompt
+            });
+        } catch (aiErr) {
+            console.error("[AudioAPI] Gemini Error:", aiErr);
+            throw new Error("AI Processing Failed");
+        }
+        console.log(`[AudioAPI] Gemini Responded (${responseText.length} chars)`);
 
         let transcript = "Audio recibido (Sin transcripción)";
         let assistantResponse = responseText;
 
         // 7. Parse Output (Transcript ||| Response)
         const separator = "|||";
-        // Check if the response contains the separator. 
-        // Note: responseText might now contain appended citations at the very end.
-        // Format: "TRANSCRIPT: ... ||| Response ... \n\n _(Sources)_"
-
         if (responseText.includes(separator)) {
             const parts = responseText.split(separator);
             const transcriptPart = parts[0];
@@ -123,13 +135,18 @@ export const POST = createApiHandler(
         if (assistantError) throw assistantError;
 
         // 10. Log Student Event (Progress)
-        await supabase.from('student_events').insert({
-            user_id: user.id,
-            chat_id: chatId,
-            area: effectiveSettings.area,
-            kind: 'answer_submitted',
-            payload: { settings: effectiveSettings, audio: true }
-        } as any);
+        // Wrapped in try-catch so it doesn't fail the whole request
+        try {
+            await supabase.from('student_events').insert({
+                user_id: user.id,
+                chat_id: chatId,
+                area: effectiveSettings.area,
+                kind: 'answer_submitted',
+                payload: { settings: effectiveSettings, audio: true }
+            } as any);
+        } catch (logErr) {
+            console.warn('[AudioAPI] Failed to log event', logErr);
+        }
 
         return {
             transcript,
