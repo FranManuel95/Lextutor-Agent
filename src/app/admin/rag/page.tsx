@@ -72,7 +72,10 @@ export default function AdminRagPage() {
                 body: formData,
             })
 
-            if (!res.ok) throw new Error('Upload failed')
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Upload failed');
+            }
 
             toast({
                 title: "Documento subido",

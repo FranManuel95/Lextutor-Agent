@@ -52,21 +52,33 @@ export async function POST(request: NextRequest) {
     }
 
 
-    const formData = await request.formData();
+    let formData;
+    try {
+        formData = await request.formData();
+    } catch (e: any) {
+        console.error("❌ Error parsing FormData (posible exceso de tamaño):", e);
+        return NextResponse.json({
+            error: "Error al leer el archivo. Es posible que el archivo sea demasiado grande (límite recomendado: 10MB)."
+        }, { status: 400 });
+    }
+
     const file = formData.get("file") as File | null;
     const displayName = (formData.get("displayName") as string) || file?.name || "document";
     const area = normalizeArea((formData.get("area") as string) || "general");
 
-    if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    if (!file) {
+        console.error("❌ No file found in FormData");
+        return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    }
 
     // 🛡️ File Validation
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // 1. Size limit: 10MB
-    const MAX_SIZE = 10 * 1024 * 1024;
+    // 1. Size limit: 500MB
+    const MAX_SIZE = 500 * 1024 * 1024;
     if (buffer.length > MAX_SIZE) {
         return NextResponse.json({
-            error: "El archivo es demasiado grande. Máximo 10MB permitido."
+            error: "El archivo es demasiado grande. Máximo 500MB permitido."
         }, { status: 400 });
     }
 
