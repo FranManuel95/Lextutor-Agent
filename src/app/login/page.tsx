@@ -164,7 +164,7 @@ export default function LoginPage({
                                             title="Selecciona tu fecha de nacimiento"
                                             aria-label="Fecha de nacimiento del usuario"
                                             aria-describedby="birthdate-hint"
-                                            className="bg-gem-mist/50 border-law-accent/30 text-white placeholder:text-white/20 focus:border-law-gold focus:ring-law-gold/20"
+                                            className="bg-gem-mist/50 border-law-accent/30 text-white placeholder:text-white/20 focus:border-law-gold focus:ring-law-gold/20 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:brightness-150 [&::-webkit-calendar-picker-indicator]:contrast-125 [&::-webkit-calendar-picker-indicator]:opacity-90 [&::-webkit-calendar-picker-indicator]:cursor-pointer hover:[&::-webkit-calendar-picker-indicator]:opacity-100 hover:[&::-webkit-calendar-picker-indicator]:brightness-200"
                                         />
                                         <p id="birthdate-hint" className="text-xs text-gem-offwhite/40">Debes ser mayor de 13 años</p>
                                     </div>

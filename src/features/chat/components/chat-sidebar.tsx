@@ -26,9 +26,10 @@ import {
 
 interface ChatSidebarProps {
     chats: Chat[]
+    onClose?: () => void
 }
 
-export function ChatSidebar({ chats }: ChatSidebarProps) {
+export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
     const pathname = usePathname()
     const router = useRouter()
     const { setTutorSettings } = useAppStore()
@@ -140,7 +141,8 @@ export function ChatSidebar({ chats }: ChatSidebarProps) {
                 <div className="space-y-4">
                     <Button
                         onClick={async () => {
-                            // Optimistic UI or just wait for redirect
+                            // Redirect will happen server-side after chat creation + welcome msg
+                            // Sidebar will close naturally on navigation
                             await createChat()
                         }}
                         className="w-full justify-start gap-3 bg-law-gold/10 border border-law-gold/30 text-law-gold hover:bg-law-gold hover:text-gem-onyx transition-all duration-300 font-bold tracking-wide uppercase text-xs h-10 mb-2"
@@ -243,6 +245,7 @@ export function ChatSidebar({ chats }: ChatSidebarProps) {
                                 <>
                                     <Link
                                         href={`/chat/${chat.id}`}
+                                        onClick={() => onClose?.()}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-xs mb-1 pr-16",
                                             pathname === `/chat/${chat.id}`

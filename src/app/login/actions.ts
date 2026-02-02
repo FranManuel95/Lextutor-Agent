@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/utils/supabase/server'
+import { sendVerificationEmail } from '@/lib/send-verification-email'
 
 export async function login(formData: FormData) {
     const supabase = createClient()
@@ -65,26 +66,27 @@ export async function signup(formData: FormData) {
         return redirect('/login?message=Debes tener al menos 13 años para registrarte')
     }
 
-    const { data: authData, error } = await supabase.auth.signUp({
+    // 4. Create user directly (Skip verification)
+    const { data: userData, error: createError } = await adminSupabase.auth.admin.createUser({
         email,
         password,
-        options: {
-            data: {
-                full_name: fullName,
-                // store in meta too
-            }
+        email_confirm: true, // AUTO-CONFIRMATION MAGIC
+        user_metadata: {
+            full_name: fullName,
         }
     })
 
-    if (error || !authData.user) {
-        return redirect(`/login?message=${error?.message || 'Error al registrarse'}`)
+    if (createError || !userData.user) {
+        return redirect(`/login?message=${createError?.message || 'Error al crear usuario'}`)
     }
 
-    // Handle Profile & Avatar
+    const user = userData.user
+
+    // 5. Handle Profile & Avatar
     let avatarUrl = null
     if (avatar && avatar.size > 0) {
         const fileExt = avatar.name.split('.').pop()
-        const filePath = `avatars/${authData.user.id}/${Date.now()}.${fileExt}`
+        const filePath = `avatars/${user.id}/${Date.now()}.${fileExt}`
 
         const { error: uploadError } = await adminSupabase.storage
             .from('avatars')
@@ -101,22 +103,23 @@ export async function signup(formData: FormData) {
         }
     }
 
-    // Update Profile with birthdate
+    // 6. Update Profile
     await adminSupabase.from('profiles').upsert({
-        id: authData.user.id,
+        id: user.id,
         full_name: fullName,
-        birthdate: birthdate,  // Store birthdate instead of age
+        birthdate: birthdate,
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString()
     })
 
-    if (error) {
-        return redirect('/login?message=Could not authenticate user')
-    }
+    // 7. Auto Sign In (Now that user exists and is confirmed)
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    })
 
-    // Check for session. If no session, email verification is likely required.
-    if (!authData.session) {
-        return redirect('/login?message=Registro exitoso. Por favor verifica tu correo electrónico para continuar.')
+    if (signInError) {
+        return redirect('/login?message=Registro exitoso, pero error al iniciar sesión automática. Por favor entra manualmente.')
     }
 
     revalidatePath('/', 'layout')
