@@ -16,7 +16,7 @@ export const POST = createApiHandler(
         const { area, difficulty, count } = body;
 
         // 1. Generate Exam via AI Service
-        const { questions, rubric, ragUsed } = await generateExam({ area, difficulty, count });
+        const { questions, rubric, ragUsed, sources } = await generateExam({ area, difficulty, count });
 
         // 2. Save Session to DB
         const { data: session, error } = await supabase
@@ -27,7 +27,11 @@ export const POST = createApiHandler(
                 difficulty,
                 questions,
                 rubric,
-                metadata: { rag_used: ragUsed, type: 'development' }
+                metadata: {
+                    rag_used: ragUsed,
+                    type: 'development',
+                    sources: sources || []
+                }
             } as any)
             .select()
             .single();
@@ -37,7 +41,8 @@ export const POST = createApiHandler(
         return {
             sessionId: (session as any).id,
             questions,
-            ragUsed
+            ragUsed,
+            sources
         };
     },
     {

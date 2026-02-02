@@ -16,7 +16,7 @@ export const POST = createApiHandler(
         const { area, difficulty, count } = body;
 
         // 1. Generate Quiz via AI Service
-        const { questions, ragUsed } = await generateQuiz({ area, difficulty, count });
+        const { questions, ragUsed, sources } = await generateQuiz({ area, difficulty, count });
 
         // 2. Save Session to DB
         const { data: session, error } = await supabase
@@ -26,7 +26,10 @@ export const POST = createApiHandler(
                 area,
                 difficulty,
                 questions: questions,
-                metadata: { rag_used: ragUsed }
+                metadata: {
+                    rag_used: ragUsed,
+                    sources: sources || []
+                }
             } as any)
             .select()
             .single();
@@ -43,7 +46,8 @@ export const POST = createApiHandler(
         return {
             sessionId: (session as any).id,
             questions: clientQuestions,
-            ragUsed
+            ragUsed,
+            sources
         };
     },
     {

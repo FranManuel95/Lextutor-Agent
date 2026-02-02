@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ShieldCheck, FileText, Users, Activity, LogOut, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { AdminMobileSidebar } from "@/components/admin-mobile-sidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export default async function AdminLayout({
 
     return (
         <div className="flex min-h-screen bg-gem-onyx text-gem-offwhite font-sans">
-            {/* Sidebar */}
+            {/* Sidebar (Desktop) */}
             <aside className="w-64 bg-gem-slate border-r border-law-accent/20 hidden md:flex flex-col">
                 <div className="p-6 border-b border-law-accent/10">
                     <h1 className="text-xl font-serif text-law-gold flex items-center gap-2">
@@ -72,7 +73,15 @@ export default async function AdminLayout({
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto flex flex-col">
+                {/* Mobile Header */}
+                <div className="md:hidden p-4 border-b border-law-accent/10 flex items-center justify-between bg-gem-slate">
+                    <h1 className="text-lg font-serif text-law-gold flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5" />
+                        Admin Panel
+                    </h1>
+                    <AdminMobileSidebar />
+                </div>
                 {children}
             </main>
         </div>

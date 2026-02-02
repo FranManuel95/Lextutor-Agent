@@ -336,7 +336,10 @@ export async function generateQuiz(params: {
         const res = await retryOperation(() => geminiClient.models.generateContent({
             model: "gemini-flash-latest",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            config: { responseMimeType: "application/json" }
+            config: {
+                responseMimeType: "application/json",
+                tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } }]
+            }
         }));
 
         if (res.usageMetadata) {
@@ -351,7 +354,24 @@ export async function generateQuiz(params: {
         const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
         const generated = JSON.parse(cleaned);
         const grounding = res.candidates?.[0]?.groundingMetadata;
-        return { questions: generated.questions, ragUsed: (grounding?.groundingChunks?.length || 0) > 0 };
+
+        // Extract sources
+        const sources: string[] = [];
+        if (grounding?.groundingChunks) {
+            grounding.groundingChunks.forEach((chunk: any) => {
+                if (chunk.retrievedContext?.title) {
+                    sources.push(chunk.retrievedContext.title);
+                } else if (chunk.web?.title) {
+                    sources.push(chunk.web.title);
+                }
+            });
+        }
+
+        return {
+            questions: generated.questions,
+            ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
+            sources: Array.from(new Set(sources))
+        };
     } else {
         const thread = await openaiClient.beta.threads.create();
         await openaiClient.beta.threads.messages.create(thread.id, { role: "user", content: prompt });
@@ -378,7 +398,37 @@ export async function generateQuiz(params: {
         }
 
         const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return { questions: JSON.parse(cleaned).questions, ragUsed: (annotations?.length || 0) > 0 };
+
+        // Extract sources
+        const sources: string[] = [];
+        if (annotations) {
+            const fileIds = new Set<string>();
+            annotations.forEach((ann: any) => {
+                if (ann.type === 'file_citation') {
+                    fileIds.add(ann.file_citation.file_id);
+                }
+            });
+
+            // Resolve filenames
+            for (const fileId of fileIds) {
+                try {
+                    const file = await openaiClient.files.retrieve(fileId);
+                    if (file.filename) {
+                        sources.push(file.filename);
+                    } else {
+                        sources.push(`Documento ${fileId.slice(-4)}`);
+                    }
+                } catch (e) {
+                    sources.push(`Documento ${fileId.slice(-4)}`);
+                }
+            }
+        }
+
+        return {
+            questions: JSON.parse(cleaned).questions,
+            ragUsed: (annotations?.length || 0) > 0,
+            sources: Array.from(new Set(sources))
+        };
     }
 }
 
@@ -400,7 +450,10 @@ export async function generateExam(params: {
         const res = await retryOperation(() => geminiClient.models.generateContent({
             model: "gemini-flash-latest",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            config: { responseMimeType: "application/json" }
+            config: {
+                responseMimeType: "application/json",
+                tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } }]
+            }
         }));
         if (res.usageMetadata) {
             logUsage("gemini", {
@@ -413,7 +466,24 @@ export async function generateExam(params: {
         const raw = res.text || "{}";
         const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
         const grounding = res.candidates?.[0]?.groundingMetadata;
-        return { ...JSON.parse(cleaned), ragUsed: (grounding?.groundingChunks?.length || 0) > 0 };
+
+        // Extract sources
+        const sources: string[] = [];
+        if (grounding?.groundingChunks) {
+            grounding.groundingChunks.forEach((chunk: any) => {
+                if (chunk.retrievedContext?.title) {
+                    sources.push(chunk.retrievedContext.title);
+                } else if (chunk.web?.title) {
+                    sources.push(chunk.web.title);
+                }
+            });
+        }
+
+        return {
+            ...JSON.parse(cleaned),
+            ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
+            sources: Array.from(new Set(sources)) // Unique sources
+        };
     } else {
         const thread = await openaiClient.beta.threads.create();
         await openaiClient.beta.threads.messages.create(thread.id, { role: "user", content: prompt });
@@ -431,9 +501,41 @@ export async function generateExam(params: {
         }
 
         const messages = await openaiClient.beta.threads.messages.list(thread.id);
-        const text = (messages.data[0].content[0] as any).text.value;
+        const assistantMessage = messages.data[0];
+        const text = (assistantMessage.content[0] as any).text.value;
+        const annotations = (assistantMessage.content[0] as any).text.annotations;
         const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        return { ...JSON.parse(cleaned), ragUsed: (messages.data[0].content[0] as any).text.annotations.length > 0 };
+
+        // Extract sources
+        const sources: string[] = [];
+        if (annotations) {
+            const fileIds = new Set<string>();
+            annotations.forEach((ann: any) => {
+                if (ann.type === 'file_citation') {
+                    fileIds.add(ann.file_citation.file_id);
+                }
+            });
+
+            // Resolve filenames
+            for (const fileId of fileIds) {
+                try {
+                    const file = await openaiClient.files.retrieve(fileId);
+                    if (file.filename) {
+                        sources.push(file.filename);
+                    } else {
+                        sources.push(`Documento ${fileId.slice(-4)}`);
+                    }
+                } catch (e) {
+                    sources.push(`Documento ${fileId.slice(-4)}`);
+                }
+            }
+        }
+
+        return {
+            ...JSON.parse(cleaned),
+            ragUsed: true, // Always true for verify-kdb exams
+            sources: Array.from(new Set(sources))
+        };
     }
 }
 

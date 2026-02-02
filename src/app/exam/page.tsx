@@ -30,6 +30,7 @@ export default function ExamPage() {
     const [questions, setQuestions] = useState<any[]>([])
     const [answers, setAnswers] = useState<Record<string, string>>({})
     const [usesRag, setUsesRag] = useState(false)
+    const [sources, setSources] = useState<string[]>([])
 
     // Results
     const [grading, setGrading] = useState<any>(null)
@@ -48,6 +49,7 @@ export default function ExamPage() {
             setSessionId(data.sessionId)
             setQuestions(data.questions)
             setUsesRag(data.ragUsed || false)
+            setSources(data.sources || [])
 
             if (data.ragUsed) {
                 toast({ title: 'RAG Activo', description: 'Examen generado con tus documentos.', className: 'bg-green-500/10 border-green-500/50 text-green-200' })
@@ -159,9 +161,21 @@ export default function ExamPage() {
                         <div className="flex justify-between items-center bg-gem-mist/10 p-4 rounded-lg border border-white/5">
                             <h2 className="text-xl font-serif text-law-gold">Responde las preguntas</h2>
                             {usesRag && (
-                                <Badge variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10 gap-2">
-                                    <CheckCircle2 size={14} /> Fuente: Documentos
-                                </Badge>
+                                <div className="flex flex-col gap-2 items-end">
+                                    <div className="flex flex-wrap justify-end gap-2 max-w-md">
+                                        {sources.length > 0 ? (
+                                            sources.map((source, idx) => (
+                                                <Badge key={idx} variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10 gap-2 w-fit">
+                                                    <CheckCircle2 size={12} />Documento: {source}
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <Badge variant="outline" className="border-green-500/50 text-green-400 bg-green-500/10 gap-2 w-fit">
+                                                <CheckCircle2 size={14} /> Fuente: Documentos
+                                            </Badge>
+                                        )}
+                                    </div>
+                                </div>
                             )}
                         </div>
                         {questions.map((q, index) => (
