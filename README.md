@@ -296,6 +296,20 @@ npm start
 - Exámenes requieren JSON estructurado estricto
 - **Decisión**: GPT-4o (Assistants API) para generación de evaluaciones
 
+
+---
+
+## 🛠️ Herramientas de Desarrollo
+
+Este proyecto fue desarrollado con el apoyo de **Antigravity** (Google Gemini Code Assist), una herramienta avanzada de asistencia de código basada en IA que aceleró significativamente el proceso de implementación, debugging y optimización del sistema.
+
+**Características de Antigravity utilizadas**:
+- Generación de código TypeScript/React con análisis contextual profundo
+- Refactoring automatizado y optimización de arquitectura
+- Debugging asistido con análisis de logs y stack traces
+- Integración con APIs de Google Cloud y OpenAI
+- Documentación técnica y generación de tests
+
 ---
 
 **Copyright © 2026 Francisco Manuel Perejón Carmona**
