@@ -254,6 +254,7 @@ export async function generateResponse(params: {
     });
 
     if (isGemini) {
+        console.log("🤖 [MODELO] Chat conversacional → Gemini 1.5 Flash (generateContent API)");
         const contents = [
             ...history.map((m) => ({
                 role: m.role === "assistant" ? "model" : "user",
@@ -283,37 +284,19 @@ export async function generateResponse(params: {
         const citations = formatGeminiCitations(grounding?.groundingChunks);
         return citations ? `${text}\n\n${citations}` : text;
     } else {
-        const thread = await openaiClient.beta.threads.create();
-        await openaiClient.beta.threads.messages.create(thread.id, {
-            role: "user",
-            content: `${system}\n\nÁREA: ${area.toUpperCase()}\nMENSAJE ACTUAL:\n${message}`,
+        console.log("🤖 [MODELO] Chat conversacional → GPT-5.2 (Responses API)");
+        // Use GPT-5.2 Responses API for conversational chat
+        const { generateResponseGPT52 } = await import("./ai-service-gpt52");
+
+        return await generateResponseGPT52({
+            message,
+            history: history.map(m => ({
+                role: m.role as "user" | "assistant",
+                content: m.content
+            })),
+            systemPrompt: system,
+            vectorStoreId: process.env.OPENAI_VECTOR_STORE_ID!,
         });
-
-        const run = await openaiClient.beta.threads.runs.createAndPoll(thread.id, {
-            assistant_id: OPENAI_ASSISTANT_ID,
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        });
-
-        if (run.usage) {
-            logUsage("openai", {
-                prompt: run.usage.prompt_tokens,
-                completion: run.usage.completion_tokens,
-                total: run.usage.total_tokens,
-            });
-        }
-
-        const messages = await openaiClient.beta.threads.messages.list(thread.id);
-        const assistantMessage = messages.data[0];
-        let text = "";
-        let annotations: any[] = [];
-
-        if (assistantMessage.content[0].type === "text") {
-            text = assistantMessage.content[0].text.value;
-            annotations = assistantMessage.content[0].text.annotations;
-        }
-
-        const citations = formatOpenAICitations(annotations);
-        return citations ? `${text}\n\n${citations}` : text;
     }
 }
 
@@ -333,6 +316,7 @@ export async function generateQuiz(params: {
     Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
 
     if (isGemini) {
+        console.log("🤖 [MODELO] Generación Quiz → Gemini 1.5 Flash (generateContent API + File Search)");
         const res = await retryOperation(() => geminiClient.models.generateContent({
             model: "gemini-flash-latest",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -373,6 +357,7 @@ export async function generateQuiz(params: {
             sources: Array.from(new Set(sources))
         };
     } else {
+        console.log("🤖 [MODELO] Generación Quiz → GPT-4o (Assistants API + File Search)");
         const thread = await openaiClient.beta.threads.create();
         await openaiClient.beta.threads.messages.create(thread.id, { role: "user", content: prompt });
         const run = await openaiClient.beta.threads.runs.createAndPoll(thread.id, {
@@ -447,6 +432,7 @@ export async function generateExam(params: {
     Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
 
     if (isGemini) {
+        console.log("🤖 [MODELO] Generación Exam → Gemini 1.5 Flash (generateContent API + File Search)");
         const res = await retryOperation(() => geminiClient.models.generateContent({
             model: "gemini-flash-latest",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -485,6 +471,7 @@ export async function generateExam(params: {
             sources: Array.from(new Set(sources)) // Unique sources
         };
     } else {
+        console.log("🤖 [MODELO] Generación Exam → GPT-4o (Assistants API + File Search)");
         const thread = await openaiClient.beta.threads.create();
         await openaiClient.beta.threads.messages.create(thread.id, { role: "user", content: prompt });
         const run = await openaiClient.beta.threads.runs.createAndPoll(thread.id, {
@@ -563,6 +550,7 @@ export async function gradeExam(params: {
     INPUT: ${JSON.stringify(inputList)}`;
 
     if (isGemini) {
+        console.log("🤖 [MODELO] Grading Exam → Gemini 2.0 Flash (generateContent API)");
         const res = await retryOperation(() => geminiClient.models.generateContent({
             model: "gemini-2.0-flash",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -581,6 +569,7 @@ export async function gradeExam(params: {
 
         return JSON.parse(res.text || "{}");
     } else {
+        console.log("🤖 [MODELO] Grading Exam → GPT-4o (Chat Completions API)");
         const completion = await openaiClient.chat.completions.create({
             model: process.env.OPENAI_MODEL || "gpt-4o-mini",
             messages: [

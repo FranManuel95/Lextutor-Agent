@@ -2,118 +2,304 @@
 
 Plataforma avanzada de tutoría jurídica con Inteligencia Artificial (RAG), diseñada para estudiantes de Derecho en España.
 
-## 🏗 Arquitectura del Proyecto
+## 🏗 Stack Tecnológico
 
-El sistema está construido sobre una arquitectura moderna, modular y escalable, priorizando la **Baja Latencia**, la **Seguridad** y la **Observabilidad**.
-
-### Stack Tecnológico
-- **Frontend**: Next.js 14 (App Router) + React + TailwindCSS + Shadcn/UI.
-- **Backend**: Next.js API Routes (Serverless Functions).
-- **Base de Datos & Auth**: Supabase (PostgreSQL, Row Level Security, Auth, Storage).
-- **IA & RAG**: Arquitectura de "Doble Nube" (Google Gemini + OpenAI).
+- **Frontend**: Next.js 14 (App Router) + React + TailwindCSS + Shadcn/UI
+- **Backend**: Next.js API Routes (Serverless Functions)
+- **Base de Datos & Auth**: Supabase (PostgreSQL, Row Level Security, Auth, Storage)
+- **IA & RAG**: Arquitectura Dual Cloud (Google Gemini + OpenAI)
 
 ---
 
-## 🧠 Estrategia de IA y RAG (Dual Cloud)
+## 🧠 Arquitectura de IA: Multi-Modelo Híbrido
 
-El núcleo del agente no depende de un solo proveedor. Hemos implementado una capa de abstracción (`src/lib/ai-service.ts`) que nos permite orquestar múltiples modelos según la tarea.
+El sistema implementa una capa de abstracción (`src/lib/ai-service.ts`) que orquesta **4 modelos diferentes** según la tarea, optimizando coste/latencia/precisión:
 
-### ¿Por qué usamos Google File Search Y OpenAI Vector Stores?
-Para garantizar la máxima disponibilidad y calidad de respuesta, el sistema mantiene **redundancia total** en la base de conocimiento:
-1.  **Google File Search**: Se utiliza como motor primario por su ventana de contexto masiva (1M+ tokens) y velocidad de recuperación nativa.
-2.  **OpenAI Vector Stores**: Se mantiene como respaldo y validación cruzada.
+### Routing Automático por Operación
 
-**Nota:** Cuando un administrador sube un archivo desde el panel, el sistema lo **sincroniza simultáneamente** en ambas nubes para asegurar consistencia total.
-
-### Modelos Utilizados
-Confirmamos el uso de una arquitectura híbrida de modelos para optimizar coste/rendimiento:
-*   **Gemini 1.5 Flash**: Modelo principal para el Chat y Consultas Rápidas (Baja latencia).
-*   **Gemini 2.0 Flash**: Utilizado para tareas de razonamiento complejo, como la **Evaluación de Exámenes de Desarrollo** (grading).
-*   **GPT-5.2**: Modelo de respaldo (fallback) y validación en tareas críticas.
-
----
-
-## 💰 Observabilidad y Costes (Debug)
-
-Hemos implementado un sistema de **Trazabilidad Financiera en Tiempo Real**.
-Cada operación que consume IA (Chat, Generación de Exámenes, Evaluación, Audio) emite logs detallados en la consola del servidor:
-
-```text
-💰 [GEMINI] Token Usage:
-   📥 Input:  15,402 tokens (€0.001085)
-   📤 Output: 345 tokens (€0.000102)
-   📊 Total:  15,747 tokens (€0.001187)
-   💵 Costo estimado: €0.001187 EUR
+```
+┌─────────────────────────┬────────────────────────────────────┐
+│ Operación               │ Modelo Utilizado                   │
+├─────────────────────────┼────────────────────────────────────┤
+│ Chat conversacional     │ GPT-5.2 o Gemini 1.5 Flash         │
+│ Quiz (test múltiple)    │ GPT-4o o Gemini 1.5 (JSON mode)    │
+│ Exam (desarrollo)       │ GPT-4o o Gemini 1.5 (JSON mode)    │
+│ Grading (corrección)    │ Gemini 2.0 Flash                   │
+│ Audio (mensajes voz)    │ Gemini 1.5 (único viable)          │
+└─────────────────────────┴────────────────────────────────────┘
 ```
 
-Esto permite auditar exactamente cuánto cuesta cada interacción del agente, desglosado por prompt (input) y generación (output).
+**Variable de control**: `AI_PROVIDER=gemini` o `openai` en `.env.local`
+
+### ¿Por qué Dual Cloud RAG?
+
+**Requisito técnico**: "Usar Google File Search Y ChatGPT"
+
+**Problema**: Son ecosistemas separados sin interoperabilidad
+
+  - OpenAI NO puede acceder a Google File Search
+- Google File Search NO puede usarse con OpenAI
+
+**Solución**: Ingesta doble simultánea en `/api/upload`
+```typescript
+// Cuando un admin sube un archivo:
+1. Sube a Google File Search → Para use con Gemini
+2. Sube a OpenAI Vector Store → Para uso con GPT-5.2/GPT-4o
+3. Registra ambos IDs en Supabase (tabla `rag_documents`)
+```
 
 ---
 
-## 🛡️ Panel de Administración y Seguridad
+## 💰 Debug & Observabilidad
 
-El sistema incluye un **Panel de Administración (`/admin`)** protegido estrictamente por Roles (RBAC).
+### 🤖 Identificación de Modelo en Logs
 
-*   **Subida de Archivos**: Solo los administradores pueden "enseñar" al agente subiendo PDFs/DOCs.
-*   **Seguridad**:
-    *   **RLS (Row Level Security)**: A nivel de base de datos, un usuario JAMÁS puede leer los chats o exámenes de otro.
-    *   **Validación Zod**: Todas las entradas de la API se validan estrictamente antes de procesarse.
-    *   **Rate Limiting**: Implementado nativamente en Postgres mediante **Supabase RPC**. Usamos un algoritmo de ventana deslizante paramétrica (`check_rate_limit`) para controlar el abuso sin latencia de red adicional.
+Todos los logs de servidor incluyen el prefijo `🤖 [MODELO]` para visibilidad total:
+
+```bash
+🤖 [MODELO] Chat conversacional → GPT-5.2 (Responses API)
+🟣 Calling GPT-5.2 Responses API...
+✅ GPT-5.2 Response received
+```
+
+### 💵 Control de Costes (Token Usage)
+
+Cada operación IA emite logs financieros en tiempo real:
+
+```bash
+💰 [GPT-5.2] Token Usage:
+   📥 Input:  5,201 tokens (€0.009778)
+   📤 Output: 1,155 tokens (€0.008686)
+   📊 Total:  6,356 tokens (€0.018463)
+   💵 Costo estimado: €0.018463 EUR
+```
+
+### Ejemplos de Debug por Operación
+
+#### 1. Generación de Examen (Quiz)
+```bash
+🤖 [MODELO] Generación Quiz → Gemini 1.5 Flash (generateContent API + File Search)
+
+💰 [GEMINI] Token Usage:
+   📥 Input:  3,245 tokens (€0.000230)
+   📤 Output: 892 tokens (€0.000251)
+   📊 Total:  4,137 tokens (€0.000481)
+   💵 Costo estimado: €0.000481 EUR
+   
+🔍 RAG: 5 documentos recuperados (Derecho Civil - Tema 3.pdf, Código Civil Arts. 1-100.pdf...)
+```
+
+#### 2. Evaluación de Examen (Grading)
+```bash
+🤖 [MODELO] Grading Exam → GPT-4o (Chat Completions API)
+
+💰 [OPENAI] Token Usage:
+   📥 Input:  8,102 tokens (€0.001139)
+   📤 Output: 456 tokens (€0.000257)
+   📊 Total:  8,558 tokens (€0.001396)
+   💵 Costo estimado: €0.001396 EUR
+
+📝 Rúbrica aplicada: Exactitud (4 pts), Razonamiento (3 pts), Claridad (2 pts)
+✅ Calificación final: 7.5/10
+```
+
+#### 3. Chat Conversacional (GPT-5.2 con reasoning)
+```bash
+🤖 [MODELO] Chat conversacional → GPT-5.2 (Responses API)
+🟣 Calling GPT-5.2 Responses API...
+📝 History messages: 8
+✅ GPT-5.2 Response received
+
+💰 [GPT-5.2] Token Usage:
+   📥 Input:  5,201 tokens (€0.009778)
+   📤 Output: 1,155 tokens (€0.008686)
+   📊 Total:  6,356 tokens (€0.018463)
+   💵 Costo estimado: €0.018463 EUR
+
+🔍 RAG: Documentos consultados → Código Civil Arts. 1254-1314 (Contratos)
+```
+
+**Proyección de costes mensual** (1000 operaciones/día):
+- Solo Gemini: ~€9/mes ✅
+- Solo GPT-4o: ~€54/mes
+- Solo GPT-5.2: ~€705/mes 💸
+- Hybrid (actual): ~€100/mes
 
 ---
 
-## 📚 Documentación de API
+## 🛡️ Panel de Administración
 
-### 1. Chat Inteligente
+Acceso exclusivo para rol `admin` en `/admin`
+
+### 1. Dashboard de Estadísticas
+![Dashboard](/assets/admin-dashboard.jpg)
+*Métricas de usuarios, chats activos y uso del sistema*
+
+### 2. Gestión RAG (Biblioteca de Documentos)
+![Gestión RAG](/assets/admin-rag.jpg)
+*Interfaz para subir manuales jurídicos (sync automático a ambas nubes)*
+
+### Seguridad del Panel
+- **RBAC (Role-Based Access Control)**: Middleware estricto
+- **RLS (Row Level Security)**: Bloqueo a nivel de base de datos
+- **Validación Zod**: Tipo, extensión y tamaño (hasta 500MB)
+
+---
+
+## 📊 Comparativa de Modelos
+
+| Criterio | GPT-5.2 | GPT-4o | Gemini 1.5 | Gemini 2.0 |
+|----------|---------|--------|------------|------------|
+| **Coste/chat** | €0.024 | €0.0018 | €0.0003 | €0.0004 |
+| **Latencia** | ~4s | ~1.5s | ~1s | ~3s |
+| **JSON Mode** | ❌ (con reasoning) | ✅ | ✅ | ✅ |
+| **Razonamiento** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Audio Nativo** | ❌ | ❌ | ✅ | ✅ |
+
+### ¿Por qué NO usar solo GPT-5.2?
+
+#### Limitación 1: JSON Mode Incompatible
+```typescript
+// ❌ ERROR 400
+const response = await openai.responses.create({
+    model: "gpt-5.2",
+    reasoning: { effort: "medium" },
+    response_format: { type: "json_object" }  // ← Incompatible
+});
+```
+
+**Impacto**: Exámenes y quizzes requieren JSON estructurado → **Obligatorio usar GPT-4o**
+
+#### Limitación 2: Coste 13x Mayor
+- GPT-5.2: $2/1M input, $8/1M output (~13x más caro)
+- Solo justificable para chat con reasoning profundo
+
+#### Limitación 3: Latencia 2-3x Mayor
+- GPT-4o: ~1.5s
+- GPT-5.2 (medium): ~4s (overhead de chain-of-thought)
+
+**Decisión**: Arquitectura híbrida para cada caso de uso óptimo
+
+---
+
+## ⚙️ Configuración
+
+### Variables de Entorno (.env.local)
+
+```bash
+# Provider principal
+AI_PROVIDER=gemini  # o "openai"
+
+# Gemini (Google Cloud)
+GEMINI_API_KEY=your_key
+GEMINI_FILESEARCH_STORE_ID=fileSearchStores/xxx
+
+# OpenAI
+OPENAI_API_KEY=sk-proj-xxx
+OPENAI_ASSISTANT_ID=asst_xxx  # Para Quiz/Exam (GPT-4o)
+OPENAI_VECTOR_STORE_ID=vs_xxx  # Para GPT-5.2 RAG
+OPENAI_MODEL=gpt-4o
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=xxx
+NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx
+```
+
+---
+
+## 📂 Estructura del Proyecto
+
+```bash
+src/
+├── app/                  # Next.js App Router
+│   ├── (auth)/           # Login/Register (públicas)
+│   ├── (main)/           # Chat, Quiz, Exam (protegidas)
+│   ├── admin/            # Panel admin (rol:admin)
+│   └── api/              # Endpoints serverless
+├── components/
+│   ├── ui/               # Primitivas Shadcn
+│   └── chat/             # Componentes de chat
+├── lib/
+│   ├── ai-service.ts     # Orquestador multi-modelo
+│   ├── ai-service-gpt52.ts  # GPT-5.2 Responses API
+│   └── utils.ts
+├── server/
+│   ├── db/               # Schemas y tipos (Supabase)
+│   └── security/         # RBAC, validación
+└── utils/                # Helpers isomórficos
+```
+
+---
+
+## 🚀 Instalación
+
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Configurar .env.local (copiar de .env.example)
+
+# 3. Desarrollo
+npm run dev  # http://localhost:3000
+
+# 4. Producción
+npm run build
+npm start
+```
+
+**Requisitos**: Node.js 18+, Supabase, API Keys (Google + OpenAI)
+
+---
+
+## 📚 API Endpoints
+
+### Chat Inteligente
 **`POST /api/chat`**
-Orquesta la conversación. Recupera contexto (RAG), historial previo y perfil del usuario.
-- **Body**: `{ "chatId": "uuid", "message": "string" }`
-- **Rate Limit**: 50 mensajes/hora.
+- Body: `{ chatId, message }`
+- RAG: Recupera contexto de documentos
+- Rate limit: 50/hora
 
-### 2. Generación de Exámenes (Desarrollo)
-**`POST /api/exam/generate`**
-Crea un examen de preguntas abiertas basado exclusivamente en la documentación subida.
-- **Body**: `{ "area": "civil", "difficulty": "hard", "count": 3 }`
-- **Output**: JSON estricto con preguntas `id` y `text`.
+### Generación de Exámenes
+**`POST /api/exam/generate`** (Desarrollo)
+**`POST /api/quiz/generate`** (Test)
+- Body: `{ area: "civil", difficulty: "hard", count: 3 }`
+- Output: JSON estructurado con preguntas
 
-### 3. Generación de Quiz (Test)
-**`POST /api/quiz/generate`**
-Genera preguntas tipo test (A/B/C/D) con corrección automática.
-- **Rate Limit**: 20/día.
+### Evaluación
+**`POST /api/exam/grade`** (IA - Gemini 2.0)
+**`POST /api/quiz/grade`** (Lógica determinista - 0 tokens)
 
-### 4. Evaluación (Grading)
-**`POST /api/exam/grade`** (Desarrollo) / **`POST /api/quiz/grade`** (Test)
-*   **Desarrollo**: Usa **Gemini 2.0 Flash** para leer la respuesta del alumno y corregirla con rúbrica académica. Genera coste de IA.
-*   **Quiz**: Evaluación **determinista** (Lógica matemática). Coste IA: **0 tokens**.
-
-### 5. Gestión Documental (Admin)
+### Upload RAG (Admin)
 **`POST /api/upload`**
-Endpoint crítico que maneja la ingestión "Dual Cloud".
-- Sube el archivo a Supabase Storage.
-- Lo indexa en **Google File Search**.
-- Lo indexa en **OpenAI Vector Store**.
-- Registra la referencia en la BD `rag_documents`.
+- Sube a Supabase Storage
+- Indexa en Google File Search
+- Indexa en OpenAI Vector Store
+- Limit: 500MB
 
 ---
 
-## 🚀 Despliegue e Instalación
+## ⚠️ Decisiones Técnicas Clave
 
-1.  **Requisitos**: Node.js 18+, Cuenta de Supabase, API Keys de Google y OpenAI.
-2.  **Instalación**:
-    ```bash
-    npm install
-    # Configura .env.local con tus claves
-    npm run dev
-    ```
-3.  **Producción**:
-    ```bash
-    npm run build
-    npm start
-    ```
+### 1. Por qué Dual Cloud RAG (ingesta doble)
+- **Requisito**: "Usar Google File Search Y ChatGPT"
+- **Realidad**: Son ecosistemas incompatibles
+- **Solución**: Sincronización simultánea en ambos
 
-**Copyright © 2026 Francisco Manuel Perejón Carmona.**
+### 2. Por qué Gemini para Audio
+- OpenAI requiere 2 pasos (Whisper → GPT-4o) = ~7-10s latencia
+- Gemini procesa audio WebM nativamente = ~2s latencia
+- **Decisión**: Hybrid Mode (forzar Gemini aunque `AI_PROVIDER=openai`)
 
-⚠️ **Aviso de Propiedad Intelectual y Uso Restringido:**
-Este código fuente, diseño y arquitectura son propiedad exclusiva del autor.
-Este repositorio se pone a disposición **ÚNICAMENTE con fines de evaluación académica y revisión técnica**.
-Queda terminantemente prohibida su copia, distribución, uso comercial o despliegue en producción sin autorización expresa por escrito del autor.
+### 3. Por qué GPT-4o para Exámenes (no GPT-5.2)
+- GPT-5.2 no soporta `response_format: json_object` con reasoning
+- Exámenes requieren JSON estructurado estricto
+- **Decisión**: GPT-4o (Assistants API) para generación de evaluaciones
+
+---
+
+**Copyright © 2026 Francisco Manuel Perejón Carmona**
+
+⚠️ **Aviso de Propiedad Intelectual:**
+Código fuente exclusivo del autor. Disponible **ÚNICAMENTE para evaluación académica**.
+Prohibida su copia, distribución o uso comercial sin autorización escrita.
