@@ -43,7 +43,7 @@ export function InfographicModal({ isOpen, onClose, imageUrl, topic }: Infograph
                                 disabled={loading}
                             >
                                 <Download className="w-4 h-4" />
-                                {loading ? 'Preparando...' : 'Descargar PDF'}
+                                <span className="hidden md:inline">{loading ? 'Preparando...' : 'Descargar PDF'}</span>
                             </Button>
                         )}
                     </PDFDownloadLink>
@@ -59,15 +59,15 @@ export function InfographicModal({ isOpen, onClose, imageUrl, topic }: Infograph
                 </div>
 
                 {/* Main Content (Image Preview) */}
-                <div className="flex-1 w-full h-full flex items-center justify-center p-8 overflow-y-auto">
-                    <div className="relative w-full max-w-3xl aspect-[9/16] bg-white rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                <div className="flex-1 w-full h-full flex items-center justify-center p-4 md:p-8 overflow-hidden relative">
+                    {/* Container constrained by height first to avoid vertical clipping */}
+                    <div className="relative h-full max-h-full w-auto max-w-full aspect-[9/16] bg-white/5 rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex items-center justify-center">
                         {/* Realistic Mockup Effect */}
                         <img
                             src={imageUrl}
                             alt={`Infografía de ${topic}`}
-                            className="w-full h-full object-contain"
+                            className="max-w-full max-h-full object-contain shadow-md"
                         />
-                        {/* Optional: Add a subtle 'paper' texture overlay if desired, but image is enough */}
                     </div>
                 </div>
 

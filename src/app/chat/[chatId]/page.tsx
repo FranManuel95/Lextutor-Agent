@@ -8,8 +8,9 @@ import type { Database } from '@/types/database.types'
 export default async function ChatIdPage({
     params
 }: {
-    params: { chatId: string }
+    params: Promise<{ chatId: string }>
 }) {
+    const { chatId } = await params
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -18,38 +19,42 @@ export default async function ChatIdPage({
     }
 
     // Verify chat ownership
-    const { data: chat } = await supabase
+    const { data: chatData } = await supabase
         .from('chats')
-        .select('id, title')
-        .eq('id', params.chatId)
+        .select('*')
+        .eq('id', chatId)
         .eq('user_id', user.id)
         .single()
+
+    const chat = chatData as Database['public']['Tables']['chats']['Row'] | null
 
     if (!chat) {
         notFound()
     }
 
     // Fetch Profile for Avatar
-    const { data: profile } = await supabase
+    const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single() as { data: Database['public']['Tables']['profiles']['Row'] | null }
+        .single()
+
+    const profile = profileData as Database['public']['Tables']['profiles']['Row'] | null
 
     const { data: messages } = await supabase
         .from('messages')
         .select('*')
-        .eq('chat_id', params.chatId)
+        .eq('chat_id', chatId)
         .order('created_at', { ascending: true })
 
     return (
-        <div className="flex flex-col h-full bg-gem-onyx">
-            <ChatHeader chatId={chat?.id!} title={chat?.title || undefined} />
+        <div className="flex flex-col h-full bg-gem-onyx pt-20 md:pt-0">
+            <ChatHeader chatId={chat.id} title={chat.title || undefined} />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <ChatList initialMessages={messages || []} userAvatar={profile?.avatar_url} />
             </div>
-            <ChatInput chatId={params.chatId} />
+            <ChatInput chatId={chatId} />
         </div>
     )
 }

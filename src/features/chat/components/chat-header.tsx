@@ -8,7 +8,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ chatId, title }: ChatHeaderProps) {
     return (
-        <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-gem-onyx/50 backdrop-blur-sm sticky top-0 z-10 w-full">
+        <header className="fixed top-14 left-0 w-full z-10 md:static md:top-auto md:w-auto flex items-center justify-between px-4 md:px-6 py-4 border-b border-white/5 bg-gem-onyx/50 backdrop-blur-sm">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-law-gold to-yellow-600 flex items-center justify-center shadow-lg shadow-law-gold/10">
                     <Bot className="w-6 h-6 text-gem-onyx" />

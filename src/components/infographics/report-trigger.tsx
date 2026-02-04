@@ -55,30 +55,30 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
             {status === 'idle' && (
                 <Button
                     onClick={handleGenerate}
-                    className="bg-transparent hover:bg-white/10 text-white border border-white/20 gap-2 h-9 px-4 rounded-full text-xs font-medium transition-all"
+                    className="bg-gradient-to-br from-law-gold to-yellow-600 hover:from-law-gold/90 hover:to-yellow-600/90 text-gem-onyx border-none gap-2 h-9 px-3 md:px-4 rounded-full text-xs font-bold shadow-lg shadow-law-gold/10 transition-all hover:scale-105"
                 >
                     <FileText className="w-4 h-4" />
-                    Generar Resumen
+                    <span className="hidden md:inline">Generar Resumen</span>
                 </Button>
             )}
 
             {status === 'generating' && (
                 <Button
                     disabled
-                    className="bg-law-gold/20 text-law-gold border border-law-gold/30 gap-2 h-9 px-4 rounded-full text-xs font-medium cursor-wait"
+                    className="bg-law-gold/20 text-law-gold border border-law-gold/30 gap-2 h-9 px-3 md:px-4 rounded-full text-xs font-medium cursor-wait"
                 >
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Generando...
+                    <span className="hidden md:inline">Generando...</span>
                 </Button>
             )}
 
             {status === 'done' && (
                 <Button
                     onClick={() => setIsModalOpen(true)}
-                    className="bg-green-600 text-white hover:bg-green-700 border border-green-500 gap-2 h-9 px-4 rounded-full text-xs font-medium shadow-lg shadow-green-900/20 animate-in fade-in zoom-in duration-300"
+                    className="bg-green-600 text-white hover:bg-green-700 border border-green-500 gap-2 h-9 px-3 md:px-4 rounded-full text-xs font-medium shadow-lg shadow-green-900/20 animate-in fade-in zoom-in duration-300"
                 >
                     <CheckCircle2 className="w-4 h-4" />
-                    Resumen Generado
+                    <span className="hidden md:inline">Resumen Generado</span>
                 </Button>
             )}
         </>
