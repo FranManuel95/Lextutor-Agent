@@ -72,12 +72,6 @@ export function ChatInput({ chatId }: ChatInputProps) {
         setIsSending(true)
         setAudioState('uploading')
 
-        // Optimistic Audio Placeholder
-        // Optimistic Audio Placeholder
-        // Removed to avoid duplication with the audio player bubble
-        // const tempId = Date.now()
-        // addOptimisticMessage({ ... })
-
         try {
             // 1. Get Signed URL
             const uploadRes = await fetch('/api/audio/create-upload', { method: 'POST' });
@@ -111,14 +105,11 @@ export function ChatInput({ chatId }: ChatInputProps) {
             if (!processRes.ok) throw new Error('Processing failed');
 
             // 4. Success
-            // remove temp before refresh
-            // removeOptimisticMessage(tempId) // Removed since creation was removed
             toast({ title: "Audio procesado", description: "Mensaje de voz enviado y respondido." });
             router.refresh();
 
         } catch (error) {
             console.error(error);
-            // removeOptimisticMessage(tempId) // Removed
             toast({ title: "Error", description: "Falló el envío de audio.", variant: "destructive" });
         } finally {
             setIsSending(false)

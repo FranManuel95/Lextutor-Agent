@@ -8,6 +8,7 @@ const nextConfig = {
             },
         ],
     },
+    transpilePackages: ["@react-pdf/renderer"],
     experimental: {
         serverActions: {
             bodySizeLimit: '50mb',
