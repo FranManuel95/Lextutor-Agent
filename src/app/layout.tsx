@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Crimson_Pro } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+    subsets: ["latin"],
+    display: 'swap',
+    variable: '--font-inter'
+});
+
+const crimsonPro = Crimson_Pro({
+    subsets: ["latin"],
+    weight: ['400', '600', '700'],
+    style: ['normal', 'italic'],
+    display: 'swap',
+    variable: '--font-crimson'
+});
 
 export const metadata: Metadata = {
     title: "Estudiante Elite",
@@ -15,12 +27,19 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+
     return (
         <html lang="es">
             <head>
-                <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+                {supabaseUrl && (
+                    <>
+                        <link rel="preconnect" href={supabaseUrl} />
+                        <link rel="dns-prefetch" href={supabaseUrl} />
+                    </>
+                )}
             </head>
-            <body className={inter.className}>
+            <body className={`${inter.variable} ${crimsonPro.variable} font-sans`}>
                 {children}
                 <Toaster />
             </body>

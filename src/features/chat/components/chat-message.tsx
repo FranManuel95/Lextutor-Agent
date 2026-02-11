@@ -7,13 +7,15 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useTypewriter } from '@/hooks/use-typewriter'
 
 interface ChatMessageProps {
     message: Message
     userAvatar?: string | null
+    isStreaming?: boolean
 }
 
-export function ChatMessage({ message, userAvatar }: ChatMessageProps) {
+export function ChatMessage({ message, userAvatar, isStreaming = false }: ChatMessageProps) {
     const isUser = message.role === 'user'
     const [audioUrl, setAudioUrl] = useState<string | null>(null)
     const [isPlaying, setIsPlaying] = useState(false)
@@ -24,27 +26,72 @@ export function ChatMessage({ message, userAvatar }: ChatMessageProps) {
     const audioRef = useRef<HTMLAudioElement | null>(null)
 
     useEffect(() => {
-        if (message.audio_path) {
-            setIsLoadingAudio(true)
-            fetch(`/api/audio/url?path=${encodeURIComponent(message.audio_path)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.signedUrl) setAudioUrl(data.signedUrl)
-                })
-                .catch(err => console.error("Failed to load audio:", err))
-                .finally(() => setIsLoadingAudio(false))
+        if (message.audio_url) {
+            setAudioUrl(message.audio_url)
         }
-    }, [message.audio_path])
+    }, [message.audio_url])
 
-    const togglePlay = () => {
-        if (!audioRef.current) return
-        if (isPlaying) {
-            audioRef.current.pause()
-        } else {
-            audioRef.current.play()
+    const loadAudio = async () => {
+        if (audioUrl) return true;
+        if (!message.audio_path) return false;
+
+        setIsLoadingAudio(true);
+        try {
+            const res = await fetch(`/api/audio/url?path=${encodeURIComponent(message.audio_path)}`);
+            const data = await res.json();
+            if (data.signedUrl) {
+                setAudioUrl(data.signedUrl);
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.error("Failed to load audio:", err);
+            return false;
+        } finally {
+            setIsLoadingAudio(false);
         }
-        setIsPlaying(!isPlaying)
+    };
+
+    const togglePlay = async () => {
+        if (audioUrl && audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+            } else {
+                await audioRef.current.play();
+                setIsPlaying(true);
+            }
+            return;
+        }
+
+        // Lazy Load
+        if (!audioUrl && message.audio_path) {
+            const loaded = await loadAudio();
+            if (loaded && audioRef.current) {
+                // Wait for state update/ref to be ready (a bit tricky with React state, but effect will sync)
+                // Actually, safer to let the user click again or use a refined effect, 
+                // but for instant feel we can try to auto-play after state set requires play-effect.
+                // Better: we set state, and use an effect to play if 'wasTryingToPlay' is true.
+            }
+        }
     }
+
+    // Effect to auto-play when audioUrl becomes available IF user requested it? 
+    // Simplified: Just load it. The user might need to click again or we can trigger it.
+    // For "Tech Lead" UX, let's make it auto-play after load.
+
+    const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+
+    useEffect(() => {
+        if (shouldAutoPlay && audioUrl && audioRef.current) {
+            audioRef.current.play()
+                .then(() => {
+                    setIsPlaying(true);
+                    setShouldAutoPlay(false);
+                })
+                .catch(e => console.error("Auto-play failed", e));
+        }
+    }, [audioUrl, shouldAutoPlay]);
 
     const handleTimeUpdate = () => {
         if (audioRef.current) {
@@ -63,16 +110,36 @@ export function ChatMessage({ message, userAvatar }: ChatMessageProps) {
         setCurrentTime(0)
     }
 
+    const handlePlayClick = async () => {
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        if (audioUrl) {
+            audioRef.current?.play();
+            setIsPlaying(true);
+        } else {
+            setShouldAutoPlay(true);
+            await loadAudio();
+        }
+    };
+
     const formatTime = (time: number) => {
         const minutes = Math.floor(time / 60)
         const seconds = Math.floor(time % 60)
         return `${minutes}:${seconds.toString().padStart(2, '0')}`
     }
+
+    // Use the prop instead of message property
+    const displayedContent = useTypewriter(message.content || '', isStreaming);
+
     return (
         <div
             id={`message-${message.id}`}
             className={cn(
-                "flex w-full px-4 py-4 gap-4 mx-auto max-w-5xl",
+                "flex w-full px-4 py-4 gap-4 mx-auto max-w-5xl transition-opacity duration-300 ease-in",
                 isUser ? "flex-row-reverse" : "flex-row"
             )}>
             {/* Avatar */}
@@ -102,74 +169,72 @@ export function ChatMessage({ message, userAvatar }: ChatMessageProps) {
                     {!isUser && <span className="text-[9px] bg-law-gold text-gem-onyx px-1 py-0 rounded font-bold uppercase tracking-wide">AI</span>}
                 </div>
 
-                {message.audio_path ? (
+                {message.audio_path || message.audio_url ? (
                     <div className={cn("space-y-2 w-full", isUser ? "items-end" : "items-start")}>
-                        {/* Audio Player Card - Adaptive Style */}
                         <div className={cn(
-                            "rounded-xl p-2 flex items-center gap-3 backdrop-blur-sm w-full min-w-[280px]",
-                            isUser ? "bg-law-gold/20 border-law-gold/30" : "bg-black/20 border-white/10"
+                            "flex items-center gap-3 p-3 rounded-xl min-w-[280px]",
+                            isUser ? "bg-law-gold text-gem-onyx" : "bg-gray-800 text-gem-offwhite border border-white/10"
                         )}>
-                            <Button
-                                size="icon"
-                                variant="ghost"
+                            <button
                                 onClick={togglePlay}
-                                disabled={isLoadingAudio || !audioUrl}
+                                disabled={isLoadingAudio}
                                 className={cn(
-                                    "h-8 w-8 rounded-full shrink-0 transition-transform active:scale-95",
-                                    isUser ? "bg-law-gold text-gem-onyx hover:bg-white" : "bg-white/10 hover:bg-white/20 text-white"
+                                    "flex items-center justify-center w-10 h-10 rounded-full transition-all shrink-0",
+                                    isUser ? "bg-gem-onyx/10 hover:bg-gem-onyx/20 text-gem-onyx" : "bg-white/10 hover:bg-white/20 text-law-gold"
                                 )}
                             >
                                 {isLoadingAudio ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : isPlaying ? (
-                                    <Pause className="h-4 w-4 fill-current" />
+                                    <Pause className="w-5 h-5 fill-current" />
                                 ) : (
-                                    <Play className="h-4 w-4 fill-current ml-0.5" />
+                                    <Play className="w-5 h-5 ml-1 fill-current" />
                                 )}
-                            </Button>
+                            </button>
 
-                            <div className="flex-1 flex flex-col justify-center gap-1">
-                                <div className="h-1 bg-black/20 rounded-full overflow-hidden w-full">
+                            <div className="flex-1 space-y-1">
+                                <div className="h-1 bg-black/20 rounded-full overflow-hidden">
                                     <div
-                                        className={cn("h-full transition-all duration-100 ease-linear", isUser ? "bg-law-gold" : "bg-white/70")}
-                                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                                        className="h-full bg-current transition-all duration-100"
+                                        style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                                     />
                                 </div>
-                                <div className="flex justify-between text-[10px] opacity-70 font-medium font-mono">
+                                <div className="flex justify-between text-[10px] font-medium opacity-80">
                                     <span>{formatTime(currentTime)}</span>
-                                    <span>{formatTime(duration)}</span>
+                                    <span>{duration ? formatTime(duration) : "--:--"}</span>
                                 </div>
                             </div>
-
-                            {/* Hidden Audio Element */}
-                            {audioUrl && (
-                                <audio
-                                    ref={audioRef}
-                                    src={audioUrl}
-                                    onTimeUpdate={handleTimeUpdate}
-                                    onLoadedMetadata={handleLoadedMetadata}
-                                    onEnded={handleEnded}
-                                    className="hidden"
-                                />
-                            )}
                         </div>
 
-                        {/* Transcription Toggle (Removed by user request) */}
-                        <div className="hidden"></div>
+                        {/* Hidden Audio Element */}
+                        <audio
+                            ref={audioRef}
+                            src={audioUrl || undefined}
+                            onTimeUpdate={handleTimeUpdate}
+                            onLoadedMetadata={handleLoadedMetadata}
+                            onEnded={handleEnded}
+                            className="hidden"
+                        />
+
+                        {/* Optional Transcript if available */}
+                        {message.transcript && (
+                            <p className="text-xs opacity-70 italic mt-1 px-1">
+                                "{message.transcript}"
+                            </p>
+                        )}
                     </div>
                 ) : (
                     <div className={cn("prose prose-invert max-w-none text-gem-offwhite/90 leading-relaxed text-sm", isUser && "text-right")}>
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={{
-                                // Custom styling for lists/paragraphs if needed to match "short paragraphs" rule
                                 p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
                                 ul: ({ node, ...props }) => <ul className="list-disc pl-4 mb-2 space-y-1" {...props} />,
                                 ol: ({ node, ...props }) => <ol className="list-decimal pl-4 mb-2 space-y-1" {...props} />,
                                 strong: ({ node, ...props }) => <strong className="text-law-gold font-bold" {...props} />
                             }}
                         >
-                            {message.content}
+                            {displayedContent || (isStreaming ? '' : '...')}
                         </ReactMarkdown>
                     </div>
                 )}

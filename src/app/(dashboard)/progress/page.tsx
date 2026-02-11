@@ -13,23 +13,24 @@ export default async function ProgressPage() {
         redirect('/login')
     }
 
-    // Fetch Stats
-    // 1. Total answers
-    const { count: totalAnswers } = await supabase
-        .from('student_events')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('kind', 'answer_submitted')
+    // Fetch Stats in Parallel
+    const [answersRes, eventsRes] = await Promise.all([
+        supabase
+            .from('student_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('kind', 'answer_submitted'),
+        supabase
+            .from('student_events')
+            .select('area, kind')
+            .eq('user_id', user.id)
+            .eq('kind', 'answer_submitted')
+            .order('created_at', { ascending: false })
+            .limit(1000)
+    ])
 
-    // 2. Area Distribution (Requires grouping, usually done via RPC or client side if small. 
-    // For MVP, we fetch events and calculate simply.)
-    const { data: events } = await supabase
-        .from('student_events')
-        .select('area, kind')
-        .eq('user_id', user.id)
-        .eq('kind', 'answer_submitted')
-        .order('created_at', { ascending: false })
-        .limit(1000)
+    const totalAnswers = answersRes.count
+    const events = eventsRes.data
 
     const distribution: Record<string, number> = {}
         ; (events as any[])?.forEach(e => {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 
 export const runtime = "nodejs";
@@ -39,6 +40,7 @@ export async function DELETE(
             throw error;
         }
 
+        revalidateTag(`chats-${user.id}`);
         return NextResponse.json({ success: true });
     } catch (error: any) {
         return NextResponse.json(

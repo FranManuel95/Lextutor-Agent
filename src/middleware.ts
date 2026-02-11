@@ -2,6 +2,23 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+    // Early return for public paths (no auth needed)
+    const publicPaths = ['/', '/login'];
+    if (publicPaths.includes(request.nextUrl.pathname)) {
+        return NextResponse.next();
+    }
+
+    // Only validate session for protected routes
+    const protectedPrefixes = ['/chat', '/admin', '/exam', '/quiz', '/progress'];
+    const isProtectedRoute = protectedPrefixes.some(prefix =>
+        request.nextUrl.pathname.startsWith(prefix)
+    );
+
+    if (!isProtectedRoute) {
+        return NextResponse.next();
+    }
+
+    // Create Supabase client only when needed
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -56,26 +73,17 @@ export async function middleware(request: NextRequest) {
 
     const { data: { session } } = await supabase.auth.getSession()
 
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/login')
-    const isAppRoute = request.nextUrl.pathname.startsWith('/chat') ||
-        request.nextUrl.pathname.startsWith('/admin') ||
-        request.nextUrl.pathname.startsWith('/exam') ||
-        request.nextUrl.pathname.startsWith('/quiz') ||
-        request.nextUrl.pathname.startsWith('/progress')
-
     // Redirect to login if accessing protected route without session
-    if (isAppRoute && !session) {
+    if (!session) {
         return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    // Redirect to chat if accessing login with session
-    if (isAuthRoute && session) {
-        return NextResponse.redirect(new URL('/chat', request.url))
     }
 
     return response
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+    // Exclude API routes, Next.js internals, and static assets
+    matcher: [
+        '/((?!api|_next/static|_next/image|_next/data|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf|eot)$).*)',
+    ],
 }

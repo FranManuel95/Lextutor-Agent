@@ -4,8 +4,14 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { FileText, Loader2, CheckCircle2 } from 'lucide-react';
-import { generateInfographicAction } from '@/app/chat/actions/generate-infographic';
-import { InfographicModal } from './InfographicModal';
+import { generateInfographicAction } from '@/app/(dashboard)/chat/actions/generate-infographic';
+import dynamic from 'next/dynamic';
+
+// Dynamic import to avoid SSR issues with @react-pdf/renderer
+const InfographicModal = dynamic(
+    () => import('./InfographicModal').then(mod => mod.InfographicModal),
+    { ssr: false }
+);
 
 interface ReportTriggerProps {
     chatId: string;

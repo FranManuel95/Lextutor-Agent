@@ -11,7 +11,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { SettingsDialog } from './settings-dialog'
 import { ProfileDialog } from '@/components/profile-dialog'
 import { useState, useEffect } from 'react'
-import { createChat, renameChat } from '@/app/chat/actions'
+import { createChat, renameChat } from '@/app/(dashboard)/chat/actions'
 import { Copyright } from '@/components/copyright'
 
 import {
@@ -32,8 +32,10 @@ interface ChatSidebarProps {
 export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
     const pathname = usePathname()
     const router = useRouter()
-    const { setTutorSettings } = useAppStore()
-    const [profile, setProfile] = useState<any>(null)
+    const { tutorSettings, setTutorSettings, userProfile, setUserProfile } = useAppStore()
+    // Use local state only if needed, or rely on store
+    // const [profile, setProfile] = useState<any>(null) -> Removing local state effectively
+
     const [deleteId, setDeleteId] = useState<string | null>(null)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editTitle, setEditTitle] = useState("")
@@ -48,21 +50,27 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
         router.refresh()
     }
 
-    // Hydrate settings and profile on mount
+    // Hydrate settings and profile on mount ONLY if missing
     useEffect(() => {
-        fetch('/api/me/settings')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.error) setTutorSettings(data)
-            })
-            .catch(err => console.error('Failed to load settings', err))
+        // Settings Cache Check
+        if (!tutorSettings.modes || tutorSettings.modes.length === 0) {
+            fetch('/api/me/settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.error) setTutorSettings(data)
+                })
+                .catch(err => console.error('Failed to load settings', err))
+        }
 
-        fetch('/api/me/profile')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.error) setProfile(data)
-            })
-            .catch(err => console.error('Failed to load profile', err))
+        // Profile Cache Check
+        if (!userProfile) {
+            fetch('/api/me/profile')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.error) setUserProfile(data)
+                })
+                .catch(err => console.error('Failed to load profile', err))
+        }
     }, [])
 
     const handleLogout = async () => {
@@ -121,15 +129,15 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 {/* Profile Card */}
                 <div className="bg-gem-mist/30 p-3 rounded-lg border border-white/5 mb-6 flex items-center gap-3 relative group">
                     <div className="w-10 h-10 rounded-full bg-law-gold/20 flex items-center justify-center text-law-gold overflow-hidden border border-law-gold/30">
-                        {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        {userProfile?.avatar_url ? (
+                            <img src={userProfile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                             <span className="font-serif font-bold text-lg">⚖️</span>
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate max-w-[120px]">
-                            {profile?.full_name || 'Invitado Elite'}
+                            {userProfile?.full_name || 'Invitado Elite'}
                         </p>
 
                     </div>
@@ -154,7 +162,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                     {/* ESTADÍSTICA */}
                     <div className="space-y-1">
                         <p className="px-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Estadística</p>
-                        <Link href="/progress" prefetch={false}>
+                        <Link href="/progress" prefetch={true}>
                             <Button
                                 variant="ghost"
                                 className={cn(
@@ -167,7 +175,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                             </Button>
                         </Link>
 
-                        <Link href="/exams" prefetch={false}>
+                        <Link href="/exams" prefetch={true}>
                             <Button
                                 variant="ghost"
                                 className={cn(
@@ -184,7 +192,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                     {/* PRÁCTICA */}
                     <div className="space-y-1">
                         <p className="px-2 text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-1">Práctica</p>
-                        <Link href="/quiz" prefetch={false}>
+                        <Link href="/quiz" prefetch={true}>
                             <Button
                                 variant="ghost"
                                 className={cn(
@@ -196,7 +204,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                                 Test Rápido
                             </Button>
                         </Link>
-                        <Link href="/exam" prefetch={false}>
+                        <Link href="/exam" prefetch={true}>
                             <Button
                                 variant="ghost"
                                 className={cn(
@@ -245,6 +253,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                                 <>
                                     <Link
                                         href={`/chat/${chat.id}`}
+                                        prefetch={true}
                                         onClick={() => onClose?.()}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-xs mb-1 pr-16",

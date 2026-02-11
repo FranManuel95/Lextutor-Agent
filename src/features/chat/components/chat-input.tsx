@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { SendHorizontal, Mic } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { sendMessage } from '@/app/chat/actions'
+import { sendMessage } from '@/app/(dashboard)/chat/actions'
 import { useAppStore } from '@/store/useAppStore'
 import { AudioRecorder } from './audio-recorder'
 import { useToast } from '@/components/ui/use-toast'
@@ -37,7 +37,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
         setIsSending(true)
         if (inputRef.current) inputRef.current.value = ''
 
-        // Optimistic UI: Create temp message
+        // Optimistic UI: Add user message immediately
         const tempId = Date.now()
         addOptimisticMessage({
             id: tempId,
@@ -47,19 +47,103 @@ export function ChatInput({ chatId }: ChatInputProps) {
             created_at: new Date().toISOString()
         })
 
+        // Add empty assistant message for streaming
+        const assistantTempId = tempId + 1
+        addOptimisticMessage({
+            id: assistantTempId,
+            chat_id: chatId,
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString()
+        })
+
         try {
-            const r = await sendMessage(chatId, content, tutorSettings)
+            const response = await fetch('/api/chat/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chatId,
+                    message: content,
+                    settings: tutorSettings,
+                }),
+            })
 
-            // Server has responded (or updated DB), so we remove optimistic text
-            // because router.refresh() will bring the real persisted message
-            removeOptimisticMessage(tempId)
-            router.refresh()
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
 
-            if ((r as any)?.error) {
-                toast({ title: "Error", description: (r as any).error, variant: "destructive" })
+            const reader = response.body?.getReader()
+            if (!reader) throw new Error('No response body')
+
+            const decoder = new TextDecoder()
+            let buffer = ''
+            let assistantContent = ''
+            let pendingChunks = ''
+            let updateTimeout: NodeJS.Timeout | null = null
+
+            // Throttled update function - updates UI every 50ms max
+            const throttledUpdate = () => {
+                if (pendingChunks) {
+                    assistantContent += pendingChunks
+                    pendingChunks = ''
+
+                    useAppStore.setState((state) => ({
+                        optimisticMessages: state.optimisticMessages.map(msg =>
+                            msg.id === assistantTempId
+                                ? { ...msg, content: assistantContent }
+                                : msg
+                        )
+                    }))
+                }
+                updateTimeout = null
+            }
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+                const lines = buffer.split('\n\n')
+                buffer = lines.pop() || ''
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6))
+
+                            if (data.type === 'chunk' && data.text) {
+                                // Accumulate chunks
+                                pendingChunks += data.text
+
+                                // Schedule throttled update (max every 50ms)
+                                if (!updateTimeout) {
+                                    updateTimeout = setTimeout(throttledUpdate, 50)
+                                }
+                            } else if (data.type === 'done') {
+                                // Final update with any pending chunks
+                                if (updateTimeout) {
+                                    clearTimeout(updateTimeout)
+                                    throttledUpdate()
+                                }
+
+                                // Remove optimistic messages, refresh will bring persisted ones
+                                setTimeout(() => {
+                                    removeOptimisticMessage(tempId)
+                                    removeOptimisticMessage(assistantTempId)
+                                    router.refresh()
+                                }, 100) // Small delay for smooth transition
+                            } else if (data.type === 'error') {
+                                throw new Error(data.message || 'Streaming error')
+                            }
+                        } catch (parseError) {
+                            console.error('Parse error:', parseError)
+                        }
+                    }
+                }
             }
         } catch (e: any) {
-            removeOptimisticMessage(tempId) // Remove on error too or let user retry (simple: remove)
+            removeOptimisticMessage(tempId)
+            removeOptimisticMessage(assistantTempId)
             toast({ title: "Error", description: e?.message ?? "Falló el envío", variant: "destructive" })
         } finally {
             setIsSending(false)
@@ -68,31 +152,57 @@ export function ChatInput({ chatId }: ChatInputProps) {
 
 
     // Audio Flow
+    // Audio Flow (Tech Lead Implementation)
     const handleAudioComplete = async (audioBlob: Blob) => {
-        setIsSending(true)
-        setAudioState('uploading')
+        if (isSending) return;
+
+        // 1. Instant UX: Optimistic Rendering with Local Blob
+        const blobUrl = URL.createObjectURL(audioBlob);
+        const tempId = Date.now();
+        const assistantTempId = tempId + 1;
+
+        setIsSending(true);
+        // Reuse 'transcribing' state to show "Escuchando..." or similar in UI if needed
+        setAudioState('transcribing');
+
+        // Optimistic User Message (Instant Playback)
+        addOptimisticMessage({
+            id: tempId,
+            chat_id: chatId,
+            role: 'user',
+            content: '', // Audio messages usually have empty text initially
+            audio_url: blobUrl, // Play immediately from memory
+            created_at: new Date().toISOString()
+        });
+
+        // Optimistic Assistant Message (Streaming Placeholder)
+        addOptimisticMessage({
+            id: assistantTempId,
+            chat_id: chatId,
+            role: 'assistant',
+            content: '',
+            created_at: new Date().toISOString()
+        });
 
         try {
-            // 1. Get Signed URL
+            // 2. Background Upload
+            setAudioState('uploading');
             const uploadRes = await fetch('/api/audio/create-upload', { method: 'POST' });
             if (!uploadRes.ok) throw new Error('Auth or API error');
-            const { path, signedUrl, token } = await uploadRes.json();
+            const { path, signedUrl } = await uploadRes.json();
 
-            // 2. Upload to Storage
             const storageRes = await fetch(signedUrl, {
                 method: 'PUT',
                 body: audioBlob,
-                headers: {
-                    'Content-Type': audioBlob.type,
-                }
+                headers: { 'Content-Type': audioBlob.type }
             });
 
             if (!storageRes.ok) throw new Error('Storage upload failed');
 
-            setAudioState('transcribing')
+            // 3. Streaming Response Call
+            setAudioState('transcribing'); // "Thinking" state
 
-            // 3. Process Message
-            const processRes = await fetch('/api/audio/message', {
+            const response = await fetch('/api/chat/audio-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -102,19 +212,63 @@ export function ChatInput({ chatId }: ChatInputProps) {
                 })
             });
 
-            if (!processRes.ok) throw new Error('Processing failed');
+            if (!response.ok) throw new Error('Audio streaming failed');
 
-            // 4. Success
-            toast({ title: "Audio procesado", description: "Mensaje de voz enviado y respondido." });
-            router.refresh();
+            // 4. Process Stream
+            const reader = response.body?.getReader();
+            if (!reader) throw new Error('No response body');
 
-        } catch (error) {
-            console.error(error);
-            toast({ title: "Error", description: "Falló el envío de audio.", variant: "destructive" });
+            const decoder = new TextDecoder();
+            let assistantContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+
+                            if (data.type === 'chunk' && data.text) {
+                                assistantContent += data.text;
+                                useAppStore.setState((state) => ({
+                                    optimisticMessages: state.optimisticMessages.map(msg =>
+                                        msg.id === assistantTempId
+                                            ? { ...msg, content: assistantContent }
+                                            : msg
+                                    )
+                                }));
+                            } else if (data.type === 'done') {
+                                // Clean up and refresh
+                                // Tech Lead Change: Don't refresh to avoid page reload feel.
+                                // router.refresh();
+                                /* setTimeout(() => {
+                                    removeOptimisticMessage(tempId);
+                                    removeOptimisticMessage(assistantTempId);
+                                }, 1000); */
+                            } else if (data.type === 'error') {
+                                throw new Error(data.message);
+                            }
+                        } catch (e) {
+                            console.error("Stream parse error", e);
+                        }
+                    }
+                }
+            }
+
+        } catch (error: any) {
+            console.error("Audio Error:", error);
+            removeOptimisticMessage(tempId);
+            removeOptimisticMessage(assistantTempId);
+            toast({ title: "Error", description: "Falló el audio.", variant: "destructive" });
         } finally {
-            setIsSending(false)
-            setIsRecording(false)
-            setAudioState('idle')
+            setIsSending(false);
+            setIsRecording(false);
+            setAudioState('idle');
         }
     }
 

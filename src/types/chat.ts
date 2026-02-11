@@ -13,6 +13,7 @@ export interface Message {
     role: 'user' | 'assistant'
     content: string
     audio_path?: string
+    audio_url?: string
     transcript?: string
     created_at: string
 }

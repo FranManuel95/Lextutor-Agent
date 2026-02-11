@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { generateResponse } from '@/lib/ai-service'
 
@@ -70,6 +70,7 @@ Estoy aquí para ayudarte a dominar todas las áreas del derecho. Puedes pedirme
         console.error("Failed to insert welcome message:", err)
     }
 
+    revalidateTag(`chats-${user.id}`)
     revalidatePath('/chat')
     redirect(`/chat/${chatId}`)
 }
@@ -188,6 +189,7 @@ export async function sendMessage(
         .update({ updated_at: new Date().toISOString() })
         .eq('id', chatId)
 
+    revalidateTag(`chats-${user.id}`)
     revalidatePath(`/chat/${chatId}`)
     revalidatePath(`/chat`) // Refresh list for title update
 }
@@ -203,6 +205,7 @@ export async function renameChat(chatId: string, newTitle: string) {
         .eq('id', chatId)
         .eq('user_id', user.id)
 
+    revalidateTag(`chats-${user.id}`)
     revalidatePath('/chat')
     return { success: true }
 }

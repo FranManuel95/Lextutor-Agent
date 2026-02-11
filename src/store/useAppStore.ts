@@ -21,6 +21,10 @@ interface AppState {
     optimisticMessages: any[]
     addOptimisticMessage: (msg: any) => void
     removeOptimisticMessage: (id: string | number) => void
+
+    // User Profile Cache
+    userProfile: any | null
+    setUserProfile: (profile: any) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -32,6 +36,7 @@ export const useAppStore = create<AppState>((set) => ({
         modes: [],
         detailLevel: 'normal'
     },
+    userProfile: null,
     setIsSending: (isSending) => set({ isSending }),
     setArea: (area) => set((state) => ({
         area,
@@ -40,9 +45,9 @@ export const useAppStore = create<AppState>((set) => ({
     setStudyMode: (studyMode) => set({ studyMode }),
     setTutorSettings: (settings) => set((state) => ({
         tutorSettings: { ...state.tutorSettings, ...settings },
-        // Sync top level area if participating
         ...(settings.area ? { area: settings.area } : {})
     })),
+    setUserProfile: (profile) => set({ userProfile: profile }),
 
     // Optimistic UI
     optimisticMessages: [],

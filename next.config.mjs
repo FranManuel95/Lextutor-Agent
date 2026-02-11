@@ -1,23 +1,24 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    transpilePackages: ['@react-pdf/renderer'],
+    experimental: {
+        serverActions: {
+            bodySizeLimit: '10mb'
+        }
+    },
     images: {
         remotePatterns: [
             {
                 protocol: 'https',
-                hostname: '**',
+                hostname: '**.supabase.co',
             },
         ],
     },
-    transpilePackages: ["@react-pdf/renderer"],
-    experimental: {
-        serverActions: {
-            bodySizeLimit: '50mb',
-        },
-    },
+    // Security headers
     async headers() {
         return [
             {
-                source: '/:path*',
+                source: '/(.*)',
                 headers: [
                     {
                         key: 'X-Frame-Options',
@@ -31,14 +32,15 @@ const nextConfig = {
                         key: 'Referrer-Policy',
                         value: 'strict-origin-when-cross-origin',
                     },
-                    {
-                        key: 'Permissions-Policy',
-                        value: 'camera=(), microphone=(self), geolocation=(), interest-cohort=()',
-                    },
                 ],
             },
-        ];
+        ]
     },
-};
 
-export default nextConfig;
+    // Compress output
+    compress: true,
+    // Optimize production build
+    swcMinify: true,
+}
+
+export default nextConfig

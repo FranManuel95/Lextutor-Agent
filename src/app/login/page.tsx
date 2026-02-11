@@ -11,13 +11,15 @@ import { AuthSubmitButton } from '@/components/auth-submit-button'
 import { PasswordMatchValidator } from '@/components/password-match-validator'
 
 
-export default function LoginPage({
-    searchParams,
-}: {
-    searchParams: { message: string }
-}) {
+import { LoginOptimizer } from './login-optimizer'
+
+import { LoginMessage } from './login-message'
+import { Suspense } from 'react'
+
+export default function LoginPage() {
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center py-2 bg-gem-onyx text-gem-offwhite font-sans selection:bg-law-gold selection:text-gem-onyx">
+            <LoginOptimizer />
             <div className="absolute top-4 right-4 md:top-8 md:right-8">
                 <Link href="/">
                     <Button variant="ghost" className="text-gray-400 hover:text-white hover:bg-white/5 gap-2">
@@ -35,6 +37,10 @@ export default function LoginPage({
                     Acceso Cliente
                 </p>
             </div>
+
+            <Suspense>
+                <LoginMessage />
+            </Suspense>
 
             <Card className="w-full max-w-[400px] mx-4 border-law-accent/30 bg-gem-slate/50 backdrop-blur-md shadow-2xl shadow-black/40">
                 <CardHeader className="space-y-1 text-center">
@@ -194,18 +200,8 @@ export default function LoginPage({
                             </form>
                         </TabsContent>
                     </Tabs>
-
-                    {searchParams?.message && (
-                        <div className={`mt-6 p-3 text-sm text-center rounded-md border ${searchParams.message.includes('exitoso')
-                            ? "bg-green-900/30 border-green-500/30 text-green-200"
-                            : "bg-red-900/30 border-red-500/30 text-red-200"
-                            }`}>
-                            {searchParams.message}
-                        </div>
-                    )}
                 </CardContent>
             </Card>
-
 
             <div className="mt-8">
                 <Copyright />

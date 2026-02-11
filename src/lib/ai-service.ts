@@ -8,7 +8,7 @@ export const isOpenAI = AI_PROVIDER === "openai";
 export const isGemini = AI_PROVIDER === "gemini";
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+export const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 const GEMINI_STORE_ID = (process.env.GEMINI_FILESEARCH_STORE_ID || "").startsWith("fileSearchStores/")
     ? process.env.GEMINI_FILESEARCH_STORE_ID!
@@ -18,7 +18,7 @@ const OPENAI_ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
 
 // --- Shared Logic ---
 
-export async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 2000): Promise<T> {
+export async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
     try {
         return await operation();
     } catch (error: any) {

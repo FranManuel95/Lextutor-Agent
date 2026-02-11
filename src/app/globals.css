@@ -7,6 +7,10 @@
   /* Dark navy */
   --foreground: 210 40% 98%;
   /* Off-white */
+
+  /* Font variables from next/font */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-crimson), ui-serif, Georgia, serif;
 }
 
 .dark {
@@ -19,6 +23,7 @@ body {
   /* gem-onyx / law-dark */
   color: #f8fafc;
   /* gem-offwhite */
+  font-family: var(--font-sans);
 }
 
 /* Custom Scrollbar - Minimalist */

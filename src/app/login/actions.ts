@@ -21,7 +21,7 @@ export async function login(formData: FormData) {
         return redirect('/login?message=Could not authenticate user')
     }
 
-    revalidatePath('/', 'layout')
+    // revalidatePath('/', 'layout')
     redirect('/chat')
 }
 
@@ -122,6 +122,6 @@ export async function signup(formData: FormData) {
         return redirect('/login?message=Registro exitoso, pero error al iniciar sesión automática. Por favor entra manualmente.')
     }
 
-    revalidatePath('/', 'layout')
+    // revalidatePath('/', 'layout')
     redirect('/chat')
 }

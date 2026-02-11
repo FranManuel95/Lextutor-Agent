@@ -62,12 +62,17 @@ export function ChatList({ initialMessages, userAvatar }: ChatListProps) {
             )}
 
             {/* Optimistic Messages */}
-            {optimisticMessages.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} userAvatar={userAvatar} />
+            {optimisticMessages.map((msg, index) => (
+                <ChatMessage
+                    key={msg.id}
+                    message={msg}
+                    userAvatar={userAvatar}
+                    isStreaming={isSending && index === optimisticMessages.length - 1 && msg.role !== 'user'}
+                />
             ))}
 
-            {/* Loading Indicator */}
-            {isSending && (
+            {/* Loading Indicator - Only show if NO assistant response yet */}
+            {isSending && (!optimisticMessages.length || optimisticMessages[optimisticMessages.length - 1].role !== 'assistant') && (
                 <div className="flex justify-start px-4 md:px-8 py-4 animate-in fade-in slide-in-from-bottom-2">
                     <div className="flex items-center gap-3 bg-gem-mist/10 rounded-2xl px-5 py-3 border border-law-accent/10">
                         <div className="w-8 h-8 rounded-full bg-law-gold/10 flex items-center justify-center">
