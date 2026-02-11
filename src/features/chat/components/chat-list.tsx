@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { ChatMessage } from './chat-message'
 import { useAppStore } from '@/store/useAppStore'
 import { Loader2 } from 'lucide-react'
@@ -8,17 +8,33 @@ import { Loader2 } from 'lucide-react'
 interface ChatListProps {
     initialMessages: any[]
     userAvatar?: string | null
+    chatId: string
 }
 
-export function ChatList({ initialMessages, userAvatar }: ChatListProps) {
+export function ChatList({ initialMessages, userAvatar, chatId }: ChatListProps) {
     const { optimisticMessages, isSending } = useAppStore()
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const prevMessagesLen = useRef(initialMessages.length)
 
+    // Tech Lead Fix: Merge and Sort messages to prevent ordering issues
+    const sortedMessages = useMemo(() => {
+        // Filter optimistic messages for THIS chat only
+        const currentChatOptimistic = optimisticMessages.filter(
+            msg => msg.chat_id === chatId
+        )
+        const all = [...initialMessages, ...currentChatOptimistic]
+        // Deduplicate by ID
+        const unique = Array.from(new Map(all.map(m => [m.id, m])).values())
+        // Sort by created_at
+        return unique.sort((a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+    }, [initialMessages, optimisticMessages, chatId])
+
     useEffect(() => {
-        const len = initialMessages.length
+        const len = sortedMessages.length
         const isNewMessage = len > prevMessagesLen.current
-        const lastMsg = initialMessages[len - 1]
+        const lastMsg = sortedMessages[len - 1]
 
         // Strategy:
         // 1. If user sent a message (optimistic or real), scroll to bottom.
@@ -31,7 +47,7 @@ export function ChatList({ initialMessages, userAvatar }: ChatListProps) {
             // We'll trust the structure is User -> Assistant usually.
             const userMsgIndex = len - 2
             if (userMsgIndex >= 0) {
-                const userMsgId = initialMessages[userMsgIndex].id
+                const userMsgId = sortedMessages[userMsgIndex].id
                 const el = document.getElementById(`message-${userMsgId}`)
                 if (el) {
                     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -46,30 +62,26 @@ export function ChatList({ initialMessages, userAvatar }: ChatListProps) {
         }
 
         prevMessagesLen.current = len
-    }, [initialMessages, optimisticMessages, isSending])
+    }, [sortedMessages, isSending]) // Depend on sortedMessages
 
     return (
         <div className="flex flex-col pb-4">
-            {/* Server Messages */}
-            {initialMessages?.length === 0 && optimisticMessages.length === 0 ? (
+            {/* Unified Message List */}
+            {sortedMessages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gem-offwhite/40 italic mt-20">
                     <p>Comienza la conversación con tu tutor.</p>
                 </div>
             ) : (
-                initialMessages?.map((msg) => (
-                    <ChatMessage key={msg.id} message={msg} userAvatar={userAvatar} />
+                sortedMessages.map((msg, index) => (
+                    <ChatMessage
+                        key={msg.id}
+                        message={msg}
+                        userAvatar={userAvatar}
+                        // Check if it's the last message AND it's from assistant AND we are sending
+                        isStreaming={isSending && index === sortedMessages.length - 1 && msg.role === 'assistant'}
+                    />
                 ))
             )}
-
-            {/* Optimistic Messages */}
-            {optimisticMessages.map((msg, index) => (
-                <ChatMessage
-                    key={msg.id}
-                    message={msg}
-                    userAvatar={userAvatar}
-                    isStreaming={isSending && index === optimisticMessages.length - 1 && msg.role !== 'user'}
-                />
-            ))}
 
             {/* Loading Indicator - Only show if NO assistant response yet */}
             {isSending && (!optimisticMessages.length || optimisticMessages[optimisticMessages.length - 1].role !== 'assistant') && (

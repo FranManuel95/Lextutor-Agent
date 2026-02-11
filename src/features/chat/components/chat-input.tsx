@@ -127,11 +127,12 @@ export function ChatInput({ chatId }: ChatInputProps) {
                                 }
 
                                 // Remove optimistic messages, refresh will bring persisted ones
-                                setTimeout(() => {
+                                // Tech Lead Fix: Disable refresh to prevent reload/blink.
+                                // router.refresh()
+                                /* setTimeout(() => {
                                     removeOptimisticMessage(tempId)
                                     removeOptimisticMessage(assistantTempId)
-                                    router.refresh()
-                                }, 100) // Small delay for smooth transition
+                                }, 100) */
                             } else if (data.type === 'error') {
                                 throw new Error(data.message || 'Streaming error')
                             }

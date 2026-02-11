@@ -130,7 +130,8 @@ export async function POST(request: NextRequest) {
         console.log("🟢 Procesamiento completado");
 
         // Encontrar doc creado en el store por displayName (V1)
-        const docs = await ai.fileSearchStores.documents.list({ parent: STORE_ID } as any);
+        // Fix: Increase pageSize to find the new doc if user has many files
+        const docs = await ai.fileSearchStores.documents.list({ parent: STORE_ID, pageSize: 100 } as any);
 
         let createdDocName: string | null = null;
         for await (const d of docs as any) {

@@ -22,7 +22,7 @@ async function ChatMessagesLoader({ chatId, userId }: { chatId: string; userId: 
         .eq('id', userId)
         .single()
 
-    return <ChatList initialMessages={messages || []} userAvatar={(profileData as any)?.avatar_url} />
+    return <ChatList initialMessages={messages || []} userAvatar={(profileData as any)?.avatar_url} chatId={chatId} />
 }
 
 // Loading fallback
