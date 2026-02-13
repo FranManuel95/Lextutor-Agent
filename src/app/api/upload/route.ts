@@ -127,22 +127,75 @@ export async function POST(request: NextRequest) {
             await sleep(1500);
             operation = await ai.operations.get({ operation } as any);
         }
-        console.log("🟢 Procesamiento completado");
+        console.log("🟢 Procesamiento completado. Resultado raw:", JSON.stringify(operation, null, 2).substring(0, 1000));
 
-        // Encontrar doc creado en el store por displayName (V1)
-        // Fix: Increase pageSize to find the new doc if user has many files
-        const docs = await ai.fileSearchStores.documents.list({ parent: STORE_ID, pageSize: 100 } as any);
-
+        // Encontrar doc creado en el store
         let createdDocName: string | null = null;
-        for await (const d of docs as any) {
-            if (d.displayName === displayName) {
-                createdDocName = d.name; // fileSearchStores/.../documents/...
-                break;
+
+        // Try getting name directly from operation response if available
+        if (operation && (operation as any).response && (operation as any).response.documentName) {
+            createdDocName = (operation as any).response.documentName;
+            console.log("🟢 Nombre obtenido directamente de la operación:", createdDocName);
+        }
+
+        if (!createdDocName) {
+            console.log("🟢 Nombre no disponible en operación, buscando por displayName (paginado)...");
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                console.log(`🟢 Intento ${attempt}/3: Buscando documento en el store...`);
+                let pageToken: string | undefined = undefined;
+
+                do {
+                    const listParams: any = {
+                        parent: STORE_ID,
+                        pageSize: 100
+                    };
+                    if (pageToken) listParams.pageToken = pageToken;
+
+                    let docs: any[] = [];
+                    try {
+                        const response = await ai.fileSearchStores.documents.list(listParams);
+                        // Debug: Log raw response for first page
+                        if (!pageToken && attempt === 1) {
+                            console.log("🔍 Raw List Response (first page):", JSON.stringify(response).substring(0, 500));
+                        }
+
+                        // Handle different response structures
+                        if (response && (response as any).documents && Array.isArray((response as any).documents)) {
+                            docs = (response as any).documents;
+                        } else if (Array.isArray(response)) {
+                            docs = response;
+                        }
+                        pageToken = (response as any)?.nextPageToken;
+                    } catch (e: any) {
+                        console.warn(`⚠️ Error listando docs (intento ${attempt}):`, e.message);
+                        break;
+                    }
+
+                    // Debug: Log first few names to check match
+                    if (!pageToken && docs.length > 0) {
+                        console.log("🔍 Muestra de docs encontrados:", docs.slice(0, 3).map(d => d.displayName));
+                    }
+
+                    for (const d of docs) {
+                        if (d?.displayName === displayName) {
+                            createdDocName = d.name;
+                            break;
+                        }
+                    }
+
+                    if (createdDocName) break;
+                } while (pageToken);
+
+                if (createdDocName) break;
+
+                // Wait before next attempt
+                if (attempt < 3) await sleep(2000);
             }
         }
 
         if (!createdDocName) {
-            return NextResponse.json({ error: "Upload completed but document not found in store list." }, { status: 500 });
+            console.error("❌ Documento no encontrado tras 3 intentos. DisplayName buscado:", displayName);
+            return NextResponse.json({ error: "Upload completed but document not found in store list (propagation delay)." }, { status: 500 });
         }
 
         console.log(`✅ Document uploaded to Gemini: ${createdDocName}`);

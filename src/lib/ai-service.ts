@@ -7,7 +7,7 @@ export const AI_PROVIDER = (process.env.AI_PROVIDER || "gemini").toLowerCase() a
 export const isOpenAI = AI_PROVIDER === "openai";
 export const isGemini = AI_PROVIDER === "gemini";
 
-const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY!, apiVersion: 'v1beta' });
 export const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 const GEMINI_STORE_ID = (process.env.GEMINI_FILESEARCH_STORE_ID || "").startsWith("fileSearchStores/")
@@ -18,20 +18,24 @@ const OPENAI_ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
 
 // --- Shared Logic ---
 
-export async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+export async function retryOperation<T>(operation: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
     try {
         return await operation();
     } catch (error: any) {
         if (retries > 0 && (
             String(error.status) === '503' ||
+            String(error.status) === '429' ||
             String(error.response?.status) === '503' ||
+            String(error.response?.status) === '429' ||
             error.message?.includes('overloaded') ||
             error.message?.includes('503') ||
+            error.message?.includes('429') ||
+            error.message?.includes('RESOURCE_EXHAUSTED') ||
             error.message?.includes('UNAVAILABLE')
         )) {
-            console.log(`⚠️ Gemini 503 Error. Retrying in ${delay}ms... (${retries} attempts left)`);
+            console.log(`⚠️ Gemini API Error (${error.status || 'Unknown'}). Retrying in ${delay}ms... (${retries} attempts left)`);
             await new Promise(resolve => setTimeout(resolve, delay));
-            return retryOperation(operation, retries - 1, delay * 1.5);
+            return retryOperation(operation, retries - 1, delay * 2); // Increased backoff factor for 429s
         }
         throw error;
     }
@@ -323,106 +327,66 @@ export async function generateQuiz(params: {
     - id: number, text: string, options: string[], correctIndex: number, explanation: string.
     Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
 
-    if (isGemini) {
-        console.log("🤖 [MODELO] Generación Quiz → Gemini 1.5 Flash (generateContent API + File Search)");
-        const res = await retryOperation(() => geminiClient.models.generateContent({
-            model: "gemini-flash-latest",
+    // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
+    console.log("🤖 [MODELO] Generación Quiz → Intentando Gemini 2.0 Flash...");
+
+    let res;
+    try {
+        res = await retryOperation(() => geminiClient.models.generateContent({
+            model: "gemini-2.0-flash",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
+            tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any],
             config: {
                 responseMimeType: "application/json",
-                tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } }]
             }
-        }));
-
-        if (res.usageMetadata) {
-            logUsage("gemini", {
-                prompt: res.usageMetadata.promptTokenCount ?? 0,
-                completion: res.usageMetadata.candidatesTokenCount ?? 0,
-                total: res.usageMetadata.totalTokenCount ?? 0,
-            });
-        }
-
-        const raw = res.text || "{}";
-        const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-        const generated = JSON.parse(cleaned);
-        const grounding = res.candidates?.[0]?.groundingMetadata;
-
-        // Extract sources
-        const sources: string[] = [];
-        if (grounding?.groundingChunks) {
-            grounding.groundingChunks.forEach((chunk: any) => {
-                if (chunk.retrievedContext?.title) {
-                    sources.push(chunk.retrievedContext.title);
-                } else if (chunk.web?.title) {
-                    sources.push(chunk.web.title);
+        } as any));
+    } catch (error: any) {
+        if (String(error.status) === '429' || error.message?.includes('RESOURCE_EXHAUSTED')) {
+            console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
+            res = await retryOperation(() => geminiClient.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any],
+                config: {
+                    responseMimeType: "application/json",
                 }
-            });
+            } as any));
+        } else {
+            throw error;
         }
-
-        return {
-            questions: generated.questions,
-            ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
-            sources: Array.from(new Set(sources))
-        };
-    } else {
-        console.log("🤖 [MODELO] Generación Quiz → GPT-4o (Assistants API + File Search)");
-        const thread = await openaiClient.beta.threads.create();
-        await openaiClient.beta.threads.messages.create(thread.id, { role: "user", content: prompt });
-        const run = await openaiClient.beta.threads.runs.createAndPoll(thread.id, {
-            assistant_id: OPENAI_ASSISTANT_ID,
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        });
-
-        if (run.usage) {
-            logUsage("openai", {
-                prompt: run.usage.prompt_tokens,
-                completion: run.usage.completion_tokens,
-                total: run.usage.total_tokens,
-            });
-        }
-
-        const messages = await openaiClient.beta.threads.messages.list(thread.id);
-        const assistantMessage = messages.data[0];
-        let text = "";
-        let annotations: any[] = [];
-        if (assistantMessage.content[0].type === "text") {
-            text = assistantMessage.content[0].text.value;
-            annotations = assistantMessage.content[0].text.annotations;
-        }
-
-        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-        // Extract sources
-        const sources: string[] = [];
-        if (annotations) {
-            const fileIds = new Set<string>();
-            annotations.forEach((ann: any) => {
-                if (ann.type === 'file_citation') {
-                    fileIds.add(ann.file_citation.file_id);
-                }
-            });
-
-            // Resolve filenames
-            for (const fileId of fileIds) {
-                try {
-                    const file = await openaiClient.files.retrieve(fileId);
-                    if (file.filename) {
-                        sources.push(file.filename);
-                    } else {
-                        sources.push(`Documento ${fileId.slice(-4)}`);
-                    }
-                } catch (e) {
-                    sources.push(`Documento ${fileId.slice(-4)}`);
-                }
-            }
-        }
-
-        return {
-            questions: JSON.parse(cleaned).questions,
-            ragUsed: (annotations?.length || 0) > 0,
-            sources: Array.from(new Set(sources))
-        };
     }
+
+    if (res.usageMetadata) {
+        logUsage("gemini", {
+            prompt: res.usageMetadata.promptTokenCount ?? 0,
+            completion: res.usageMetadata.candidatesTokenCount ?? 0,
+            total: res.usageMetadata.totalTokenCount ?? 0,
+        });
+    }
+
+    const raw = res.text || "{}";
+    const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+    const generated = JSON.parse(cleaned);
+    const grounding = res.candidates?.[0]?.groundingMetadata;
+
+    // Extract sources
+    const sources: string[] = [];
+    if (grounding?.groundingChunks) {
+        grounding.groundingChunks.forEach((chunk: any) => {
+            if (chunk.retrievedContext?.title) {
+                sources.push(chunk.retrievedContext.title);
+            } else if (chunk.web?.title) {
+                sources.push(chunk.web.title);
+            }
+        });
+    }
+
+    return {
+        questions: generated.questions,
+        ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
+        sources: Array.from(new Set(sources))
+    };
+
 }
 
 /**
@@ -439,99 +403,65 @@ export async function generateExam(params: {
     Output JSON (Strict): { "questions": [{ "id": 1, "text": "Enunciado de la pregunta..." }], "rubric": { "1": "Criterios de evaluación..." } }
     Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
 
-    if (isGemini) {
-        console.log("🤖 [MODELO] Generación Exam → Gemini 1.5 Flash (generateContent API + File Search)");
-        const res = await retryOperation(() => geminiClient.models.generateContent({
-            model: "gemini-flash-latest",
+    // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
+    console.log("🤖 [MODELO] Generación Exam → Intentando Gemini 2.0 Flash...");
+
+    let res;
+    try {
+        res = await retryOperation(() => geminiClient.models.generateContent({
+            model: "gemini-2.0-flash",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
+            tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 25 } } as any],
             config: {
                 responseMimeType: "application/json",
-                tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } }]
             }
-        }));
-        if (res.usageMetadata) {
-            logUsage("gemini", {
-                prompt: res.usageMetadata.promptTokenCount ?? 0,
-                completion: res.usageMetadata.candidatesTokenCount ?? 0,
-                total: res.usageMetadata.totalTokenCount ?? 0,
-            });
-        }
-
-        const raw = res.text || "{}";
-        const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-        const grounding = res.candidates?.[0]?.groundingMetadata;
-
-        // Extract sources
-        const sources: string[] = [];
-        if (grounding?.groundingChunks) {
-            grounding.groundingChunks.forEach((chunk: any) => {
-                if (chunk.retrievedContext?.title) {
-                    sources.push(chunk.retrievedContext.title);
-                } else if (chunk.web?.title) {
-                    sources.push(chunk.web.title);
+        } as any));
+    } catch (error: any) {
+        if (String(error.status) === '429' || error.message?.includes('RESOURCE_EXHAUSTED')) {
+            console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
+            res = await retryOperation(() => geminiClient.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 25 } } as any],
+                config: {
+                    responseMimeType: "application/json",
                 }
-            });
+            } as any));
+        } else {
+            throw error;
         }
-
-        return {
-            ...JSON.parse(cleaned),
-            ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
-            sources: Array.from(new Set(sources)) // Unique sources
-        };
-    } else {
-        console.log("🤖 [MODELO] Generación Exam → GPT-4o (Assistants API + File Search)");
-        const thread = await openaiClient.beta.threads.create();
-        await openaiClient.beta.threads.messages.create(thread.id, { role: "user", content: prompt });
-        const run = await openaiClient.beta.threads.runs.createAndPoll(thread.id, {
-            assistant_id: OPENAI_ASSISTANT_ID,
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        });
-
-        if (run.usage) {
-            logUsage("openai", {
-                prompt: run.usage.prompt_tokens,
-                completion: run.usage.completion_tokens,
-                total: run.usage.total_tokens,
-            });
-        }
-
-        const messages = await openaiClient.beta.threads.messages.list(thread.id);
-        const assistantMessage = messages.data[0];
-        const text = (assistantMessage.content[0] as any).text.value;
-        const annotations = (assistantMessage.content[0] as any).text.annotations;
-        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-
-        // Extract sources
-        const sources: string[] = [];
-        if (annotations) {
-            const fileIds = new Set<string>();
-            annotations.forEach((ann: any) => {
-                if (ann.type === 'file_citation') {
-                    fileIds.add(ann.file_citation.file_id);
-                }
-            });
-
-            // Resolve filenames
-            for (const fileId of fileIds) {
-                try {
-                    const file = await openaiClient.files.retrieve(fileId);
-                    if (file.filename) {
-                        sources.push(file.filename);
-                    } else {
-                        sources.push(`Documento ${fileId.slice(-4)}`);
-                    }
-                } catch (e) {
-                    sources.push(`Documento ${fileId.slice(-4)}`);
-                }
-            }
-        }
-
-        return {
-            ...JSON.parse(cleaned),
-            ragUsed: true, // Always true for verify-kdb exams
-            sources: Array.from(new Set(sources))
-        };
     }
+
+    if (res.usageMetadata) {
+        logUsage("gemini", {
+            prompt: res.usageMetadata.promptTokenCount ?? 0,
+            completion: res.usageMetadata.candidatesTokenCount ?? 0,
+            total: res.usageMetadata.totalTokenCount ?? 0,
+        });
+    }
+
+    const raw = res.text || "{}";
+    const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+    const grounding = res.candidates?.[0]?.groundingMetadata;
+
+    // Extract sources
+    const sources: string[] = [];
+    if (grounding?.groundingChunks) {
+        grounding.groundingChunks.forEach((chunk: any) => {
+            if (chunk.retrievedContext?.title) {
+                sources.push(chunk.retrievedContext.title);
+            } else if (chunk.web?.title) {
+                sources.push(chunk.web.title);
+            }
+        });
+    }
+
+    return {
+        ...JSON.parse(cleaned),
+        ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
+        sources: Array.from(new Set(sources)) // Unique sources
+    };
+
 }
 
 /**
@@ -554,49 +484,45 @@ export async function gradeExam(params: {
     Eres un corrector académico de Derecho. Evalúas con honestidad estricta.
     Calibración: 5-6/10 aceptable, 7/10 bien, 8+/10 sólida, 9-10/10 excelente.
     Rúbrica (10 pts): Exactitud (4), razonamiento (3), claridad (2), adecuación (1).
-    Devuelve JSON válido: { "questions": [...], "attempt": { "finalScore": ... } }
+    Devuelve JSON válido: { "questions": [...], "attempt": { "finalScore": number, "overallFeedback": "Comentario general sobre el desempeño del estudiante..." } }
     INPUT: ${JSON.stringify(inputList)}`;
 
-    if (isGemini) {
-        console.log("🤖 [MODELO] Grading Exam → Gemini 2.0 Flash (generateContent API)");
-        const res = await retryOperation(() => geminiClient.models.generateContent({
+    // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
+    console.log("🤖 [MODELO] Grading Exam → Intentando Gemini 2.0 Flash...");
+
+    let res;
+    try {
+        res = await retryOperation(() => geminiClient.models.generateContent({
             model: "gemini-2.0-flash",
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             config: {
                 responseMimeType: "application/json",
             }
         }));
-
-        if (res.usageMetadata) {
-            logUsage("gemini", {
-                prompt: res.usageMetadata.promptTokenCount ?? 0,
-                completion: res.usageMetadata.candidatesTokenCount ?? 0,
-                total: res.usageMetadata.totalTokenCount ?? 0,
-            });
+    } catch (error: any) {
+        if (String(error.status) === '429' || error.message?.includes('RESOURCE_EXHAUSTED')) {
+            console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
+            res = await retryOperation(() => geminiClient.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                config: {
+                    responseMimeType: "application/json",
+                }
+            }));
+        } else {
+            throw error;
         }
-
-        return JSON.parse(res.text || "{}");
-    } else {
-        console.log("🤖 [MODELO] Grading Exam → GPT-4o (Chat Completions API)");
-        const completion = await openaiClient.chat.completions.create({
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-            messages: [
-                { role: "system", content: "You are a strict academic grader." },
-                { role: "user", content: prompt }
-            ],
-            response_format: { type: "json_object" }
-        });
-
-        if (completion.usage) {
-            logUsage("openai", {
-                prompt: completion.usage.prompt_tokens,
-                completion: completion.usage.completion_tokens,
-                total: completion.usage.total_tokens,
-            });
-        }
-
-        return JSON.parse(completion.choices[0].message.content || "{}");
     }
+
+    if (res.usageMetadata) {
+        logUsage("gemini", {
+            prompt: res.usageMetadata.promptTokenCount ?? 0,
+            completion: res.usageMetadata.candidatesTokenCount ?? 0,
+            total: res.usageMetadata.totalTokenCount ?? 0,
+        });
+    }
+
+    return JSON.parse(res.text || "{}");
 }
 
 /**
@@ -622,10 +548,10 @@ export async function generateAudioResponse(params: {
                 { inlineData: { mimeType: "audio/webm", data: base64Audio } }
             ]
         }],
+        tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } } as any],
         config: {
-            tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } }],
         },
-    });
+    } as any);
 
     if (res.usageMetadata) {
         logUsage("gemini", {

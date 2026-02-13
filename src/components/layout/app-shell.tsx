@@ -30,7 +30,7 @@ export async function AppShell({
                     <ChatSidebarLoader />
                 </Suspense>
             </aside>
-            <main className="flex-1 overflow-hidden bg-gem-onyx flex flex-col">
+            <main className="flex-1 overflow-y-auto custom-scrollbar bg-gem-onyx flex flex-col">
                 <Suspense fallback={<div className="h-14 border-b border-white/5 bg-gem-onyx flex items-center px-4"><Skeleton className="h-8 w-8 rounded-md bg-white/10" /></div>}>
                     <MobileSidebarLoader />
                 </Suspense>
