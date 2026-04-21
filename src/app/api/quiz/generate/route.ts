@@ -4,11 +4,12 @@ import { generateQuiz } from "@/lib/ai-service";
 import { z } from "zod";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const generateSchema = z.object({
   area: z.enum(["laboral", "civil", "mercantil", "procesal", "otro"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  count: z.number().min(10).max(20).default(15),
+  count: z.number().min(5).max(20).default(10),
 });
 
 export const POST = createApiHandler(

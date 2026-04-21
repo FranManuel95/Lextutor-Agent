@@ -383,36 +383,73 @@ Legislación española vigente. El array questions debe tener exactamente ${coun
 }
 
 async function callGeminiContent(prompt: string, tools?: any[]) {
-  return retryOperation(() =>
-    geminiClient.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      ...(tools ? { tools } : {}),
-    } as any)
+  return retryOperation(
+    () =>
+      geminiClient.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        ...(tools ? { tools } : {}),
+      } as any),
+    2,
+    1000
   );
 }
 
 /**
- * Unified Quiz Generation — knowledge-based (no RAG)
+ * Unified Quiz Generation — Option A: fileSearch sin JSON mode, fallback a conocimiento general
  */
 export async function generateQuiz(params: { area: string; difficulty: string; count: number }) {
   const { area, difficulty, count } = params;
   const prompt = buildQuizPrompt(area, difficulty, count);
 
-  console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash (conocimiento general)");
+  let questions: any[] = [];
+  let grounding: any = null;
 
-  const res = await callGeminiContent(prompt);
-
-  if (res.usageMetadata) {
-    logUsage("gemini", {
-      prompt: res.usageMetadata.promptTokenCount ?? 0,
-      completion: res.usageMetadata.candidatesTokenCount ?? 0,
-      total: res.usageMetadata.totalTokenCount ?? 0,
-    });
+  // Intento 1: con fileSearch (sin JSON mode — compatible con Gemini 2.5 Flash thinking)
+  if (HAS_GEMINI_RAG) {
+    console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash + fileSearch (sin JSON mode)");
+    try {
+      const ragTools = [
+        { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any,
+      ];
+      const res = await callGeminiContent(prompt, ragTools);
+      grounding = res.candidates?.[0]?.groundingMetadata ?? null;
+      if (res.usageMetadata) {
+        logUsage("gemini", {
+          prompt: res.usageMetadata.promptTokenCount ?? 0,
+          completion: res.usageMetadata.candidatesTokenCount ?? 0,
+          total: res.usageMetadata.totalTokenCount ?? 0,
+        });
+      }
+      const parsed = extractJsonFromText(res.text || "");
+      questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+      if (questions.length > 0) {
+        console.log(`✅ fileSearch generó ${questions.length} preguntas`);
+      } else {
+        console.warn("⚠️ fileSearch devolvió 0 preguntas, usando conocimiento general");
+      }
+    } catch (e: any) {
+      console.warn(`⚠️ fileSearch falló (${e.message}), usando conocimiento general`);
+    }
   }
 
-  const parsed = extractJsonFromText(res.text || "");
-  const questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+  // Intento 2: conocimiento general (sin herramientas)
+  if (questions.length === 0) {
+    console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash (conocimiento general)");
+    const res = await callGeminiContent(prompt);
+    if (res.usageMetadata) {
+      logUsage("gemini", {
+        prompt: res.usageMetadata.promptTokenCount ?? 0,
+        completion: res.usageMetadata.candidatesTokenCount ?? 0,
+        total: res.usageMetadata.totalTokenCount ?? 0,
+      });
+    }
+    const parsed = extractJsonFromText(res.text || "");
+    questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+    console.log(
+      `📝 Conocimiento general generó ${questions.length} preguntas. Raw: ${(res.text || "").slice(0, 200)}`
+    );
+  }
 
   if (questions.length === 0) {
     throw new Error(
@@ -420,7 +457,19 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
     );
   }
 
-  return { questions, ragUsed: false, sources: [] };
+  const sources: string[] = [];
+  if (grounding?.groundingChunks) {
+    grounding.groundingChunks.forEach((chunk: any) => {
+      if (chunk.retrievedContext?.title) sources.push(chunk.retrievedContext.title);
+      else if (chunk.web?.title) sources.push(chunk.web.title);
+    });
+  }
+
+  return {
+    questions,
+    ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
+    sources: Array.from(new Set(sources)),
+  };
 }
 
 /**
