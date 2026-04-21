@@ -1,0 +1,89 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Up-to-date docs for Next.js, React, Tailwind, Shadcn. Use 'use context7' in prompts."
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless"],
+      "description": "Browser automation and E2E testing via accessibility snapshots."
+    },
+    "dbhub": {
+      "command": "npx",
+      "args": ["-y", "dbhub@latest", "--transport", "stdio"],
+      "env": {
+        "DSN": "postgresql://postgres:postgres@localhost:54322/postgres"
+      },
+      "description": "Query local Supabase PostgreSQL. Run 'supabase start' first."
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp", "--stdio"],
+      "env": {
+        "FIGMA_API_KEY": "${FIGMA_API_KEY}"
+      },
+      "description": "Read Figma designs, extract tokens and component specs. Requires FIGMA_API_KEY in .env."
+    },
+    "eslint": {
+      "command": "npx",
+      "args": ["@eslint/mcp@latest"],
+      "description": "Official ESLint MCP — lint files and get structured fix suggestions."
+    }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/lint-on-edit.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/pre-stop-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npm run start)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx eslint*)",
+      "Bash(npx playwright*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git fetch*)",
+      "Bash(git pull*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git stash*)",
+      "Bash(supabase start)",
+      "Bash(supabase stop)",
+      "Bash(supabase status)",
+      "Bash(supabase db*)",
+      "Bash(supabase migration*)",
+      "Bash(ls*)",
+      "Bash(mkdir*)",
+      "Bash(cat .env.example)"
+    ]
+  }
+}
