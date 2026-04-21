@@ -160,7 +160,11 @@ export async function generateResponseStream(params: {
     })),
     {
       role: "user",
-      parts: [{ text: `${system}\n\nÁREA: ${area.toUpperCase()}\nMENSAJE ACTUAL:\n${message}` }],
+      parts: [
+        {
+          text: `${system}\n\nÁREA: ${area.toUpperCase()}\n<user_message>\n${message}\n</user_message>`,
+        },
+      ],
     },
   ];
 
