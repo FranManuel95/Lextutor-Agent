@@ -2,23 +2,11 @@
 # PostToolUse hook: runs ESLint --fix on edited TypeScript/JavaScript files.
 # Receives JSON on stdin with tool_input.file_path.
 
-set -euo pipefail
+set -uo pipefail
 
 INPUT=$(cat)
 
-FILE_PATH=$(python3 -c "
-import json, sys
-try:
-    data = json.loads('''$INPUT''' if '''$INPUT''' else '{}')
-    fp = data.get('tool_input', {}).get('file_path', '')
-    print(fp)
-except Exception:
-    print('')
-" 2>/dev/null || echo "")
-
-# Fallback: try reading file_path directly from JSON via basic parsing
-if [[ -z "$FILE_PATH" ]]; then
-  FILE_PATH=$(echo "$INPUT" | python3 -c "
+FILE_PATH=$(echo "$INPUT" | python3 -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -26,7 +14,6 @@ try:
 except Exception:
     print('')
 " 2>/dev/null || echo "")
-fi
 
 if [[ -z "$FILE_PATH" ]]; then
   exit 0

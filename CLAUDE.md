@@ -106,12 +106,15 @@ See `.env.example`. Critical:
 ```
 AI_PROVIDER=gemini|openai
 GEMINI_API_KEY
+GEMINI_FILESEARCH_STORE_ID   # Google File Search store for RAG
 OPENAI_API_KEY
+OPENAI_ASSISTANT_ID          # Pre-configured Assistant with File Search
+OPENAI_VECTOR_STORE_ID       # Vector Store for RAG documents
+OPENAI_MODEL                 # Model for quiz/exam generation (e.g. gpt-4o)
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY    # Server-side ONLY
 RESEND_API_KEY
-FIGMA_API_KEY                # For Figma MCP
 ```
 
 ## MCP Servers Available
@@ -144,8 +147,15 @@ Genera assets, gestiona brand kits, exporta diseños directamente desde Claude.
 
 ## Automated Pipeline (Hooks)
 
-- **PostToolUse (Edit/Write)** → ESLint + auto-fix on edited `.ts/.tsx` files
-- **Stop** → TypeScript `tsc --noEmit` check before finishing any task
+- **PreToolUse (Edit/Write)** → Blocks writes to `.env`, `.pem`, `.key` and credential files
+- **PostToolUse (Edit/Write)** → ESLint `--fix` on edited `.ts/.tsx/.js/.jsx` files
+- **Stop** → TypeScript `tsc --noEmit` only when TS files changed
+
+## Formatting
+
+- **Prettier** configured in `.prettierrc` with `prettier-plugin-tailwindcss`
+- `npm run format` — format all `src/**` files
+- `npm run format:check` — CI check (no writes)
 
 ## Git Workflow
 

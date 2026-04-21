@@ -15,9 +15,11 @@ if [[ "$CHANGED_TS" -eq 0 && "$STAGED_TS" -eq 0 ]]; then
 fi
 
 echo "[pre-stop] TypeScript check ($CHANGED_TS changed, $STAGED_TS staged TS files)..."
-npx tsc --noEmit 2>&1 | head -60
 
+set +e
+npx tsc --noEmit 2>&1 | head -60
 TS_EXIT=${PIPESTATUS[0]}
+set -e
 
 if [[ $TS_EXIT -ne 0 ]]; then
   echo ""

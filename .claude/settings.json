@@ -30,6 +30,17 @@
     }
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/guard-sensitive-files.sh"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
@@ -55,13 +66,17 @@
   "permissions": {
     "allow": [
       "Bash(npm run lint)",
-      "Bash(npm run lint:fix)",
       "Bash(npm run build)",
       "Bash(npm run dev)",
       "Bash(npm run start)",
+      "Bash(npm run format)",
+      "Bash(npm run test)",
+      "Bash(npm install*)",
       "Bash(npx tsc --noEmit)",
       "Bash(npx eslint*)",
       "Bash(npx playwright*)",
+      "Bash(npx prettier*)",
+      "Bash(node*)",
       "Bash(git status)",
       "Bash(git diff*)",
       "Bash(git log*)",
