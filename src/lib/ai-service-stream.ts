@@ -168,7 +168,7 @@ export async function generateResponseStream(params: {
     const streamResponse = await retryOperation(
       () =>
         geminiClient.models.generateContentStream({
-          model: "gemini-2.0-flash",
+          model: "gemini-2.5-flash",
           contents,
         }),
       2,
@@ -181,7 +181,7 @@ export async function generateResponseStream(params: {
     // Fallback to Pro model (using 002 as stable version)
     const streamResponse = await retryOperation(() =>
       geminiClient.models.generateContentStream({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents,
       })
     );
@@ -206,7 +206,7 @@ export async function generateAudioResponseStream(params: {
     const result = await retryOperation(
       () =>
         geminiClient.models.generateContentStream({
-          model: "gemini-2.0-flash", // Usar el modelo más rápido
+          model: "gemini-2.5-flash", // Usar el modelo más rápido
           contents: [
             {
               role: "user",
@@ -230,9 +230,9 @@ export async function generateAudioResponseStream(params: {
   } catch (error) {
     console.error("❌ Error en generateAudioResponseStream:", error);
     // Fallback robusto a 1.5 Flash si 2.0 falla
-    console.warn("⚠️ Fallback a Gemini 1.5 Flash...");
+    console.warn("⚠️ Fallback a Gemini 2.5 Flash...");
     const fallback = await geminiClient.models.generateContentStream({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",
