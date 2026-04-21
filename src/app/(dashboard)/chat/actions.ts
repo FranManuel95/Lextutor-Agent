@@ -39,7 +39,7 @@ export async function createChat() {
       user_id: user.id,
       title: "Nuevo Chat",
     })
-    .select()
+    .select("id")
     .single();
 
   if (error) {
@@ -161,7 +161,7 @@ export async function sendMessage(
       role: "assistant",
       content: aiResponse,
     })
-    .select()
+    .select("id")
     .single();
 
   // 5. Auto-Title Check (Deterministic First Sentence)

@@ -133,7 +133,6 @@ export async function POST(request: NextRequest) {
             // Update Chat Timestamp
             await supabase
               .from("chats")
-              // @ts-expect-error — Supabase type mismatch on updated_at
               .update({ updated_at: new Date().toISOString() })
               .eq("id", chatId);
           }
