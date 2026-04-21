@@ -121,16 +121,24 @@ FIGMA_API_KEY                # For Figma MCP
 | `context7` | Up-to-date Next.js/Tailwind/Shadcn docs — use `use context7` in prompts |
 | `playwright` | E2E testing, browser automation, UI validation |
 | `dbhub` | Query local Supabase PostgreSQL during development |
-| `figma` | Read Figma designs, extract tokens, sync components |
+| `figma` | Official Figma MCP (OAuth) — reads designs, extracts tokens and components |
+| `claude-design` | Claude Design handoff — paste a claude.ai/design URL to build from prototype |
 | `eslint` | Lint code directly from Claude context |
 | `github` | PRs, issues, code review |
 | `canva` | Generate and edit design assets (already connected) |
 
-## Design Tools
+## Design Tools & Workflow
 
-- **Claude Design** (anthropic.com) — Generate UI prototypes, slides, mockups via chat
-- **Canva MCP** — Already connected: generate-design, get-assets, list-brand-kits, export-design
-- **Figma MCP** — Read production Figma files (requires FIGMA_API_KEY)
+### Claude Design → Claude Code pipeline
+1. Go to **claude.ai/design** (Pro/Max/Team/Enterprise)
+2. Describe the UI — Claude Opus 4.7 genera el prototipo aplicando tu design system
+3. Export como **"Handoff to Claude Code"** — obtiene una URL de handoff
+4. Pega la URL aquí en Claude Code con el MCP `claude-design` activo
+5. Claude Code materializa el bundle en componentes Next.js/React reales
+
+### Other design tools
+- **Canva MCP** — Ya conectado: generate-design, get-assets, list-brand-kits, export-design
+- **Figma MCP** — Servidor oficial con OAuth 2.0, sin API key. El primer uso abre el navegador para autenticarte.
 
 ## Automated Pipeline (Hooks)
 
