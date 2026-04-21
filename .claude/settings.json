@@ -23,11 +23,6 @@
       "url": "https://mcp.figma.com/mcp",
       "description": "Official Figma MCP server with OAuth 2.0. First use opens browser to authenticate with your Figma account — no API key needed."
     },
-    "claude-design": {
-      "command": "npx",
-      "args": ["-y", "claude-handoff-mcp@latest"],
-      "description": "Claude Design handoff integration. Paste a claude.ai/design handoff URL to materialize designs into Next.js components."
-    },
     "eslint": {
       "command": "npx",
       "args": ["@eslint/mcp@latest"],

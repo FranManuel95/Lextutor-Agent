@@ -122,23 +122,25 @@ FIGMA_API_KEY                # For Figma MCP
 | `playwright` | E2E testing, browser automation, UI validation |
 | `dbhub` | Query local Supabase PostgreSQL during development |
 | `figma` | Official Figma MCP (OAuth) — reads designs, extracts tokens and components |
-| `claude-design` | Claude Design handoff — paste a claude.ai/design URL to build from prototype |
 | `eslint` | Lint code directly from Claude context |
 | `github` | PRs, issues, code review |
 | `canva` | Generate and edit design assets (already connected) |
 
 ## Design Tools & Workflow
 
-### Claude Design → Claude Code pipeline
-1. Go to **claude.ai/design** (Pro/Max/Team/Enterprise)
-2. Describe the UI — Claude Opus 4.7 genera el prototipo aplicando tu design system
-3. Export como **"Handoff to Claude Code"** — obtiene una URL de handoff
-4. Pega la URL aquí en Claude Code con el MCP `claude-design` activo
-5. Claude Code materializa el bundle en componentes Next.js/React reales
+### Claude Design (claude.ai/design) — web only, no API/MCP
+Available for Pro/Max/Team/Enterprise. Workflow:
+1. Ir a **claude.ai/design** → describir la UI en chat (Claude Opus 4.7)
+2. Claude lee tu GitHub repo URL y aplica tu design system automáticamente
+3. Refinar con chat, edición inline, o sliders generados por Claude
+4. Exportar: **PDF, PPTX, HTML/ZIP, Canva, URL interna**
+5. Para construir el código: exportar como "Handoff to Claude Code" desde la UI → Claude Code recibe el bundle con diseño + reasoning e implementa los componentes
 
-### Other design tools
-- **Canva MCP** — Ya conectado: generate-design, get-assets, list-brand-kits, export-design
-- **Figma MCP** — Servidor oficial con OAuth 2.0, sin API key. El primer uso abre el navegador para autenticarte.
+### Figma MCP (OAuth) — primera vez
+Al usar el MCP `figma` por primera vez, Claude Code abrirá el navegador automáticamente para autenticarte con tu cuenta Figma. Sin API key. Bug conocido: el token OAuth a veces no persiste en `~/.claude.json` — si falla, re-autenticar con `/mcp` → select figma → Authenticate.
+
+### Canva MCP — ya conectado
+Genera assets, gestiona brand kits, exporta diseños directamente desde Claude.
 
 ## Automated Pipeline (Hooks)
 
