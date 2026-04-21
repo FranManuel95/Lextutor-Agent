@@ -106,7 +106,7 @@ supabase/
 - Local: `postgresql://postgres:postgres@localhost:54322/postgres`
 - RLS enabled on all tables — always test with anon and authenticated roles
 - Migrations in `supabase/migrations/` — never edit production schema directly
-- Use Supabase MCP (`dbhub`) for queries during development
+- Use `dbhub` MCP for local queries; use `supabase` MCP to apply migrations to production
 
 ## Environment Variables
 
@@ -132,11 +132,24 @@ RESEND_API_KEY
 |-----|---------|
 | `context7` | Up-to-date Next.js/Tailwind/Shadcn docs — use `use context7` in prompts |
 | `playwright` | E2E testing, browser automation, UI validation |
-| `dbhub` | Query local Supabase PostgreSQL during development |
+| `dbhub` | Query **local** Supabase PostgreSQL (localhost:54322) — run `supabase start` first |
+| `supabase` | Supabase Management API — execute SQL, apply migrations on **production**. Requires `SUPABASE_ACCESS_TOKEN` in `.env.local` |
 | `figma` | Official Figma MCP (OAuth) — reads designs, extracts tokens and components |
 | `eslint` | Lint code directly from Claude context |
 | `github` | PRs, issues, code review |
 | `canva` | Generate and edit design assets (already connected) |
+
+### Supabase MCP — setup (one-time)
+
+1. Ve a [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) y crea un **Personal Access Token**
+2. Añádelo a `.env.local` (gitignored):
+   ```
+   SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
+   SUPABASE_PROJECT_ID=abcdefghijklmnop  # ref de tu proyecto (opcional pero recomendado)
+   ```
+3. Reinicia la sesión de Claude Code — el MCP `supabase` estará disponible
+
+El wrapper `.claude/scripts/supabase-mcp.sh` carga `.env.local` automáticamente antes de lanzar el servidor MCP, por lo que las credenciales nunca entran en `settings.json`.
 
 ## Design Tools & Workflow
 
