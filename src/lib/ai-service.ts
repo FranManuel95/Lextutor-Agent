@@ -352,42 +352,44 @@ export async function generateResponse(params: {
 
 const HAS_GEMINI_RAG = !!process.env.GEMINI_FILESEARCH_STORE_ID;
 
-function buildQuizPrompt(area: string, difficulty: string, count: number, withRag: boolean) {
-  return `Genera un TEST de Derecho ${area.toUpperCase()} (Dificultad: ${difficulty.toUpperCase()}) con EXACTAMENTE ${count} preguntas tipo test.
-${withRag ? "Basa las preguntas en los documentos del corpus disponible cuando sea posible." : "Usa tu conocimiento sobre legislación española vigente."}
-Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
-{"questions":[{"id":1,"text":"Enunciado de la pregunta","options":["A) opción","B) opción","C) opción","D) opción"],"correctIndex":0,"explanation":"Explicación breve"}]}
-IMPORTANTE: El array questions debe tener EXACTAMENTE ${count} elementos. No incluyas nada fuera del JSON.`;
+function extractJsonFromText(text: string): any {
+  const cleaned = text
+    .replace(/```json/g, "")
+    .replace(/```/g, "")
+    .trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Try to find a JSON object anywhere in the text
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
 }
 
-async function callGeminiForQuiz(prompt: string, withRag: boolean) {
-  const tools = withRag
-    ? [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any]
-    : undefined;
+function buildQuizPrompt(area: string, difficulty: string, count: number) {
+  return `Eres un experto en derecho español. Genera ${count} preguntas tipo test sobre Derecho ${area.toUpperCase()} con dificultad ${difficulty.toUpperCase()}.
 
-  try {
-    return await retryOperation(() =>
-      geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        ...(tools ? { tools } : {}),
-        config: { responseMimeType: "application/json" },
-      } as any)
-    );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      await new Promise((r) => setTimeout(r, 3000));
-      return retryOperation(() =>
-        geminiClient.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          ...(tools ? { tools } : {}),
-          config: { responseMimeType: "application/json" },
-        } as any)
-      );
-    }
-    throw error;
-  }
+Responde ÚNICAMENTE con este JSON (sin texto adicional, sin markdown):
+{"questions":[{"id":1,"text":"Pregunta aquí","options":["A) opción1","B) opción2","C) opción3","D) opción4"],"correctIndex":0,"explanation":"Explicación breve"}]}
+
+Legislación española vigente. El array questions debe tener exactamente ${count} objetos.`;
+}
+
+async function callGeminiContent(prompt: string, tools?: any[]) {
+  return retryOperation(() =>
+    geminiClient.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      ...(tools ? { tools } : {}),
+    } as any)
+  );
 }
 
 /**
@@ -395,52 +397,52 @@ async function callGeminiForQuiz(prompt: string, withRag: boolean) {
  */
 export async function generateQuiz(params: { area: string; difficulty: string; count: number }) {
   const { area, difficulty, count } = params;
+  const prompt = buildQuizPrompt(area, difficulty, count);
 
   console.log(
     "🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash" + (HAS_GEMINI_RAG ? " + RAG" : " (sin RAG)")
   );
 
+  let questions: any[] = [];
+  let grounding: any = null;
+
   // Attempt 1: with RAG (if configured)
-  let res = await callGeminiForQuiz(
-    buildQuizPrompt(area, difficulty, count, HAS_GEMINI_RAG),
-    HAS_GEMINI_RAG
-  );
-
-  if (res.usageMetadata) {
-    logUsage("gemini", {
-      prompt: res.usageMetadata.promptTokenCount ?? 0,
-      completion: res.usageMetadata.candidatesTokenCount ?? 0,
-      total: res.usageMetadata.totalTokenCount ?? 0,
-    });
-  }
-
-  let generated: any = {};
-  try {
-    const raw = (res.text || "{}")
-      .replace(/```json/g, "")
-      .replace(/```/g, "")
-      .trim();
-    generated = JSON.parse(raw);
-  } catch {
-    generated = {};
-  }
-
-  const grounding = res.candidates?.[0]?.groundingMetadata;
-  let questions: any[] = Array.isArray(generated.questions) ? generated.questions : [];
-
-  // Attempt 2: fallback without RAG if RAG returned empty or malformed
-  if (questions.length === 0 && HAS_GEMINI_RAG) {
-    console.warn("⚠️ RAG returned 0 questions, falling back to knowledge-based generation...");
-    res = await callGeminiForQuiz(buildQuizPrompt(area, difficulty, count, false), false);
+  if (HAS_GEMINI_RAG) {
     try {
-      const raw2 = (res.text || "{}")
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
-      questions = JSON.parse(raw2)?.questions ?? [];
-    } catch {
-      questions = [];
+      const ragTools = [
+        { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any,
+      ];
+      const res = await callGeminiContent(prompt, ragTools);
+      if (res.usageMetadata) {
+        logUsage("gemini", {
+          prompt: res.usageMetadata.promptTokenCount ?? 0,
+          completion: res.usageMetadata.candidatesTokenCount ?? 0,
+          total: res.usageMetadata.totalTokenCount ?? 0,
+        });
+      }
+      grounding = res.candidates?.[0]?.groundingMetadata ?? null;
+      const parsed = extractJsonFromText(res.text || "");
+      questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+      if (questions.length > 0) console.log(`✅ RAG generó ${questions.length} preguntas`);
+      else console.warn("⚠️ RAG devolvió 0 preguntas, usando fallback sin RAG");
+    } catch (e: any) {
+      console.warn("⚠️ RAG call failed:", e.message, "— usando fallback sin RAG");
     }
+  }
+
+  // Attempt 2: pure knowledge fallback
+  if (questions.length === 0) {
+    const res = await callGeminiContent(prompt);
+    if (res.usageMetadata) {
+      logUsage("gemini", {
+        prompt: res.usageMetadata.promptTokenCount ?? 0,
+        completion: res.usageMetadata.candidatesTokenCount ?? 0,
+        total: res.usageMetadata.totalTokenCount ?? 0,
+      });
+    }
+    const parsed = extractJsonFromText(res.text || "");
+    questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+    console.log(`📝 Fallback sin RAG generó ${questions.length} preguntas`);
   }
 
   if (questions.length === 0) {
