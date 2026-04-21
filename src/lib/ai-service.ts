@@ -350,49 +350,61 @@ export async function generateResponse(params: {
   }
 }
 
+const HAS_GEMINI_RAG = !!process.env.GEMINI_FILESEARCH_STORE_ID;
+
+function buildQuizPrompt(area: string, difficulty: string, count: number, withRag: boolean) {
+  return `Genera un TEST de Derecho ${area.toUpperCase()} (Dificultad: ${difficulty.toUpperCase()}) con EXACTAMENTE ${count} preguntas tipo test.
+${withRag ? "Basa las preguntas en los documentos del corpus disponible cuando sea posible." : "Usa tu conocimiento sobre legislación española vigente."}
+Devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
+{"questions":[{"id":1,"text":"Enunciado de la pregunta","options":["A) opción","B) opción","C) opción","D) opción"],"correctIndex":0,"explanation":"Explicación breve"}]}
+IMPORTANTE: El array questions debe tener EXACTAMENTE ${count} elementos. No incluyas nada fuera del JSON.`;
+}
+
+async function callGeminiForQuiz(prompt: string, withRag: boolean) {
+  const tools = withRag
+    ? [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any]
+    : undefined;
+
+  try {
+    return await retryOperation(() =>
+      geminiClient.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        ...(tools ? { tools } : {}),
+        config: { responseMimeType: "application/json" },
+      } as any)
+    );
+  } catch (error: any) {
+    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
+      await new Promise((r) => setTimeout(r, 3000));
+      return retryOperation(() =>
+        geminiClient.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          ...(tools ? { tools } : {}),
+          config: { responseMimeType: "application/json" },
+        } as any)
+      );
+    }
+    throw error;
+  }
+}
+
 /**
  * Unified Quiz Generation
  */
 export async function generateQuiz(params: { area: string; difficulty: string; count: number }) {
   const { area, difficulty, count } = params;
-  const prompt = `Genera un TEST de Derecho ${area.toUpperCase()} (Dificultad: ${difficulty.toUpperCase()}) con ${count} preguntas tipo test.
-    IMPORTANTE: Debes basarte EXCLUSIVAMENTE en la BASE DE CONOCIMIENTO (documentos adjuntos) para generar las preguntas.
-    Devuelve JSON con "questions": Array de objetos:
-    - id: number, text: string, options: string[], correctIndex: number, explanation: string.
-    Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
 
-  // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
-  console.log("🤖 [MODELO] Generación Quiz → Intentando Gemini 2.0 Flash...");
+  console.log(
+    "🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash" + (HAS_GEMINI_RAG ? " + RAG" : " (sin RAG)")
+  );
 
-  let res;
-  try {
-    res = await retryOperation(() =>
-      geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any],
-        config: {
-          responseMimeType: "application/json",
-        },
-      } as any)
-    );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
-      res = await retryOperation(() =>
-        geminiClient.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any],
-          config: {
-            responseMimeType: "application/json",
-          },
-        } as any)
-      );
-    } else {
-      throw error;
-    }
-  }
+  // Attempt 1: with RAG (if configured)
+  let res = await callGeminiForQuiz(
+    buildQuizPrompt(area, difficulty, count, HAS_GEMINI_RAG),
+    HAS_GEMINI_RAG
+  );
 
   if (res.usageMetadata) {
     logUsage("gemini", {
@@ -402,28 +414,51 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
     });
   }
 
-  const raw = res.text || "{}";
-  const cleaned = raw
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
-  const generated = JSON.parse(cleaned);
-  const grounding = res.candidates?.[0]?.groundingMetadata;
+  let generated: any = {};
+  try {
+    const raw = (res.text || "{}")
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+    generated = JSON.parse(raw);
+  } catch {
+    generated = {};
+  }
 
-  // Extract sources
+  const grounding = res.candidates?.[0]?.groundingMetadata;
+  let questions: any[] = Array.isArray(generated.questions) ? generated.questions : [];
+
+  // Attempt 2: fallback without RAG if RAG returned empty or malformed
+  if (questions.length === 0 && HAS_GEMINI_RAG) {
+    console.warn("⚠️ RAG returned 0 questions, falling back to knowledge-based generation...");
+    res = await callGeminiForQuiz(buildQuizPrompt(area, difficulty, count, false), false);
+    try {
+      const raw2 = (res.text || "{}")
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+      questions = JSON.parse(raw2)?.questions ?? [];
+    } catch {
+      questions = [];
+    }
+  }
+
+  if (questions.length === 0) {
+    throw new Error(
+      "No se pudieron generar preguntas. Por favor, inténtalo de nuevo en unos momentos."
+    );
+  }
+
   const sources: string[] = [];
   if (grounding?.groundingChunks) {
     grounding.groundingChunks.forEach((chunk: any) => {
-      if (chunk.retrievedContext?.title) {
-        sources.push(chunk.retrievedContext.title);
-      } else if (chunk.web?.title) {
-        sources.push(chunk.web.title);
-      }
+      if (chunk.retrievedContext?.title) sources.push(chunk.retrievedContext.title);
+      else if (chunk.web?.title) sources.push(chunk.web.title);
     });
   }
 
   return {
-    questions: generated.questions,
+    questions,
     ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
     sources: Array.from(new Set(sources)),
   };
