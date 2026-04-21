@@ -1,37 +1,42 @@
-'use server';
+"use server";
 
-import { generateLegalInfographic } from '@/lib/imagen-service';
-import { createClient } from '@/utils/supabase/server';
+import { generateLegalInfographic } from "@/lib/imagen-service";
+import { createClient } from "@/utils/supabase/server";
 import { GoogleGenAI } from "@google/genai";
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
-export async function generateInfographicAction(chatId: string): Promise<{ success: boolean; imageUrl?: string; topic?: string; error?: string }> {
-    if (!chatId) {
-        return { success: false, error: "Chat ID is required" };
+export async function generateInfographicAction(
+  chatId: string
+): Promise<{ success: boolean; imageUrl?: string; topic?: string; error?: string }> {
+  if (!chatId) {
+    return { success: false, error: "Chat ID is required" };
+  }
+
+  try {
+    // 1. Fetch Chat History
+    const supabase = createClient();
+    const { data: messages } = await supabase
+      .from("messages")
+      .select("content, role")
+      .eq("chat_id", chatId)
+      .order("created_at", { ascending: false })
+      .limit(30); // Expanded context window (30 messages)
+
+    if (!messages || messages.length === 0) {
+      return { success: false, error: "No messages found to summarize." };
     }
 
-    try {
-        // 1. Fetch Chat History
-        const supabase = createClient();
-        const { data: messages } = await supabase
-            .from('messages')
-            .select('content, role')
-            .eq('chat_id', chatId)
-            .order('created_at', { ascending: false })
-            .limit(30); // Expanded context window (30 messages)
+    // Reverse to chronological order for the AI analysis
+    const recentHistory = [...messages]
+      .reverse()
+      .map((m) => `${m.role}: ${m.content}`)
+      .join("\n");
 
-        if (!messages || messages.length === 0) {
-            return { success: false, error: "No messages found to summarize." };
-        }
+    // 2. Extract Visual Brief using Gemini (Text Model)
+    console.log("🔍 Analizando historial para extraer Visual Brief estructurado...");
 
-        // Reverse to chronological order for the AI analysis
-        const recentHistory = (messages as any[]).reverse().map(m => `${m.role}: ${m.content}`).join('\n');
-
-        // 2. Extract Visual Brief using Gemini (Text Model)
-        console.log("🔍 Analizando historial para extraer Visual Brief estructurado...");
-
-        const briefPrompt = `
+    const briefPrompt = `
             Analyze the following conversation history between a law student and a tutor.
             Create a structured content brief for an educational infographic.
             
@@ -57,45 +62,53 @@ export async function generateInfographicAction(chatId: string): Promise<{ succe
             3. Ensure all text is in SPANISH and accurately reflects the conversation details.
         `;
 
-        const briefRes = await geminiClient.models.generateContent({
-            model: "gemini-flash-latest",
-            contents: [{ role: "user", parts: [{ text: briefPrompt }] }]
-        });
+    const briefRes = await geminiClient.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: [{ role: "user", parts: [{ text: briefPrompt }] }],
+    });
 
-        let contentData = {
-            topic: "Conceptos Jurídicos",
-            sections: [
-                { title: "Resumen", content: "Resumen de la sesión de estudio." }
-            ],
-            footer_context: "LexTutor AI"
-        };
+    let contentData = {
+      topic: "Conceptos Jurídicos",
+      sections: [{ title: "Resumen", content: "Resumen de la sesión de estudio." }],
+      footer_context: "LexTutor AI",
+    };
 
-        try {
-            const text = briefRes.text?.replace(/```json/g, '').replace(/```/g, '').trim() || "";
-            const parsed = JSON.parse(text);
-            contentData = {
-                topic: parsed.topic || contentData.topic,
-                sections: (parsed.sections && Array.isArray(parsed.sections)) ? parsed.sections : contentData.sections,
-                footer_context: parsed.footer_context || contentData.footer_context
-            };
-        } catch (e) {
-            console.error("⚠️ Error parsing visual brief JSON:", e);
-        }
-
-        console.log(`📌 Visual Brief extraído (${contentData.sections.length} secciones):`, contentData);
-
-        // 3. Generate Infographic
-        const imageUrl = await generateLegalInfographic(contentData);
-
-        if (imageUrl) {
-            console.log("✅ Server Action: Success, returning image URL.");
-            return { success: true, imageUrl, topic: contentData.topic };
-        } else {
-            console.error("❌ Server Action: Image URL is null.");
-            return { success: false, error: "Failed to generate image" };
-        }
-    } catch (error) {
-        console.error("Error in generateInfographicAction:", error);
-        return { success: false, error: "Internal server error" };
+    try {
+      const text =
+        briefRes.text
+          ?.replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim() || "";
+      const parsed = JSON.parse(text);
+      contentData = {
+        topic: parsed.topic || contentData.topic,
+        sections:
+          parsed.sections && Array.isArray(parsed.sections)
+            ? parsed.sections
+            : contentData.sections,
+        footer_context: parsed.footer_context || contentData.footer_context,
+      };
+    } catch (e) {
+      console.error("⚠️ Error parsing visual brief JSON:", e);
     }
+
+    console.log(
+      `📌 Visual Brief extraído (${contentData.sections.length} secciones):`,
+      contentData
+    );
+
+    // 3. Generate Infographic
+    const imageUrl = await generateLegalInfographic(contentData);
+
+    if (imageUrl) {
+      console.log("✅ Server Action: Success, returning image URL.");
+      return { success: true, imageUrl, topic: contentData.topic };
+    } else {
+      console.error("❌ Server Action: Image URL is null.");
+      return { success: false, error: "Failed to generate image" };
+    }
+  } catch (error) {
+    console.error("Error in generateInfographicAction:", error);
+    return { success: false, error: "Internal server error" };
+  }
 }

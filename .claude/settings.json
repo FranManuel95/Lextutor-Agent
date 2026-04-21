@@ -1,0 +1,119 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "description": "Up-to-date docs for Next.js, React, Tailwind, Shadcn. Use 'use context7' in prompts."
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--headless"],
+      "description": "Browser automation and E2E testing via accessibility snapshots."
+    },
+    "dbhub": {
+      "command": "npx",
+      "args": ["-y", "dbhub@latest", "--transport", "stdio"],
+      "env": {
+        "DSN": "postgresql://postgres:postgres@localhost:54322/postgres"
+      },
+      "description": "Query local Supabase PostgreSQL. Run 'supabase start' first."
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp",
+      "description": "Official Figma MCP server with OAuth 2.0. First use opens browser to authenticate with your Figma account — no API key needed."
+    },
+    "eslint": {
+      "command": "npx",
+      "args": ["@eslint/mcp@latest"],
+      "description": "Official ESLint MCP — lint files and get structured fix suggestions."
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/guard-sensitive-files.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/lint-on-edit.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/pre-stop-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npm run start)",
+      "Bash(npm run format)",
+      "Bash(npm run format:check)",
+      "Bash(npm run test)",
+      "Bash(npm run test:run)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm run storybook)",
+      "Bash(npm run build-storybook)",
+      "Bash(npm run analyze)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx eslint*)",
+      "Bash(npx playwright*)",
+      "Bash(npx prettier*)",
+      "Bash(npx vitest run*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git fetch*)",
+      "Bash(git pull*)",
+      "Bash(git checkout*)",
+      "Bash(git stash*)",
+      "Bash(supabase start)",
+      "Bash(supabase stop)",
+      "Bash(supabase status)",
+      "Bash(supabase db*)",
+      "Bash(supabase migration*)",
+      "Bash(mkdir*)",
+      "Bash(chmod +x*)",
+      "mcp__github__search_repositories",
+      "mcp__github__get_file_contents",
+      "mcp__github__list_branches",
+      "mcp__github__list_commits",
+      "mcp__github__list_pull_requests",
+      "mcp__github__pull_request_read",
+      "mcp__github__issue_read",
+      "mcp__github__list_issues"
+    ]
+  }
+}
