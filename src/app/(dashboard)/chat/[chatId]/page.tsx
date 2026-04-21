@@ -16,11 +16,13 @@ async function ChatMessagesLoader({ chatId, userId }: { chatId: string; userId: 
     .eq("chat_id", chatId)
     .order("created_at", { ascending: true });
 
-  const { data: profileData } = await supabase
+  type ProfileAvatar = Pick<Database["public"]["Tables"]["profiles"]["Row"], "avatar_url">;
+  const { data: rawProfile } = await supabase
     .from("profiles")
     .select("avatar_url")
     .eq("id", userId)
     .single();
+  const profileData = rawProfile as ProfileAvatar | null;
 
   return (
     <ChatList
