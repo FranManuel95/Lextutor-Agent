@@ -181,6 +181,57 @@ Every `git commit` automatically runs `lint-staged`:
 - `.js/.jsx/.mjs` → ESLint --fix + Prettier
 - `.json/.css/.md` → Prettier only
 
+## Slash Commands (Automatización de tareas)
+
+Usa estos comandos para generar boilerplate completo sin describir nada:
+
+| Comando | Uso | Genera |
+|---------|-----|--------|
+| `/component NombreComponente` | `> /component UserCard` | Componente + test + story |
+| `/page ruta descripción` | `> /page settings Ajustes de usuario` | page.tsx + loading + error |
+| `/api ruta descripción` | `> /api users/preferences GET preferencias` | route.ts + Zod + auth + test |
+| `/migration descripción` | `> /migration add user preferences table` | SQL + RLS policies |
+| `/test src/lib/utils.ts` | `> /test src/lib/rateLimit.ts` | Test suite completo |
+| `/security-review` | `> /security-review` | Auditoría de seguridad |
+| `/review` | `> /review` | Code review de la PR actual |
+
+## Workflow eficiente por tipo de tarea
+
+### Nueva feature (web)
+```
+1. claude.ai/design → diseña la UI → Handoff to Claude Code
+2. /component NombreComponente    → crea el componente con tests y story
+3. /page ruta                     → crea la página del dashboard
+4. /api ruta                      → crea la API route con auth + Zod
+5. /migration descripción         → crea la migración con RLS
+6. npm run test:run               → verifica todo
+7. git commit (Husky auto-lint)  → push → CI verifica en GitHub
+```
+
+### Bug fix
+```
+1. /test src/lib/[modulo].ts      → escribe el test que reproduce el bug
+2. Arregla el código              → PostToolUse hook auto-lintea
+3. npx vitest run [test]          → confirma que el test pasa
+4. git commit → push
+```
+
+### Nueva UI con diseño innovador
+```
+1. claude.ai/design → describe la UI → Claude Opus 4.7 genera prototipo
+2. Exporta "Handoff to Claude Code"
+3. /component [nombre] → implementa con Shadcn + Tailwind
+4. npm run storybook → revisa en catálogo visual
+5. Playwright MCP → valida en browser real
+```
+
+### Tips de eficiencia máxima
+- Añade `use context7` a cualquier prompt sobre Next.js/React/Tailwind/Shadcn para obtener docs actualizadas
+- Playwright MCP valida UI visualmente sin abrir el navegador manualmente
+- DBHub MCP: consulta el schema de Supabase directamente (`supabase start` primero)
+- Canva MCP: genera assets de diseño sin salir de Claude Code
+- Los hooks se ejecutan solos — no necesitas recordar formatear o typecheckear
+
 ## Git Workflow
 
 - Working branch: `claude/setup-dev-environment-0P2vM`

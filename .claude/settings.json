@@ -30,6 +30,16 @@
     }
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/user/Lextutor-Agent/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
@@ -70,22 +80,23 @@
       "Bash(npm run dev)",
       "Bash(npm run start)",
       "Bash(npm run format)",
+      "Bash(npm run format:check)",
       "Bash(npm run test)",
-      "Bash(npm install*)",
+      "Bash(npm run test:run)",
+      "Bash(npm run test:coverage)",
+      "Bash(npm run storybook)",
+      "Bash(npm run build-storybook)",
+      "Bash(npm run analyze)",
       "Bash(npx tsc --noEmit)",
       "Bash(npx eslint*)",
       "Bash(npx playwright*)",
       "Bash(npx prettier*)",
-      "Bash(node*)",
-      "Bash(git status)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
+      "Bash(npx vitest run*)",
       "Bash(git add*)",
       "Bash(git commit*)",
       "Bash(git push*)",
       "Bash(git fetch*)",
       "Bash(git pull*)",
-      "Bash(git branch*)",
       "Bash(git checkout*)",
       "Bash(git stash*)",
       "Bash(supabase start)",
@@ -93,9 +104,16 @@
       "Bash(supabase status)",
       "Bash(supabase db*)",
       "Bash(supabase migration*)",
-      "Bash(ls*)",
       "Bash(mkdir*)",
-      "Bash(cat .env.example)"
+      "Bash(chmod +x*)",
+      "mcp__github__search_repositories",
+      "mcp__github__get_file_contents",
+      "mcp__github__list_branches",
+      "mcp__github__list_commits",
+      "mcp__github__list_pull_requests",
+      "mcp__github__pull_request_read",
+      "mcp__github__issue_read",
+      "mcp__github__list_issues"
     ]
   }
 }
