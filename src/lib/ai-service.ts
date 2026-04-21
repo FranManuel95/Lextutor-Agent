@@ -393,57 +393,26 @@ async function callGeminiContent(prompt: string, tools?: any[]) {
 }
 
 /**
- * Unified Quiz Generation
+ * Unified Quiz Generation — knowledge-based (no RAG)
  */
 export async function generateQuiz(params: { area: string; difficulty: string; count: number }) {
   const { area, difficulty, count } = params;
   const prompt = buildQuizPrompt(area, difficulty, count);
 
-  console.log(
-    "🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash" + (HAS_GEMINI_RAG ? " + RAG" : " (sin RAG)")
-  );
+  console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash (conocimiento general)");
 
-  let questions: any[] = [];
-  let grounding: any = null;
+  const res = await callGeminiContent(prompt);
 
-  // Attempt 1: with RAG (if configured)
-  if (HAS_GEMINI_RAG) {
-    try {
-      const ragTools = [
-        { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any,
-      ];
-      const res = await callGeminiContent(prompt, ragTools);
-      if (res.usageMetadata) {
-        logUsage("gemini", {
-          prompt: res.usageMetadata.promptTokenCount ?? 0,
-          completion: res.usageMetadata.candidatesTokenCount ?? 0,
-          total: res.usageMetadata.totalTokenCount ?? 0,
-        });
-      }
-      grounding = res.candidates?.[0]?.groundingMetadata ?? null;
-      const parsed = extractJsonFromText(res.text || "");
-      questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
-      if (questions.length > 0) console.log(`✅ RAG generó ${questions.length} preguntas`);
-      else console.warn("⚠️ RAG devolvió 0 preguntas, usando fallback sin RAG");
-    } catch (e: any) {
-      console.warn("⚠️ RAG call failed:", e.message, "— usando fallback sin RAG");
-    }
+  if (res.usageMetadata) {
+    logUsage("gemini", {
+      prompt: res.usageMetadata.promptTokenCount ?? 0,
+      completion: res.usageMetadata.candidatesTokenCount ?? 0,
+      total: res.usageMetadata.totalTokenCount ?? 0,
+    });
   }
 
-  // Attempt 2: pure knowledge fallback
-  if (questions.length === 0) {
-    const res = await callGeminiContent(prompt);
-    if (res.usageMetadata) {
-      logUsage("gemini", {
-        prompt: res.usageMetadata.promptTokenCount ?? 0,
-        completion: res.usageMetadata.candidatesTokenCount ?? 0,
-        total: res.usageMetadata.totalTokenCount ?? 0,
-      });
-    }
-    const parsed = extractJsonFromText(res.text || "");
-    questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
-    console.log(`📝 Fallback sin RAG generó ${questions.length} preguntas`);
-  }
+  const parsed = extractJsonFromText(res.text || "");
+  const questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
 
   if (questions.length === 0) {
     throw new Error(
@@ -451,19 +420,7 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
     );
   }
 
-  const sources: string[] = [];
-  if (grounding?.groundingChunks) {
-    grounding.groundingChunks.forEach((chunk: any) => {
-      if (chunk.retrievedContext?.title) sources.push(chunk.retrievedContext.title);
-      else if (chunk.web?.title) sources.push(chunk.web.title);
-    });
-  }
-
-  return {
-    questions,
-    ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
-    sources: Array.from(new Set(sources)),
-  };
+  return { questions, ragUsed: false, sources: [] };
 }
 
 /**
