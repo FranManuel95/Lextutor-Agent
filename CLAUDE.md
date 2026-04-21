@@ -5,12 +5,21 @@ AI-powered legal tutoring platform for Spanish law students. Next.js 14 full-sta
 ## Dev Commands
 
 ```bash
-npm run dev      # Dev server (4GB memory)
-npm run build    # Production build
-npm run lint     # ESLint
-npx tsc --noEmit # Type check only
-supabase start   # Local Supabase (API: 54321, DB: 54322)
-supabase db reset # Reset + re-run migrations
+npm run dev            # Dev server (4GB memory)
+npm run build          # Production build
+npm run start          # Production server
+npm run lint           # ESLint
+npm run format         # Prettier write
+npm run format:check   # Prettier check (CI)
+npm run test           # Vitest watch
+npm run test:run       # Vitest one-shot (CI)
+npm run test:coverage  # Coverage report
+npm run storybook      # Storybook dev server :6006
+npm run build-storybook # Storybook static build
+npm run analyze        # Bundle analyzer (opens browser)
+npx tsc --noEmit       # Type check only
+supabase start         # Local Supabase (API: 54321, DB: 54322)
+supabase db reset      # Reset + re-run migrations
 ```
 
 ## Tech Stack
@@ -151,11 +160,26 @@ Genera assets, gestiona brand kits, exporta diseños directamente desde Claude.
 - **PostToolUse (Edit/Write)** → ESLint `--fix` on edited `.ts/.tsx/.js/.jsx` files
 - **Stop** → TypeScript `tsc --noEmit` only when TS files changed
 
-## Formatting
+## Formatting & Tests
 
-- **Prettier** configured in `.prettierrc` with `prettier-plugin-tailwindcss`
-- `npm run format` — format all `src/**` files
-- `npm run format:check` — CI check (no writes)
+- **Prettier** configured in `.prettierrc` with `prettier-plugin-tailwindcss` (auto-sorts Tailwind classes)
+- **Vitest** — unit tests in `src/test/**/*.test.ts`. Config: `vitest.config.ts`
+- **Storybook** — component stories at `src/**/*.stories.tsx`. Config: `.storybook/`
+- **Bundle Analyzer** — `npm run analyze` opens visual treemap of bundle size
+
+## CI/CD (GitHub Actions)
+
+Pipeline at `.github/workflows/ci.yml` runs on every push and PR to `main`:
+1. **Lint & Typecheck** — `next lint` + `tsc --noEmit` + `prettier --check`
+2. **Unit Tests** — `vitest run`
+3. **Security Audit** — `npm audit --audit-level=high`
+
+## Pre-commit (Husky + lint-staged)
+
+Every `git commit` automatically runs `lint-staged`:
+- `.ts/.tsx` → ESLint --fix + Prettier
+- `.js/.jsx/.mjs` → ESLint --fix + Prettier
+- `.json/.css/.md` → Prettier only
 
 ## Git Workflow
 
