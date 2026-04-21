@@ -168,7 +168,7 @@ export async function generateResponseStream(params: {
     const streamResponse = await retryOperation(
       () =>
         geminiClient.models.generateContentStream({
-          model: "gemini-1.5-flash-latest",
+          model: "gemini-2.0-flash",
           contents,
         }),
       2,
@@ -181,7 +181,7 @@ export async function generateResponseStream(params: {
     // Fallback to Pro model (using 002 as stable version)
     const streamResponse = await retryOperation(() =>
       geminiClient.models.generateContentStream({
-        model: "gemini-1.5-pro-002",
+        model: "gemini-1.5-flash",
         contents,
       })
     );
