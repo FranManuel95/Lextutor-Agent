@@ -10,7 +10,10 @@ export const dynamic = "force-dynamic";
 
 const chatIdSchema = z.string().uuid();
 
-export async function DELETE(request: NextRequest, { params }: { params: { chatId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ chatId: string }> }
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -25,7 +28,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { chatI
     return NextResponse.json({ error: "Too many delete requests." }, { status: 429 });
   }
 
-  const chatId = params.chatId;
+  const { chatId } = await params;
 
   if (!chatIdSchema.safeParse(chatId).success) {
     return NextResponse.json({ error: "Invalid chat ID" }, { status: 400 });

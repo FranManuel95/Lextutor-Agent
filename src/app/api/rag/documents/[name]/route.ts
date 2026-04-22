@@ -9,11 +9,12 @@ export const runtime = "nodejs";
 
 const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
-export async function DELETE(_req: NextRequest, ctx: { params: { name: string } }) {
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: string }> }) {
   try {
     const { supabase } = await requireAdmin();
 
-    const documentName = decodeURIComponent(ctx.params.name);
+    const { name } = await ctx.params;
+    const documentName = decodeURIComponent(name);
 
     if (!documentName) {
       return NextResponse.json({ error: "Missing document name" }, { status: 400 });
