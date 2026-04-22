@@ -27,10 +27,13 @@ export function ActivityChart({ data }: Props) {
   const totalMessages = data.reduce((s, d) => s + d.messages, 0);
 
   return (
-    <div className="rounded-2xl border border-law-accent/20 bg-gem-slate p-6">
+    <section
+      aria-label="Gráfico de actividad de los últimos 7 días"
+      className="rounded-2xl border border-law-accent/20 bg-gem-slate p-6"
+    >
       <div className="mb-6 flex items-center justify-between">
         <h2 className="flex items-center gap-2 font-serif text-xl text-law-gold">
-          <BarChart3 size={20} />
+          <BarChart3 size={20} aria-hidden="true" />
           Actividad últimos 7 días
         </h2>
         <div className="flex items-center gap-4 text-xs text-gem-offwhite/60">
@@ -81,6 +84,6 @@ export function ActivityChart({ data }: Props) {
           Sin actividad registrada esta semana
         </p>
       )}
-    </div>
+    </section>
   );
 }

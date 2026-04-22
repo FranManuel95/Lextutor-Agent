@@ -1,0 +1,20 @@
+{
+  "name": "Lextutor — Estudiante Elite",
+  "short_name": "Lextutor",
+  "description": "Plataforma de preparación jurídica con IA para estudiantes españoles",
+  "start_url": "/chat",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#d4af37",
+  "lang": "es",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

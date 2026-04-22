@@ -10,9 +10,15 @@ interface Props {
 
 export function LeaderboardTabs({ current }: Props) {
   return (
-    <div className="flex rounded-lg border border-white/10 bg-black/30 p-1">
+    <div
+      role="tablist"
+      aria-label="Métrica del ranking"
+      className="flex rounded-lg border border-white/10 bg-black/30 p-1"
+    >
       <Link
         href="/leaderboard?metric=score"
+        role="tab"
+        aria-selected={current === "score"}
         className={cn(
           "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition",
           current === "score"
@@ -25,6 +31,8 @@ export function LeaderboardTabs({ current }: Props) {
       </Link>
       <Link
         href="/leaderboard?metric=streak"
+        role="tab"
+        aria-selected={current === "streak"}
         className={cn(
           "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition",
           current === "streak"

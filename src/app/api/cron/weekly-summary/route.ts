@@ -18,6 +18,7 @@ type Attempt = {
 type Profile = {
   id: string;
   full_name: string | null;
+  email_weekly_summary?: boolean | null;
 };
 
 type UserSummary = {
@@ -155,9 +156,13 @@ export async function POST(request: NextRequest) {
 
   const userIds = Array.from(byUser.keys());
 
-  // 4. Fetch emails (auth.admin) and names (profiles) in parallel
+  // 4. Fetch emails (auth.admin), names + opt-in flag (profiles) in parallel
   const [profilesRes, authUsersRes] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").in("id", userIds).returns<Profile[]>(),
+    supabase
+      .from("profiles")
+      .select("id, full_name, email_weekly_summary")
+      .in("id", userIds)
+      .returns<Profile[]>(),
     // listUsers returns all, so we paginate with perPage=1000
     supabase.auth.admin.listUsers({ perPage: 1000 }),
   ]);
@@ -165,11 +170,20 @@ export async function POST(request: NextRequest) {
   const namesById = Object.fromEntries(
     (profilesRes.data ?? []).map((p) => [p.id, p.full_name ?? "Estudiante"])
   );
+  // Honor email opt-out — never send to users who explicitly disabled the summary.
+  const optedInIds = new Set(
+    (profilesRes.data ?? []).filter((p) => p.email_weekly_summary !== false).map((p) => p.id)
+  );
   const emailsById = Object.fromEntries(
     (authUsersRes.data?.users ?? [])
-      .filter((u) => userIds.includes(u.id) && u.email)
+      .filter((u) => userIds.includes(u.id) && u.email && optedInIds.has(u.id))
       .map((u) => [u.id, u.email as string])
   );
+
+  let skippedOptOut = 0;
+  for (const userId of userIds) {
+    if (!optedInIds.has(userId)) skippedOptOut += 1;
+  }
 
   // 5. Build summaries and send
   let sent = 0;
@@ -225,5 +239,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ sent, errors, totalUsersActive: userIds.length });
+  return NextResponse.json({
+    sent,
+    errors,
+    skippedOptOut,
+    totalUsersActive: userIds.length,
+  });
 }

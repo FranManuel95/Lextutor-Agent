@@ -20,7 +20,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useAppStore } from "@/store/useAppStore";
 import { SettingsDialog } from "./settings-dialog";
 import { ProfileDialog } from "@/components/profile-dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createChat, renameChat } from "@/app/(dashboard)/chat/actions";
 import { Copyright } from "@/components/copyright";
 
@@ -51,6 +51,20 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
   const [editTitle, setEditTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<"title" | "content">("title");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K / Ctrl+K focuses the search input
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const [messageResults, setMessageResults] = useState<
     Array<{ chatId: string; chatTitle: string; snippet: string; role: string }>
   >([]);
@@ -310,12 +324,19 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-600" />
             <input
+              ref={searchInputRef}
               type="text"
               placeholder={searchMode === "title" ? "Buscar chats…" : "Buscar en mensajes…"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-7 text-xs text-gem-offwhite placeholder:text-gray-600 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
+              aria-label={searchMode === "title" ? "Buscar chats por título" : "Buscar en mensajes"}
+              className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-16 text-xs text-gem-offwhite placeholder:text-gray-600 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
             />
+            {!searchQuery && (
+              <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-white/10 bg-black/30 px-1 py-0.5 font-mono text-[9px] font-bold text-gray-600 md:inline-block">
+                ⌘K
+              </kbd>
+            )}
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
