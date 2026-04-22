@@ -289,10 +289,9 @@ export async function POST(request: NextRequest) {
         openaiFileId = openaiFile.id;
         console.log(`✅ Document also uploaded to OpenAI: ${openaiFile.id}`);
       } catch (e: any) {
-        console.error("⚠️ OpenAI upload failed (non-critical):", e?.message || e);
-        console.error("Stack:", e?.stack);
-        console.error("Error completo:", JSON.stringify(e, null, 2));
-        // No bloqueamos si OpenAI falla
+        // Log only the safe message; stack traces and raw error objects may include
+        // headers or payload bytes with sensitive data.
+        console.error("⚠️ OpenAI upload failed (non-critical):", e?.message || "unknown error");
       }
     }
 

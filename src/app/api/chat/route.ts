@@ -54,12 +54,11 @@ export const POST = createApiHandler(
       const firstSentence = message.split(/[.\n?!]/)[0];
       const newTitle = firstSentence.trim().substring(0, 40);
       if (newTitle) {
-        // Non-blocking update
-        supabase
+        const { error: titleError } = await supabase
           .from("chats")
           .update({ title: newTitle } as any)
-          .eq("id", chatId)
-          .then();
+          .eq("id", chatId);
+        if (titleError) console.error("Title update failed:", titleError.message);
       }
     }
 

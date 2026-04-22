@@ -1,58 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
-export async function POST(request: NextRequest) {
-    // 1. Verify User (Standard Client)
-    const authHeader = request.headers.get('Authorization');
-    // Wait, we are in App Router server component/route. We use utils/supabase/server to get session.
-    // However, to Generate Signed Upload URL that Bypass RLS (or if RLS is tricky), we can use Service Role.
-    // Let's use Service Role for the Storage operation to ensure it works, assuming the User is Authenticated.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export async function POST(_request: NextRequest) {
+  const supabase = createServerClient();
+  const {
+    data: { user },
+    error: authErr,
+  } = await supabase.auth.getUser();
 
-    if (!serviceRoleKey) {
-        console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.");
-        return NextResponse.json(
-            { error: "Server Configuration Error: Missing Service Role Key" },
-            { status: 500 }
-        );
-    }
+  if (authErr || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+  const rateLimit = await checkRateLimit(user.id, RATE_LIMITS.AUDIO_UPLOAD_URL);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many upload requests." }, { status: 429 });
+  }
 
-    // Verify Auth via standard client (optional but good for security context if we trust the cookie)
-    // Actually, let's just use the admin client to generate the URL for the `user.id` contained in the request (or validated session).
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // We need validation.
-    const { createClient: createServerClient } = await import("@/utils/supabase/server");
-    const supabase = createServerClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("FATAL: Supabase service-role config missing");
+    return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+  }
 
-    if (error || !user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const adminSupabase = createAdminClient(supabaseUrl, serviceRoleKey);
 
-    try {
-        const timestamp = Date.now();
-        const path = `${user.id}/${timestamp}.webm`;
+  try {
+    // Path is server-generated under the authenticated user's namespace;
+    // client never supplies it, so there is no traversal surface.
+    const timestamp = Date.now();
+    const path = `${user.id}/${timestamp}.webm`;
 
-        // Use Admin Client to create signed URL to ensure no RLS "Policy not found" error
-        const { data, error: storageError } = await adminSupabase
-            .storage
-            .from('audio-notes')
-            .createSignedUploadUrl(path);
+    const { data, error: storageError } = await adminSupabase.storage
+      .from("audio-notes")
+      .createSignedUploadUrl(path);
 
-        if (storageError) throw storageError;
+    if (storageError) throw storageError;
 
-        return NextResponse.json({
-            path,
-            signedUrl: data.signedUrl,
-            token: data.token
-        });
-
-    } catch (error: any) {
-        console.error("Upload URL Error:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    return NextResponse.json({
+      path,
+      signedUrl: data.signedUrl,
+      token: data.token,
+    });
+  } catch (error: any) {
+    console.error("Upload URL Error:", error?.message || error);
+    return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
+  }
 }

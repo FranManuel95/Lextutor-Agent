@@ -58,4 +58,8 @@ export const RATE_LIMITS = {
   QUIZ_GENERATE: { endpoint: "/api/quiz/generate", limit: 20, windowMinutes: 1440 }, // 24h
   AUDIO_MESSAGE: { endpoint: "/api/audio/message", limit: 30, windowMinutes: 60 },
   SETTINGS_UPDATE: { endpoint: "/api/me/settings", limit: 20, windowMinutes: 60 },
+  AUTH_RESEND: { endpoint: "/api/auth/resend-verification", limit: 3, windowMinutes: 60 },
+  CHAT_DELETE: { endpoint: "/api/chat/delete", limit: 30, windowMinutes: 60 },
+  AUDIO_UPLOAD_URL: { endpoint: "/api/audio/create-upload", limit: 30, windowMinutes: 60 },
+  RAG_DOCS_LIST: { endpoint: "/api/rag/documents", limit: 60, windowMinutes: 60 },
 } as const;
