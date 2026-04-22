@@ -57,4 +57,5 @@ export const RATE_LIMITS = {
   EXAM_GENERATE: { endpoint: "/api/exam/generate", limit: 10, windowMinutes: 1440 }, // 24h
   QUIZ_GENERATE: { endpoint: "/api/quiz/generate", limit: 20, windowMinutes: 1440 }, // 24h
   AUDIO_MESSAGE: { endpoint: "/api/audio/message", limit: 30, windowMinutes: 60 },
+  SETTINGS_UPDATE: { endpoint: "/api/me/settings", limit: 20, windowMinutes: 60 },
 } as const;

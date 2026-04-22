@@ -1,5 +1,23 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const examStatsSchema = z.object({
+  streak: z.number(),
+  longestStreak: z.number(),
+  lastActive: z.string().nullable(),
+  averages: z.object({
+    byType: z.record(z.number()),
+    byArea: z.record(z.number()),
+  }),
+});
+
+const DEFAULT_STATS = {
+  streak: 0,
+  longestStreak: 0,
+  lastActive: null,
+  averages: { byType: {}, byArea: {} },
+};
 
 export const runtime = "nodejs";
 
@@ -58,14 +76,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const parsedStats = examStatsSchema.safeParse(stats);
+
   return NextResponse.json({
     items,
     count,
-    stats: stats ?? {
-      streak: 0,
-      longestStreak: 0,
-      lastActive: null,
-      averages: { byType: {}, byArea: {} },
-    },
+    stats: parsedStats.success ? parsedStats.data : DEFAULT_STATS,
   });
 }

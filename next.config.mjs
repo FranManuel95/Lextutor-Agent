@@ -38,6 +38,31 @@ const nextConfig = {
                         key: 'Referrer-Policy',
                         value: 'strict-origin-when-cross-origin',
                     },
+                    {
+                        key: 'X-XSS-Protection',
+                        value: '1; mode=block',
+                    },
+                    {
+                        key: 'Permissions-Policy',
+                        value: 'camera=(), geolocation=(), payment=()',
+                    },
+                    {
+                        // Blocks external script injection; unsafe-inline/eval required by Next.js hydration
+                        key: 'Content-Security-Policy',
+                        value: [
+                            "default-src 'self'",
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                            "style-src 'self' 'unsafe-inline'",
+                            "img-src 'self' data: blob: https://*.supabase.co",
+                            "media-src 'self' blob: https://*.supabase.co",
+                            "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+                            "font-src 'self'",
+                            "object-src 'none'",
+                            "frame-ancestors 'none'",
+                            "base-uri 'self'",
+                            "form-action 'self'",
+                        ].join('; '),
+                    },
                 ],
             },
         ]

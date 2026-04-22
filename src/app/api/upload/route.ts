@@ -144,7 +144,12 @@ export async function POST(request: NextRequest) {
     } as any);
 
     console.log("🟢 Esperando procesamiento de Gemini...");
+    const uploadStart = Date.now();
+    const UPLOAD_TIMEOUT_MS = 120_000;
     while (!operation.done) {
+      if (Date.now() - uploadStart > UPLOAD_TIMEOUT_MS) {
+        throw new Error("Gemini processing timeout after 2 minutes.");
+      }
       await sleep(1500);
       operation = await ai.operations.get({ operation } as any);
     }
