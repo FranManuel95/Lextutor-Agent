@@ -28,10 +28,10 @@ describe("requireAdmin", () => {
     await expect(requireAdmin()).rejects.toThrow("Unauthorized");
   });
 
-  it("throws auth error message when getUser fails", async () => {
+  it("throws 'Unauthorized' when getUser returns an auth error", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: "token expired" } });
     const { requireAdmin } = await import("@/server/security/requireAdmin");
-    await expect(requireAdmin()).rejects.toThrow("token expired");
+    await expect(requireAdmin()).rejects.toThrow("Unauthorized");
   });
 
   it("throws 'Forbidden' when profile missing", async () => {

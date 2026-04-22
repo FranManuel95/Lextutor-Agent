@@ -10,8 +10,7 @@ export async function requireAdmin() {
     data: { user },
     error: userErr,
   } = await supabase.auth.getUser();
-  if (userErr) throw new Error(userErr.message);
-  if (!user) throw new Error("Unauthorized");
+  if (userErr || !user) throw new Error("Unauthorized");
 
   const { data: profileRaw, error: profileErr } = await supabase
     .from("profiles")
