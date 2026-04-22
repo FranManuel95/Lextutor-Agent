@@ -8,6 +8,8 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // Playwright tests live in e2e/ and are run via `npm run test:e2e`.
+    exclude: ["node_modules/**", "e2e/**", ".next/**"],
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",

@@ -3,6 +3,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export async function POST(_request: NextRequest) {
       token: data.token,
     });
   } catch (error: any) {
-    console.error("Upload URL Error:", error?.message || error);
+    logger.error("audio/create-upload failed", error, { userId: user.id });
     return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
   }
 }

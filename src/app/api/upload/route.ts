@@ -7,6 +7,7 @@ import os from "os";
 import OpenAI from "openai";
 import fs from "fs";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -323,13 +324,13 @@ export async function POST(request: NextRequest) {
       openai_synced: !!openaiFileId,
     });
   } catch (error: any) {
-    console.error("Upload error:", error?.status, error?.message || error);
+    logger.error("upload failed", error, { status: error?.status });
     return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
   } finally {
     try {
       await unlink(tempPath);
     } catch (e: any) {
-      console.error("Failed to delete temp file:", e?.message);
+      logger.warn("Failed to delete temp upload file", { message: e?.message });
     }
   }
 }

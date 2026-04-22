@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { generateResponseStream } from "@/lib/ai-service-stream";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 
 type ChatOwnership = { user_id: string; title: string | null };
 type ProfileName = { full_name: string | null };
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
           settings
         );
       } catch (error: any) {
-        console.error("Streaming error:", error?.message || error);
+        logger.error("chat/stream failed", error, { chatId, userId: user.id });
         if (!streamSucceeded) {
           const errorMessage = error?.message || "Unknown streaming error";
           controller.enqueue(
@@ -250,6 +251,6 @@ async function saveAssistantMessage(
       .update({ updated_at: new Date().toISOString() } as any)
       .eq("id", chatId);
   } catch (error) {
-    console.error("Failed to save assistant message:", error);
+    logger.error("Failed to save assistant message", error, { chatId, userId });
   }
 }

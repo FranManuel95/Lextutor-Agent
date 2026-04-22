@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/server/security/requireAdmin";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,8 +38,7 @@ export async function GET(request: NextRequest) {
   } catch (e: any) {
     const msg = e?.message || "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
-    // Never log the full error object — it may contain request headers or payload
-    console.error("GET /api/rag/documents error:", msg);
+    logger.error("GET /api/rag/documents failed", e, { route: "/api/rag/documents", status });
     return NextResponse.json({ error: msg }, { status });
   }
 }

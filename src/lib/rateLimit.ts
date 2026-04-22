@@ -2,6 +2,7 @@
 // Provides easy-to-use rate limiting for API routes
 
 import { createClient } from "@/lib/supabase";
+import { logger } from "@/lib/logger";
 
 export interface RateLimitConfig {
   endpoint: string;
@@ -36,7 +37,9 @@ export async function checkRateLimit(
   } as any);
 
   if (error) {
-    console.error("Rate limit check error:", error);
+    logger.error("Rate limit RPC failed — failing closed", error, {
+      endpoint: config.endpoint,
+    });
     // Fail closed: deny request if rate limit check fails to prevent abuse
     return {
       allowed: false,

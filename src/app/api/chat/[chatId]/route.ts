@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -38,13 +39,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { chatI
     const { error } = await supabase.from("chats").delete().eq("id", chatId).eq("user_id", user.id); // Security: Ensure user owns the chat
 
     if (error) {
-      console.error("Delete Chat Error:", error);
       throw error;
     }
 
     revalidateTag(`chats-${user.id}`);
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    logger.error("DELETE /api/chat/[chatId] failed", error, { chatId, userId: user.id });
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }

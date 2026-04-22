@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 import { createHash } from "crypto";
 import { z } from "zod";
 
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Verification email sent successfully" });
   } catch (error) {
-    console.error("Error resending verification:", error);
+    logger.error("resend-verification failed", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

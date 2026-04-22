@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ signedUrl: data.signedUrl });
   } catch (error: any) {
-    console.error("Signed URL Error:", error);
+    logger.error("audio/url signed URL failed", error, { userId: user.id });
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

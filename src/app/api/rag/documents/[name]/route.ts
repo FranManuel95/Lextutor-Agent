@@ -3,6 +3,7 @@ import { requireAdmin } from "@/server/security/requireAdmin";
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -41,7 +42,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: { name: string } 
         await openai.files.del(doc.openai_file_id);
         console.log(`✅ Document also deleted from OpenAI: ${doc.openai_file_id}`);
       } catch (e: any) {
-        console.error("⚠️ OpenAI delete warning:", e.message);
+        logger.warn("OpenAI delete failed (continuing)", { message: e?.message });
         // Continuar aunque falle
       }
     }
@@ -57,8 +58,10 @@ export async function DELETE(_req: NextRequest, ctx: { params: { name: string } 
         await ai.files.delete({ name: documentName });
       }
     } catch (e: any) {
-      const msg = e?.message || "";
-      console.error("Gemini delete warning:", e?.status, msg);
+      logger.warn("Gemini delete failed (continuing to DB cleanup)", {
+        status: e?.status,
+        message: e?.message,
+      });
       // Ignorar 404 para permitir limpieza de DB
     }
 
@@ -72,11 +75,12 @@ export async function DELETE(_req: NextRequest, ctx: { params: { name: string } 
 
     return NextResponse.json({ success: true });
   } catch (e: any) {
-    console.error("DELETE /api/rag/documents/[name] error:", e?.status, e?.message || e);
-
     const msg = e?.message || "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
-
+    logger.error("DELETE /api/rag/documents/[name] failed", e, {
+      route: "/api/rag/documents/[name]",
+      status,
+    });
     return NextResponse.json({ error: msg }, { status });
   }
 }
