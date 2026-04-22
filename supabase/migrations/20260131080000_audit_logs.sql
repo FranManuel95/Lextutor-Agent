@@ -22,9 +22,21 @@ create index if not exists idx_audit_logs_action_created
 -- RLS: Only admins can view audit logs
 alter table public.audit_logs enable row level security;
 
-create policy "Admins can view all audit logs"
-  on public.audit_logs for select
-  using ( is_admin() );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'audit_logs'
+      and policyname = 'Admins can view all audit logs'
+  ) then
+    execute $policy$
+      create policy "Admins can view all audit logs"
+        on public.audit_logs for select
+        using ( is_admin() )
+    $policy$;
+  end if;
+end $$;
 
 -- Helper function to log events (callable from API routes via service role)
 create or replace function public.log_audit_event(
