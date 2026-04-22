@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ExamsFilters } from "./ExamsFilters";
 import { ExamsPagination } from "./ExamsPagination";
+import { AdminExportButton } from "@/components/admin-export-button";
 
 export const dynamic = "force-dynamic";
 
@@ -115,11 +116,23 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8 p-8">
-      <div className="flex flex-col gap-2">
-        <h2 className="font-serif text-3xl italic text-law-gold">Exámenes de la plataforma</h2>
-        <p className="text-gem-offwhite/60">
-          Todos los intentos de quiz, test y examen abierto realizados por los usuarios.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <h2 className="font-serif text-3xl italic text-law-gold">Exámenes de la plataforma</h2>
+          <p className="text-gem-offwhite/60">
+            Todos los intentos de quiz, test y examen abierto realizados por los usuarios.
+          </p>
+        </div>
+        <AdminExportButton
+          href={(() => {
+            const p = new URLSearchParams();
+            if (area) p.set("area", area);
+            if (attemptType) p.set("type", attemptType);
+            if (status) p.set("status", status);
+            const qs = p.toString();
+            return `/api/admin/exams/export${qs ? `?${qs}` : ""}`;
+          })()}
+        />
       </div>
 
       <Card className="border-law-accent/20 bg-gem-slate">

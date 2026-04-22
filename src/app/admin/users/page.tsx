@@ -4,6 +4,7 @@ import { Database } from "@/types/database.types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminUsersClient } from "./AdminUsersClient";
 import { UsersPagination } from "./UsersPagination";
+import { AdminExportButton } from "@/components/admin-export-button";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -71,11 +72,14 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8 p-8">
-      <div className="flex flex-col gap-2">
-        <h2 className="font-serif text-3xl italic text-law-gold">Gestión de Usuarios</h2>
-        <p className="text-gem-offwhite/60">
-          Listado de todos los usuarios registrados en la plataforma.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <h2 className="font-serif text-3xl italic text-law-gold">Gestión de Usuarios</h2>
+          <p className="text-gem-offwhite/60">
+            Listado de todos los usuarios registrados en la plataforma.
+          </p>
+        </div>
+        <AdminExportButton href="/api/admin/users/export" />
       </div>
 
       <Card className="border-law-accent/20 bg-gem-slate">
