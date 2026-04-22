@@ -3,22 +3,38 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { Database } from "@/types/database.types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminUsersClient } from "./AdminUsersClient";
+import { UsersPagination } from "./UsersPagination";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage() {
+const PAGE_SIZE = 50;
+
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function AdminUsersPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const rawPage = parseInt(params.page ?? "1", 10);
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
+
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
   const [profilesResult, authResult, sessionResult] = await Promise.all([
     supabase
       .from("profiles")
-      .select("*")
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
+      .range(from, to)
       .returns<Profile[]>(),
-    adminSupabase.auth.admin.listUsers({ perPage: 1000 }),
+    // Supabase auth.admin.listUsers is paginated; use same page/perPage.
+    adminSupabase.auth.admin.listUsers({ page, perPage: PAGE_SIZE }),
     supabase.auth.getUser(),
   ]);
 
@@ -50,6 +66,8 @@ export default async function AdminUsersPage() {
   }));
 
   const currentUserId = sessionResult.data.user?.id ?? "";
+  const totalCount = profilesResult.count ?? users.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
     <div className="space-y-8 p-8">
@@ -62,10 +80,18 @@ export default async function AdminUsersPage() {
 
       <Card className="border-law-accent/20 bg-gem-slate">
         <CardHeader>
-          <CardTitle className="text-gem-offwhite">Usuarios ({users.length})</CardTitle>
+          <CardTitle className="text-gem-offwhite">
+            Usuarios · {totalCount.toLocaleString()} total
+            {totalPages > 1 && (
+              <span className="ml-2 text-sm font-normal text-gem-offwhite/50">
+                (página {page} de {totalPages})
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <AdminUsersClient users={users} currentUserId={currentUserId} />
+          {totalPages > 1 && <UsersPagination currentPage={page} totalPages={totalPages} />}
         </CardContent>
       </Card>
     </div>

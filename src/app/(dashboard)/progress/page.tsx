@@ -1,8 +1,20 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { Trophy, Target, TrendingUp, BookOpen, Clock, Activity, Star, Flame } from "lucide-react";
+import Link from "next/link";
+import {
+  Trophy,
+  Target,
+  TrendingUp,
+  BookOpen,
+  Clock,
+  Activity,
+  Star,
+  Flame,
+  ChevronRight,
+} from "lucide-react";
 import { Copyright } from "@/components/copyright";
 import { ProgressExportButton } from "./ProgressExportButton";
+import { StreakToast } from "./StreakToast";
 
 type ExamStats = {
   streak: number;
@@ -29,7 +41,7 @@ export default async function ProgressPage() {
 
   if (!user) redirect("/login");
 
-  const [answersRes, eventsRes, statsRes, totalExamsRes] = await Promise.all([
+  const [answersRes, eventsRes, statsRes, totalExamsRes, recentExamsRes] = await Promise.all([
     supabase
       .from("student_events")
       .select("*", { count: "exact", head: true })
@@ -48,12 +60,26 @@ export default async function ProgressPage() {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("status", "finished"),
+    supabase
+      .from("exam_attempts")
+      .select("id, area, attempt_type, score, created_at")
+      .eq("user_id", user.id)
+      .eq("status", "finished")
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   const totalAnswers = answersRes.count ?? 0;
   const totalExams = totalExamsRes.count ?? 0;
   const events = eventsRes.data ?? [];
   const stats: ExamStats = (statsRes.data as unknown as ExamStats) ?? DEFAULT_STATS;
+  const recentExams = (recentExamsRes.data ?? []) as Array<{
+    id: string;
+    area: string | null;
+    attempt_type: string | null;
+    score: number | null;
+    created_at: string;
+  }>;
 
   const distribution: Record<string, number> = {};
   events.forEach((e: any) => {
@@ -121,6 +147,8 @@ export default async function ProgressPage() {
           />
         </div>
       </div>
+
+      <StreakToast streak={stats.streak} longestStreak={stats.longestStreak} />
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-6 pt-3 md:px-16">
         <div className="mx-auto max-w-6xl space-y-8 pb-10">
@@ -297,6 +325,81 @@ export default async function ProgressPage() {
               </div>
             </div>
           </div>
+
+          {/* Recent exams */}
+          {recentExams.length > 0 && (
+            <div className="rounded-2xl border border-white/5 bg-gray-900/40 p-6 shadow-inner">
+              <div className="mb-6 flex items-center justify-between">
+                <h3 className="flex items-center gap-2 font-serif text-xl text-white">
+                  <Trophy size={20} className="text-law-gold" />
+                  Últimos Exámenes
+                </h3>
+                <Link
+                  href="/exams"
+                  className="flex items-center gap-1 text-xs text-law-gold/80 hover:text-law-gold"
+                >
+                  Ver todos
+                  <ChevronRight size={14} />
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {recentExams.map((ex) => {
+                  const score = Number(ex.score ?? 0);
+                  const typeLabel =
+                    ex.attempt_type === "quiz"
+                      ? "Quiz"
+                      : ex.attempt_type === "exam_test"
+                        ? "Test"
+                        : ex.attempt_type === "exam_open"
+                          ? "Abierto"
+                          : "Examen";
+                  return (
+                    <Link
+                      key={ex.id}
+                      href={`/exams/${ex.id}`}
+                      className="group flex items-center justify-between rounded-xl border border-white/5 bg-black/20 px-4 py-3 transition hover:border-law-gold/30 hover:bg-law-gold/5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                            {typeLabel}
+                          </span>
+                          <span className="truncate font-medium capitalize text-gray-200">
+                            {ex.area || "General"}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {new Date(ex.created_at).toLocaleString("es-ES", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      <div
+                        className={`font-mono text-lg font-bold ${
+                          score >= 7
+                            ? "text-green-400"
+                            : score >= 5
+                              ? "text-law-gold"
+                              : "text-red-400"
+                        }`}
+                      >
+                        {score.toFixed(1)}
+                        <span className="ml-0.5 text-xs font-medium text-gray-500">/10</span>
+                      </div>
+                      <ChevronRight
+                        size={16}
+                        className="ml-3 text-gray-600 transition group-hover:text-law-gold"
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <Copyright />
         </div>

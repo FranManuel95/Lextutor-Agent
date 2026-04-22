@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useMemo } from "react";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Search, ShieldCheck, User } from "lucide-react";
+import { Search, ShieldCheck, User, ExternalLink } from "lucide-react";
 
 type UserRow = {
   id: string;
@@ -142,15 +143,19 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
             return (
               <TableRow key={user.id} className="border-law-accent/10 hover:bg-white/5">
                 <TableCell className="font-medium text-gem-offwhite">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 border border-law-accent/30">
+                  <Link
+                    href={`/admin/users/${user.id}`}
+                    className="group flex items-center gap-3 transition hover:text-law-gold"
+                  >
+                    <Avatar className="h-8 w-8 border border-law-accent/30 transition group-hover:border-law-gold/50">
                       <AvatarImage src={user.avatar_url ?? ""} />
                       <AvatarFallback className="bg-law-primary text-xs text-law-gold">
                         {user.full_name?.slice(0, 2).toUpperCase() ?? "US"}
                       </AvatarFallback>
                     </Avatar>
                     <span>{user.full_name ?? "Sin nombre"}</span>
-                  </div>
+                    <ExternalLink className="h-3 w-3 opacity-0 transition group-hover:opacity-60" />
+                  </Link>
                 </TableCell>
                 <TableCell className="text-gem-offwhite/80">{user.email ?? "N/A"}</TableCell>
                 <TableCell>
