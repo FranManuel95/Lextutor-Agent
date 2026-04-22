@@ -327,6 +327,8 @@ export async function POST(request: NextRequest) {
   } finally {
     try {
       await unlink(tempPath);
-    } catch {}
+    } catch (e: any) {
+      console.error("Failed to delete temp file:", e?.message);
+    }
   }
 }

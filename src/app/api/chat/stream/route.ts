@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     .from("chats")
     .select("user_id, title")
     .eq("id", chatId)
-    .single();
+    .maybeSingle();
 
   if (!chat || (chat as any).user_id !== user.id) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
 
   const stream = new ReadableStream({
     async start(controller) {
+      let streamSucceeded = false;
       try {
         // Send initial event
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "start" })}\n\n`));
@@ -153,11 +154,13 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        streamSucceeded = true;
+
         // Send done event before saving so client renders immediately
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
         controller.close();
 
-        // Await save after stream closes — function stays alive until this completes
+        // Only persist if stream completed — avoids saving partial/empty responses
         await saveAssistantMessage(
           supabase,
           chatId,
@@ -168,11 +171,13 @@ export async function POST(request: NextRequest) {
           settings
         );
       } catch (error: any) {
-        console.error("Streaming error:", error);
-        const errorMessage = error?.message || "Unknown streaming error";
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n\n`)
-        );
+        console.error("Streaming error:", error?.message || error);
+        if (!streamSucceeded) {
+          const errorMessage = error?.message || "Unknown streaming error";
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n\n`)
+          );
+        }
         controller.close();
       }
     },
