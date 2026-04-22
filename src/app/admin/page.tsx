@@ -41,7 +41,7 @@ export default async function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="space-y-6 p-4 sm:p-6 md:space-y-8 md:p-8">
       <div className="flex flex-col gap-2">
         <h2 className="font-serif text-3xl italic text-law-gold">Panel de Control</h2>
         <p className="text-gem-offwhite/60">Visión general del sistema Estudiante Elite.</p>

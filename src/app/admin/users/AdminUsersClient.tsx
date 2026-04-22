@@ -160,14 +160,14 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
         </p>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-gem-offwhite/50">
           {filtered.length} usuario{filtered.length !== 1 ? "s" : ""}
           {search || roleFilter !== "all" ? " encontrados" : " registrados"}
         </p>
 
         {selected.size > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-gem-offwhite/60">
               {selected.size} seleccionado{selected.size !== 1 ? "s" : ""}
             </span>
@@ -203,112 +203,116 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
         )}
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow className="border-law-accent/20 hover:bg-white/5">
-            <TableHead className="w-8"></TableHead>
-            <TableHead className="text-law-gold">Usuario</TableHead>
-            <TableHead className="text-law-gold">Email</TableHead>
-            <TableHead className="text-law-gold">Rol</TableHead>
-            <TableHead className="text-law-gold">Fecha Registro</TableHead>
-            <TableHead className="text-law-gold">Acciones</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.map((user) => {
-            const role = localRoles[user.id] ?? user.role ?? "student";
-            const isSelf = user.id === currentUserId;
-            const isLoading = loadingId === user.id;
-            const isChecked = selected.has(user.id);
+      <div className="-mx-4 overflow-x-auto sm:mx-0">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-law-accent/20 hover:bg-white/5">
+              <TableHead className="w-8"></TableHead>
+              <TableHead className="text-law-gold">Usuario</TableHead>
+              <TableHead className="text-law-gold">Email</TableHead>
+              <TableHead className="text-law-gold">Rol</TableHead>
+              <TableHead className="text-law-gold">Fecha Registro</TableHead>
+              <TableHead className="text-law-gold">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((user) => {
+              const role = localRoles[user.id] ?? user.role ?? "student";
+              const isSelf = user.id === currentUserId;
+              const isLoading = loadingId === user.id;
+              const isChecked = selected.has(user.id);
 
-            return (
-              <TableRow
-                key={user.id}
-                className={`border-law-accent/10 hover:bg-white/5 ${
-                  isChecked ? "bg-law-gold/5" : ""
-                }`}
-              >
-                <TableCell>
-                  <Checkbox
-                    checked={isChecked}
-                    onCheckedChange={() => toggleSelected(user.id)}
-                    disabled={isSelf}
-                    aria-label={`Seleccionar ${user.full_name ?? "usuario"}`}
-                  />
-                </TableCell>
-                <TableCell className="font-medium text-gem-offwhite">
-                  <Link
-                    href={`/admin/users/${user.id}`}
-                    className="group flex items-center gap-3 transition hover:text-law-gold"
-                  >
-                    <Avatar className="h-8 w-8 border border-law-accent/30 transition group-hover:border-law-gold/50">
-                      <AvatarImage src={user.avatar_url ?? ""} />
-                      <AvatarFallback className="bg-law-primary text-xs text-law-gold">
-                        {user.full_name?.slice(0, 2).toUpperCase() ?? "US"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span>{user.full_name ?? "Sin nombre"}</span>
-                    <ExternalLink className="h-3 w-3 opacity-0 transition group-hover:opacity-60" />
-                  </Link>
-                </TableCell>
-                <TableCell className="text-gem-offwhite/80">{user.email ?? "N/A"}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={role === "admin" ? "default" : "secondary"}
-                    className={
-                      role === "admin"
-                        ? "bg-law-gold text-gem-onyx hover:bg-law-gold/80"
-                        : "bg-white/10 text-white hover:bg-white/20"
-                    }
-                  >
-                    {role}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-gem-offwhite/60">
-                  {user.created_at ? format(new Date(user.created_at), "PPp", { locale: es }) : "-"}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={isSelf || isLoading || pending}
-                    onClick={() => toggleRole(user)}
-                    title={
-                      isSelf
-                        ? "No puedes cambiar tu propio rol"
-                        : `Cambiar a ${role === "admin" ? "student" : "admin"}`
-                    }
-                    className="gap-1.5 text-xs text-gem-offwhite/60 hover:text-gem-offwhite disabled:opacity-30"
-                  >
-                    {isLoading ? (
-                      <span className="animate-pulse">…</span>
-                    ) : role === "admin" ? (
-                      <>
-                        <User className="h-3.5 w-3.5" />
-                        Quitar admin
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Hacer admin
-                      </>
-                    )}
-                  </Button>
+              return (
+                <TableRow
+                  key={user.id}
+                  className={`border-law-accent/10 hover:bg-white/5 ${
+                    isChecked ? "bg-law-gold/5" : ""
+                  }`}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={() => toggleSelected(user.id)}
+                      disabled={isSelf}
+                      aria-label={`Seleccionar ${user.full_name ?? "usuario"}`}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium text-gem-offwhite">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="group flex items-center gap-3 transition hover:text-law-gold"
+                    >
+                      <Avatar className="h-8 w-8 border border-law-accent/30 transition group-hover:border-law-gold/50">
+                        <AvatarImage src={user.avatar_url ?? ""} />
+                        <AvatarFallback className="bg-law-primary text-xs text-law-gold">
+                          {user.full_name?.slice(0, 2).toUpperCase() ?? "US"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{user.full_name ?? "Sin nombre"}</span>
+                      <ExternalLink className="h-3 w-3 opacity-0 transition group-hover:opacity-60" />
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-gem-offwhite/80">{user.email ?? "N/A"}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={role === "admin" ? "default" : "secondary"}
+                      className={
+                        role === "admin"
+                          ? "bg-law-gold text-gem-onyx hover:bg-law-gold/80"
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }
+                    >
+                      {role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-gem-offwhite/60">
+                    {user.created_at
+                      ? format(new Date(user.created_at), "PPp", { locale: es })
+                      : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={isSelf || isLoading || pending}
+                      onClick={() => toggleRole(user)}
+                      title={
+                        isSelf
+                          ? "No puedes cambiar tu propio rol"
+                          : `Cambiar a ${role === "admin" ? "student" : "admin"}`
+                      }
+                      className="gap-1.5 text-xs text-gem-offwhite/60 hover:text-gem-offwhite disabled:opacity-30"
+                    >
+                      {isLoading ? (
+                        <span className="animate-pulse">…</span>
+                      ) : role === "admin" ? (
+                        <>
+                          <User className="h-3.5 w-3.5" />
+                          Quitar admin
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Hacer admin
+                        </>
+                      )}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {!filtered.length && (
+              <TableRow>
+                <TableCell colSpan={6} className="py-8 text-center text-gem-offwhite/50">
+                  {search || roleFilter !== "all"
+                    ? "Sin resultados para la búsqueda."
+                    : "No se encontraron usuarios."}
                 </TableCell>
               </TableRow>
-            );
-          })}
-          {!filtered.length && (
-            <TableRow>
-              <TableCell colSpan={6} className="py-8 text-center text-gem-offwhite/50">
-                {search || roleFilter !== "all"
-                  ? "Sin resultados para la búsqueda."
-                  : "No se encontraron usuarios."}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

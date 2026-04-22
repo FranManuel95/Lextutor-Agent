@@ -144,9 +144,11 @@ export default async function ProgressPage() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gem-onyx font-sans text-gem-offwhite">
       {/* Header */}
-      <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-6 backdrop-blur-sm md:px-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between py-6 md:pb-4 md:pt-8">
-          <h1 className="text-shadow-sm font-serif text-3xl italic text-white">Mi Progreso</h1>
+      <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-4 backdrop-blur-sm sm:px-6 md:px-10">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center sm:py-6 md:pb-4 md:pt-8">
+          <h1 className="text-shadow-sm font-serif text-2xl italic text-white sm:text-3xl">
+            Mi Progreso
+          </h1>
           <ProgressExportButton
             data={{
               totalAnswers,
@@ -164,7 +166,7 @@ export default async function ProgressPage() {
 
       <StreakToast streak={stats.streak} longestStreak={stats.longestStreak} />
 
-      <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-6 pt-3 md:px-16">
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:px-10 md:pt-3 lg:px-16">
         <div className="mx-auto max-w-6xl space-y-8 pb-10">
           {/* KPI Row 1 */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

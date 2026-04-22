@@ -115,7 +115,7 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
   };
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="space-y-6 p-4 sm:p-6 md:space-y-8 md:p-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2">
           <h2 className="font-serif text-3xl italic text-law-gold">Exámenes de la plataforma</h2>
@@ -153,79 +153,81 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
             currentStatus={status ?? "all"}
           />
 
-          <Table>
-            <TableHeader>
-              <TableRow className="border-law-accent/20 hover:bg-white/5">
-                <TableHead className="text-law-gold">Usuario</TableHead>
-                <TableHead className="text-law-gold">Tipo</TableHead>
-                <TableHead className="text-law-gold">Área</TableHead>
-                <TableHead className="text-law-gold">Nota</TableHead>
-                <TableHead className="text-law-gold">Estado</TableHead>
-                <TableHead className="text-law-gold">Fecha</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attempts.map((a) => {
-                const userName = profilesById[a.user_id] ?? "Sin nombre";
-                const score = Number(a.score ?? 0);
-                return (
-                  <TableRow key={a.id} className="border-law-accent/10 hover:bg-white/5">
-                    <TableCell className="font-medium text-gem-offwhite">
-                      <Link href={`/admin/users/${a.user_id}`} className="hover:text-law-gold">
-                        {userName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-white/5 text-gem-offwhite/80">
-                        {typeLabel(a.attempt_type)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="capitalize text-gem-offwhite/80">
-                      {a.area || "general"}
-                    </TableCell>
-                    <TableCell>
-                      {a.status === "finished" ? (
-                        <span
-                          className={`font-mono font-bold ${
-                            score >= 7
-                              ? "text-green-400"
-                              : score >= 5
-                                ? "text-law-gold"
-                                : "text-red-400"
-                          }`}
+          <div className="-mx-4 overflow-x-auto sm:mx-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-law-accent/20 hover:bg-white/5">
+                  <TableHead className="text-law-gold">Usuario</TableHead>
+                  <TableHead className="text-law-gold">Tipo</TableHead>
+                  <TableHead className="text-law-gold">Área</TableHead>
+                  <TableHead className="text-law-gold">Nota</TableHead>
+                  <TableHead className="text-law-gold">Estado</TableHead>
+                  <TableHead className="text-law-gold">Fecha</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {attempts.map((a) => {
+                  const userName = profilesById[a.user_id] ?? "Sin nombre";
+                  const score = Number(a.score ?? 0);
+                  return (
+                    <TableRow key={a.id} className="border-law-accent/10 hover:bg-white/5">
+                      <TableCell className="font-medium text-gem-offwhite">
+                        <Link href={`/admin/users/${a.user_id}`} className="hover:text-law-gold">
+                          {userName}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-white/5 text-gem-offwhite/80">
+                          {typeLabel(a.attempt_type)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="capitalize text-gem-offwhite/80">
+                        {a.area || "general"}
+                      </TableCell>
+                      <TableCell>
+                        {a.status === "finished" ? (
+                          <span
+                            className={`font-mono font-bold ${
+                              score >= 7
+                                ? "text-green-400"
+                                : score >= 5
+                                  ? "text-law-gold"
+                                  : "text-red-400"
+                            }`}
+                          >
+                            {score.toFixed(1)}/10
+                          </span>
+                        ) : (
+                          <span className="text-xs italic text-gem-offwhite/40">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            a.status === "finished"
+                              ? "bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                              : "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"
+                          }
                         >
-                          {score.toFixed(1)}/10
-                        </span>
-                      ) : (
-                        <span className="text-xs italic text-gem-offwhite/40">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          a.status === "finished"
-                            ? "bg-green-500/10 text-green-400 hover:bg-green-500/20"
-                            : "bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"
-                        }
-                      >
-                        {a.status === "finished" ? "Finalizado" : "En curso"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-gem-offwhite/60">
-                      {format(new Date(a.created_at), "PPp", { locale: es })}
+                          {a.status === "finished" ? "Finalizado" : "En curso"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-gem-offwhite/60">
+                        {format(new Date(a.created_at), "PPp", { locale: es })}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {attempts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center italic text-gem-offwhite/40">
+                      Sin resultados para los filtros aplicados.
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {attempts.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center italic text-gem-offwhite/40">
-                    Sin resultados para los filtros aplicados.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
           {totalPages > 1 && (
             <ExamsPagination

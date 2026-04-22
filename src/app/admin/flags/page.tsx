@@ -69,7 +69,7 @@ export default async function AdminFlagsPage({ searchParams }: PageProps) {
   );
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="space-y-6 p-4 sm:p-6 md:space-y-8 md:p-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2">
           <h2 className="font-serif text-3xl italic text-law-gold">Reportes de preguntas</h2>
