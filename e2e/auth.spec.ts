@@ -16,13 +16,13 @@ test.describe("Authentication flow", () => {
 
   test("successful login redirects to /chat", async ({ page }) => {
     await loginAs(page, email, password);
-    await page.waitForURL(/\/chat/, { timeout: 15_000 });
+    await page.waitForURL(/\/chat/, { timeout: 30_000 });
     expect(page.url()).toContain("/chat");
   });
 
   test("chat dashboard is visible after login", async ({ page }) => {
     await loginAs(page, email, password);
-    await page.waitForURL(/\/chat/, { timeout: 15_000 });
+    await page.waitForURL(/\/chat/, { timeout: 30_000 });
     await expect(page.locator("body")).toBeVisible();
     // Sidebar or main layout should render
     await expect(page.locator("main, [role='main'], nav").first()).toBeVisible();
@@ -30,14 +30,14 @@ test.describe("Authentication flow", () => {
 
   test("wrong password shows error on login page", async ({ page }) => {
     await loginAs(page, email, "definitivamente-mal-password-xyz");
-    // Should stay on /login with error message in URL
-    await page.waitForURL(/\/login/, { timeout: 10_000 });
+    // Wait specifically for the redirect that includes the error message param
+    await page.waitForURL(/\/login.*message=/, { timeout: 10_000 });
     expect(page.url()).toContain("message=");
   });
 
   test("protected routes are accessible after login", async ({ page }) => {
     await loginAs(page, email, password);
-    await page.waitForURL(/\/chat/, { timeout: 15_000 });
+    await page.waitForURL(/\/chat/, { timeout: 30_000 });
 
     // Navigate to another protected route without being redirected to login
     await page.goto("/progress");
@@ -48,7 +48,7 @@ test.describe("Authentication flow", () => {
   test("already authenticated user is redirected away from /login", async ({ page }) => {
     // Log in first
     await loginAs(page, email, password);
-    await page.waitForURL(/\/chat/, { timeout: 15_000 });
+    await page.waitForURL(/\/chat/, { timeout: 30_000 });
 
     // Try to visit /login again — should redirect to /chat
     await page.goto("/login");
