@@ -327,7 +327,20 @@ export default function ExamReviewPage() {
             className="gap-2 border-law-gold/40 bg-law-gold/5 text-law-gold hover:bg-law-gold/10 hover:text-law-gold"
           >
             <Link
-              href={`${attempt.attempt_type === "exam_open" ? "/exam" : "/quiz"}?area=${encodeURIComponent(area ?? "civil")}`}
+              href={(() => {
+                const base = attempt.attempt_type === "exam_open" ? "/exam" : "/quiz";
+                const params = new URLSearchParams();
+                params.set("area", area ?? "civil");
+                const difficulty = payload?.config?.difficulty ?? attempt.payload?.difficulty;
+                const count = payload?.config?.count ?? attempt.payload?.count ?? questions.length;
+                if (difficulty && ["easy", "medium", "hard"].includes(String(difficulty))) {
+                  params.set("difficulty", String(difficulty));
+                }
+                if (Number.isFinite(Number(count)) && count > 0) {
+                  params.set("count", String(count));
+                }
+                return `${base}?${params.toString()}`;
+              })()}
             >
               <RotateCw className="h-4 w-4" /> Volver a intentar
             </Link>

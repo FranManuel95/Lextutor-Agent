@@ -1,12 +1,9 @@
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import Link from "next/link";
 import { requireAdmin } from "@/server/security/requireAdmin";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { FlagsStatusFilter } from "./FlagsStatusFilter";
-import { FlagRowActions } from "./FlagRowActions";
+import { FlagsList } from "./FlagsList";
+import { AdminExportButton } from "@/components/admin-export-button";
 
 export const dynamic = "force-dynamic";
 
@@ -31,13 +28,6 @@ type Profile = { id: string; full_name: string | null };
 interface PageProps {
   searchParams: Promise<{ status?: string }>;
 }
-
-const REASON_LABEL: Record<string, string> = {
-  incorrect: "Respuesta incorrecta",
-  ambiguous: "Ambigua",
-  off_topic: "Fuera de tema",
-  other: "Otro",
-};
 
 const STATUSES = ["open", "reviewed", "dismissed"] as const;
 
@@ -80,11 +70,15 @@ export default async function AdminFlagsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8 p-8">
-      <div className="flex flex-col gap-2">
-        <h2 className="font-serif text-3xl italic text-law-gold">Reportes de preguntas</h2>
-        <p className="text-gem-offwhite/60">
-          Revisa los reportes enviados por los usuarios sobre preguntas con errores o ambigüedades.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <h2 className="font-serif text-3xl italic text-law-gold">Reportes de preguntas</h2>
+          <p className="text-gem-offwhite/60">
+            Revisa los reportes enviados por los usuarios sobre preguntas con errores o
+            ambigüedades.
+          </p>
+        </div>
+        <AdminExportButton href="/api/admin/flags/export" />
       </div>
 
       <Card className="border-law-accent/20 bg-gem-slate">
@@ -99,67 +93,8 @@ export default async function AdminFlagsPage({ searchParams }: PageProps) {
           </CardTitle>
           <FlagsStatusFilter current={status} />
         </CardHeader>
-        <CardContent className="space-y-3">
-          {flags.length === 0 ? (
-            <p className="py-8 text-center italic text-gem-offwhite/40">
-              No hay reportes en este estado.
-            </p>
-          ) : (
-            flags.map((f) => (
-              <div
-                key={f.id}
-                className="space-y-3 rounded-lg border border-law-accent/10 bg-black/20 p-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge
-                      className={
-                        f.reason === "incorrect"
-                          ? "bg-red-500/10 text-red-400"
-                          : f.reason === "ambiguous"
-                            ? "bg-yellow-500/10 text-yellow-400"
-                            : f.reason === "off_topic"
-                              ? "bg-purple-500/10 text-purple-400"
-                              : "bg-white/10 text-white"
-                      }
-                    >
-                      {REASON_LABEL[f.reason] ?? f.reason}
-                    </Badge>
-                    {f.area && (
-                      <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/60">
-                        {f.area}
-                      </span>
-                    )}
-                    <Link
-                      href={`/admin/users/${f.user_id}`}
-                      className="text-xs text-gem-offwhite/60 hover:text-law-gold"
-                    >
-                      {profilesById[f.user_id] ?? "Sin nombre"}
-                    </Link>
-                    <span className="text-xs text-gem-offwhite/40">
-                      {format(new Date(f.created_at), "PPp", { locale: es })}
-                    </span>
-                  </div>
-                  <FlagRowActions flagId={f.id} currentStatus={f.status} />
-                </div>
-
-                {f.question_text && (
-                  <p className="text-sm italic text-gem-offwhite">
-                    &ldquo;{f.question_text}&rdquo;
-                  </p>
-                )}
-
-                {f.comment && (
-                  <p className="rounded border border-white/5 bg-black/30 px-3 py-2 text-xs text-gem-offwhite/80">
-                    <span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/40">
-                      Comentario del usuario
-                    </span>
-                    {f.comment}
-                  </p>
-                )}
-              </div>
-            ))
-          )}
+        <CardContent>
+          <FlagsList flags={flags} profilesById={profilesById} currentStatus={status} />
         </CardContent>
       </Card>
     </div>

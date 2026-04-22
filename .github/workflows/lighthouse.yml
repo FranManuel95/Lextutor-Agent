@@ -1,0 +1,44 @@
+name: Lighthouse CI
+
+# Runs Lighthouse against the built app on every PR to main.
+# Budgets are defined in lighthouserc.json — we only fail the PR when
+# performance drops below the threshold there. Everything else is reported.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit (static routes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        # The build needs env vars to validate — we inject dummy values so env.ts
+        # doesn't throw. Lighthouse only hits unauthenticated routes (/, /login)
+        # so production secrets aren't needed.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "dummy-anon-key-for-lh-build"
+          SUPABASE_SERVICE_ROLE_KEY: "dummy-service-role-key-for-lh-build"
+          GEMINI_API_KEY: "dummy-gemini-for-lh-build"
+        run: npm run build
+
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.14.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

@@ -10,6 +10,7 @@ import {
   Trash2,
   Search,
   X,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chat } from "@/types/chat";
@@ -49,10 +50,49 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<"title" | "content">("title");
+  const [messageResults, setMessageResults] = useState<
+    Array<{ chatId: string; chatTitle: string; snippet: string; role: string }>
+  >([]);
+  const [searchingMessages, setSearchingMessages] = useState(false);
 
   const filteredChats = searchQuery.trim()
     ? chats.filter((c) => (c.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase()))
     : chats;
+
+  // Debounced content search
+  useEffect(() => {
+    if (searchMode !== "content") {
+      setMessageResults([]);
+      return;
+    }
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setMessageResults([]);
+      return;
+    }
+    setSearchingMessages(true);
+    const handler = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/chat/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMessageResults(data.results ?? []);
+        } else {
+          setMessageResults([]);
+        }
+      } catch {
+        setMessageResults([]);
+      } finally {
+        setSearchingMessages(false);
+      }
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery, searchMode]);
 
   const handleRename = async (chatId: string, newTitle: string) => {
     if (!newTitle.trim()) {
@@ -196,6 +236,21 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
               </Button>
             </Link>
 
+            <Link href="/leaderboard" prefetch={true}>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "h-8 w-full justify-start gap-3 text-xs font-medium tracking-wide transition-all duration-300",
+                  pathname === "/leaderboard"
+                    ? "bg-white/10 text-white"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <Trophy size={16} />
+                Ranking
+              </Button>
+            </Link>
+
             <Link href="/exams" prefetch={true}>
               <Button
                 variant="ghost"
@@ -256,7 +311,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-600" />
             <input
               type="text"
-              placeholder="Buscar chats…"
+              placeholder={searchMode === "title" ? "Buscar chats…" : "Buscar en mensajes…"}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-7 text-xs text-gem-offwhite placeholder:text-gray-600 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
@@ -271,102 +326,153 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
               </button>
             )}
           </div>
+          <div className="flex gap-1 text-[10px]">
+            <button
+              onClick={() => setSearchMode("title")}
+              className={cn(
+                "rounded px-2 py-0.5 transition",
+                searchMode === "title"
+                  ? "bg-law-gold/20 text-law-gold"
+                  : "text-gray-600 hover:text-gray-400"
+              )}
+            >
+              Por título
+            </button>
+            <button
+              onClick={() => setSearchMode("content")}
+              className={cn(
+                "rounded px-2 py-0.5 transition",
+                searchMode === "content"
+                  ? "bg-law-gold/20 text-law-gold"
+                  : "text-gray-600 hover:text-gray-400"
+              )}
+            >
+              En mensajes
+            </button>
+          </div>
         </div>
         <div className="custom-scrollbar flex-1 overflow-y-auto px-2">
-          {filteredChats.length === 0 && searchQuery && (
+          {searchMode === "content" && searchQuery.trim().length >= 2 && (
+            <div className="py-2">
+              {searchingMessages && (
+                <p className="px-4 py-3 text-center text-xs italic text-gray-600">Buscando…</p>
+              )}
+              {!searchingMessages && messageResults.length === 0 && (
+                <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+                  Sin coincidencias en mensajes
+                </p>
+              )}
+              {!searchingMessages &&
+                messageResults.map((r, i) => (
+                  <Link
+                    key={i}
+                    href={`/chat/${r.chatId}`}
+                    onClick={() => onClose?.()}
+                    className="mb-1 block rounded-lg border border-white/5 bg-white/5 px-3 py-2 transition hover:border-law-gold/30 hover:bg-law-gold/5"
+                  >
+                    <p className="truncate text-[10px] font-bold uppercase tracking-widest text-law-gold/70">
+                      {r.chatTitle}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-gray-400">{r.snippet}</p>
+                  </Link>
+                ))}
+            </div>
+          )}
+          {searchMode === "title" && filteredChats.length === 0 && searchQuery && (
             <p className="px-4 py-6 text-center text-xs italic text-gray-600">
               Sin resultados para &ldquo;{searchQuery}&rdquo;
             </p>
           )}
-          {filteredChats.map((chat) => (
-            <div key={chat.id} className="group relative">
-              {editingId === chat.id ? (
-                <div
-                  className={cn(
-                    "mb-1 flex items-center gap-3 rounded-xl px-4 py-3 pr-2 text-xs transition-all duration-200",
-                    "border border-law-gold/30 bg-white/5"
-                  )}
-                >
-                  <MessageSquare size={16} className="flex-shrink-0 text-law-gold" />
-                  <input
-                    type="text"
-                    autoFocus
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onKeyDown={async (e) => {
-                      if (e.key === "Enter") {
-                        await handleRename(chat.id, editTitle);
-                      } else if (e.key === "Escape") {
-                        setEditingId(null);
-                      }
-                    }}
-                    onBlur={() => handleRename(chat.id, editTitle)}
-                    className="w-full border-none bg-transparent text-white outline-none placeholder:text-gray-600"
-                  />
-                </div>
-              ) : (
-                <>
-                  <Link
-                    href={`/chat/${chat.id}`}
-                    prefetch={true}
-                    onClick={() => onClose?.()}
+          {searchMode === "title" &&
+            filteredChats.map((chat) => (
+              <div key={chat.id} className="group relative">
+                {editingId === chat.id ? (
+                  <div
                     className={cn(
-                      "mb-1 flex items-center gap-3 rounded-xl px-4 py-3 pr-16 text-xs transition-all duration-200",
-                      pathname === `/chat/${chat.id}`
-                        ? "border border-white/5 bg-law-accent/20 text-white shadow-lg shadow-black/20"
-                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                      "mb-1 flex items-center gap-3 rounded-xl px-4 py-3 pr-2 text-xs transition-all duration-200",
+                      "border border-law-gold/30 bg-white/5"
                     )}
                   >
-                    <MessageSquare
-                      size={16}
-                      className={cn(
-                        "flex-shrink-0 transition-colors",
-                        pathname === `/chat/${chat.id}`
-                          ? "text-law-gold"
-                          : "text-gray-600 group-hover:text-gray-400"
-                      )}
+                    <MessageSquare size={16} className="flex-shrink-0 text-law-gold" />
+                    <input
+                      type="text"
+                      autoFocus
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") {
+                          await handleRename(chat.id, editTitle);
+                        } else if (e.key === "Escape") {
+                          setEditingId(null);
+                        }
+                      }}
+                      onBlur={() => handleRename(chat.id, editTitle)}
+                      className="w-full border-none bg-transparent text-white outline-none placeholder:text-gray-600"
                     />
-                    <span className="truncate font-medium">{chat.title}</span>
-                  </Link>
-                  <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setEditingId(chat.id);
-                        setEditTitle(chat.title || "");
-                      }}
-                      className="p-1.5 text-gray-600 transition-colors hover:text-law-gold"
-                    >
-                      {/* Edit Icon (Pencil) */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setDeleteId(chat.id);
-                      }}
-                      className="p-1.5 text-gray-600 transition-colors hover:text-red-400"
-                    >
-                      <Trash2 size={14} />
-                    </button>
                   </div>
-                </>
-              )}
-            </div>
-          ))}
+                ) : (
+                  <>
+                    <Link
+                      href={`/chat/${chat.id}`}
+                      prefetch={true}
+                      onClick={() => onClose?.()}
+                      className={cn(
+                        "mb-1 flex items-center gap-3 rounded-xl px-4 py-3 pr-16 text-xs transition-all duration-200",
+                        pathname === `/chat/${chat.id}`
+                          ? "border border-white/5 bg-law-accent/20 text-white shadow-lg shadow-black/20"
+                          : "text-gray-400 hover:bg-white/5 hover:text-white"
+                      )}
+                    >
+                      <MessageSquare
+                        size={16}
+                        className={cn(
+                          "flex-shrink-0 transition-colors",
+                          pathname === `/chat/${chat.id}`
+                            ? "text-law-gold"
+                            : "text-gray-600 group-hover:text-gray-400"
+                        )}
+                      />
+                      <span className="truncate font-medium">{chat.title}</span>
+                    </Link>
+                    <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setEditingId(chat.id);
+                          setEditTitle(chat.title || "");
+                        }}
+                        className="p-1.5 text-gray-600 transition-colors hover:text-law-gold"
+                      >
+                        {/* Edit Icon (Pencil) */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                          <path d="m15 5 4 4" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setDeleteId(chat.id);
+                        }}
+                        className="p-1.5 text-gray-600 transition-colors hover:text-red-400"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
         </div>
       </div>
 

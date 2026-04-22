@@ -11,6 +11,8 @@ import {
   Star,
   Flame,
   ChevronRight,
+  Lightbulb,
+  ArrowRight,
 } from "lucide-react";
 import { Copyright } from "@/components/copyright";
 import { ProgressExportButton } from "./ProgressExportButton";
@@ -95,6 +97,18 @@ export default async function ProgressPage() {
     areaScores.length > 0
       ? Math.round((areaScores.reduce((sum, [, v]) => sum + v, 0) / areaScores.length) * 10) / 10
       : null;
+
+  // Recommendation: area with the lowest average (below 7/10). Only shown when
+  // we have at least 2 finished exams for that area (to avoid noise from a
+  // single bad result).
+  const areaCounts: Record<string, number> = {};
+  (recentExams ?? []).forEach((e) => {
+    const key = e.area ?? "general";
+    areaCounts[key] = (areaCounts[key] ?? 0) + 1;
+  });
+  const weakArea = areaScores
+    .filter(([area, score]) => (areaCounts[area] ?? 0) >= 2 && score < 7)
+    .sort((a, b) => a[1] - b[1])[0];
 
   const milestones = [
     {
@@ -208,6 +222,32 @@ export default async function ProgressPage() {
               sub={stats.lastActive ? "Fecha último examen" : "Sin actividad aún"}
             />
           </div>
+
+          {/* Recommendation */}
+          {weakArea && (
+            <Link
+              href={`/quiz?area=${encodeURIComponent(weakArea[0])}&difficulty=medium`}
+              className="group flex items-center gap-4 rounded-2xl border border-law-gold/30 bg-gradient-to-br from-law-gold/5 to-transparent p-5 transition hover:border-law-gold/50 hover:from-law-gold/10"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-law-gold/20">
+                <Lightbulb className="h-5 w-5 text-law-gold" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-law-gold/80">
+                  Recomendación
+                </p>
+                <p className="mt-0.5 text-sm text-gem-offwhite">
+                  Tu punto débil es{" "}
+                  <strong className="capitalize text-law-gold">{weakArea[0]}</strong>
+                  <span className="text-gem-offwhite/60">
+                    {" "}
+                    ({weakArea[1]}/10 de media). Practica un test rápido para reforzarla.
+                  </span>
+                </p>
+              </div>
+              <ArrowRight className="h-5 w-5 shrink-0 text-law-gold/60 transition group-hover:translate-x-1 group-hover:text-law-gold" />
+            </Link>
+          )}
 
           {/* Scores by area */}
           {areaScores.length > 0 && (
