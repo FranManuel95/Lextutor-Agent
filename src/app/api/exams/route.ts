@@ -35,8 +35,10 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
   const area = searchParams.get("area");
   const status = searchParams.get("status");
-  const limit = parseInt(searchParams.get("limit") || "20");
-  const offset = parseInt(searchParams.get("offset") || "0");
+  const rawLimit = parseInt(searchParams.get("limit") || "20", 10);
+  const rawOffset = parseInt(searchParams.get("offset") || "0", 10);
+  const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 20;
+  const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
 
   // 1. Fetch paginated items
   let query = supabase

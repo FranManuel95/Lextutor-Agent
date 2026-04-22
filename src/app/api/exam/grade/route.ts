@@ -1,5 +1,6 @@
 import { createApiHandler } from "@/lib/api-handler";
 import { gradeExam } from "@/lib/ai-service";
+import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -70,5 +71,6 @@ export const POST = createApiHandler(
   },
   {
     schema: gradeSchema,
+    rateLimit: RATE_LIMITS.EXAM_GRADE,
   }
 );

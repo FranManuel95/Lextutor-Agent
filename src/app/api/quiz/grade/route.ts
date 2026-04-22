@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createApiHandler } from "@/lib/api-handler";
+import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -29,12 +30,6 @@ export const POST = createApiHandler(
 
     let rawScore = 0;
     const total = questions.length;
-
-    console.log(`\n💰 [QUIZ-GRADER] Token Usage:`);
-    console.log(`   📥 Input:  0 tokens (€0.000000)`);
-    console.log(`   📤 Output: 0 tokens (€0.000000)`);
-    console.log(`   📊 Total:  0 tokens (€0.000000)`);
-    console.log(`   💵 Costo estimado: €0.000000 EUR (Determinista - Sin IA)\n`);
 
     const payloadQuestions = questions.map((q) => {
       const rawIdx = answers[String(q.id)];
@@ -113,5 +108,6 @@ export const POST = createApiHandler(
   },
   {
     schema: gradeSchema,
+    rateLimit: RATE_LIMITS.QUIZ_GRADE,
   }
 );

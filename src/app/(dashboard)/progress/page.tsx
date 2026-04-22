@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Trophy, Target, TrendingUp, BookOpen, Clock, Activity } from "lucide-react";
 import { Copyright } from "@/components/copyright";
+import { ProgressExportButton } from "./ProgressExportButton";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -77,6 +78,18 @@ export default async function ProgressPage() {
       <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-6 backdrop-blur-sm md:px-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between py-6 md:pb-4 md:pt-8">
           <h1 className="text-shadow-sm font-serif text-3xl italic text-white">Mi Progreso</h1>
+          <ProgressExportButton
+            data={{
+              totalAnswers: totalAnswers ?? 0,
+              distribution,
+              milestones: milestones.map(({ title, desc, unlocked }) => ({
+                title,
+                desc,
+                unlocked,
+              })),
+              generatedAt: new Date().toLocaleString("es-ES"),
+            }}
+          />
         </div>
       </div>
 

@@ -65,4 +65,6 @@ export const RATE_LIMITS = {
   CHAT_DELETE: { endpoint: "/api/chat/delete", limit: 30, windowMinutes: 60 },
   AUDIO_UPLOAD_URL: { endpoint: "/api/audio/create-upload", limit: 30, windowMinutes: 60 },
   RAG_DOCS_LIST: { endpoint: "/api/rag/documents", limit: 60, windowMinutes: 60 },
+  EXAM_GRADE: { endpoint: "/api/exam/grade", limit: 30, windowMinutes: 1440 }, // 24h
+  QUIZ_GRADE: { endpoint: "/api/quiz/grade", limit: 50, windowMinutes: 1440 }, // 24h
 } as const;
