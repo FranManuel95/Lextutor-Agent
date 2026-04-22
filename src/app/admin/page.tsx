@@ -1,58 +1,39 @@
-import { createClient } from "@/utils/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Users, MessageSquare, Database } from "lucide-react";
+import { ActivityChart } from "./ActivityChart";
+import { getCachedAdminStats } from "@/lib/data/get-admin-stats";
 
-export const dynamic = "force-dynamic";
+// Cached at data-fetch layer (5 min). No need for force-dynamic.
+export const revalidate = 300;
 
 export default async function AdminDashboard() {
-  const supabase = await createClient();
-
-  // Fetch Stats
-  // 1. Total Documents
-  const { count: docsCount } = await supabase
-    .from("rag_documents")
-    .select("id", { count: "exact", head: true });
-
-  // 2. Total Users (profiles maps 1:1 to auth.users)
-  const { count: usersCount } = await supabase
-    .from("profiles")
-    .select("id", { count: "exact", head: true });
-
-  // 3. Total Messages (Activity proxy)
-  const { count: msgsCount } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true });
-
-  // 4. Total Quizzes/Exams
-  const { count: attemptsCount } = await supabase
-    .from("exam_attempts")
-    .select("id", { count: "exact", head: true });
+  const { docsCount, usersCount, msgsCount, attemptsCount, activity } = await getCachedAdminStats();
 
   const stats = [
     {
       title: "Documentos RAG",
-      value: docsCount || 0,
+      value: docsCount,
       icon: FileText,
       color: "text-blue-400",
       bg: "bg-blue-500/10",
     },
     {
       title: "Usuarios Registrados",
-      value: usersCount || 0,
+      value: usersCount,
       icon: Users,
       color: "text-green-400",
       bg: "bg-green-500/10",
     },
     {
       title: "Mensajes Totales",
-      value: msgsCount || 0,
+      value: msgsCount,
       icon: MessageSquare,
       color: "text-purple-400",
       bg: "bg-purple-500/10",
     },
     {
       title: "Exámenes Realizados",
-      value: attemptsCount || 0,
+      value: attemptsCount,
       icon: Database,
       color: "text-yellow-400",
       bg: "bg-yellow-500/10",
@@ -83,6 +64,8 @@ export default async function AdminDashboard() {
           </Card>
         ))}
       </div>
+
+      {activity.length > 0 && <ActivityChart data={activity} />}
     </div>
   );
 }

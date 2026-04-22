@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
     user = result.user;
     supabase = result.supabase;
   } catch (e: any) {
-    return NextResponse.json({ error: e.message || "Forbidden" }, { status: 403 });
+    const msg = e?.message || "Forbidden";
+    const status = msg === "Unauthorized" ? 401 : 403;
+    return NextResponse.json({ error: msg }, { status });
   }
 
   if (!STORE_ID?.startsWith("fileSearchStores/")) {
@@ -131,9 +133,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // Upload & ingest to File Search Store (Gemini)
-    console.log("🟢 Iniciando upload a Gemini File Search...");
-    console.log("🟢 Store ID:", STORE_ID);
-    console.log("🟢 Display Name:", displayName);
+    logger.info("upload: starting Gemini File Search ingest", { displayName, area });
 
     let operation = await ai.fileSearchStores.uploadToFileSearchStore({
       file: tempPath,
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       },
     } as any);
 
-    console.log("🟢 Esperando procesamiento de Gemini...");
+    logger.info("upload: waiting for Gemini processing");
     const uploadStart = Date.now();
     const UPLOAD_TIMEOUT_MS = 120_000;
     while (!operation.done) {
@@ -155,10 +155,7 @@ export async function POST(request: NextRequest) {
       await sleep(1500);
       operation = await ai.operations.get({ operation } as any);
     }
-    console.log(
-      "🟢 Procesamiento completado. Resultado raw:",
-      JSON.stringify(operation, null, 2).substring(0, 1000)
-    );
+    logger.info("upload: Gemini processing completed");
 
     // Encontrar doc creado en el store
     let createdDocName: string | null = null;
@@ -166,13 +163,12 @@ export async function POST(request: NextRequest) {
     // Try getting name directly from operation response if available
     if (operation && (operation as any).response && (operation as any).response.documentName) {
       createdDocName = (operation as any).response.documentName;
-      console.log("🟢 Nombre obtenido directamente de la operación:", createdDocName);
+      logger.info("upload: document name from operation response", { createdDocName });
     }
 
     if (!createdDocName) {
-      console.log("🟢 Nombre no disponible en operación, buscando por displayName (paginado)...");
+      logger.info("upload: name not in operation, searching by displayName");
       for (let attempt = 1; attempt <= 3; attempt++) {
-        console.log(`🟢 Intento ${attempt}/3: Buscando documento en el store...`);
         let pageToken: string | undefined = undefined;
 
         do {
@@ -185,13 +181,6 @@ export async function POST(request: NextRequest) {
           let docs: any[] = [];
           try {
             const response = await ai.fileSearchStores.documents.list(listParams);
-            // Debug: Log raw response for first page
-            if (!pageToken && attempt === 1) {
-              console.log(
-                "🔍 Raw List Response (first page):",
-                JSON.stringify(response).substring(0, 500)
-              );
-            }
 
             // Handle different response structures
             if (
@@ -207,14 +196,6 @@ export async function POST(request: NextRequest) {
           } catch (e: any) {
             console.warn(`⚠️ Error listando docs (intento ${attempt}):`, e.message);
             break;
-          }
-
-          // Debug: Log first few names to check match
-          if (!pageToken && docs.length > 0) {
-            console.log(
-              "🔍 Muestra de docs encontrados:",
-              docs.slice(0, 3).map((d) => d.displayName)
-            );
           }
 
           for (const d of docs) {
@@ -235,24 +216,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (!createdDocName) {
-      console.error(
-        "❌ Documento no encontrado tras 3 intentos. DisplayName buscado:",
-        displayName
-      );
+      logger.error("upload: document not found after 3 attempts", null, { displayName });
       return NextResponse.json(
         { error: "Upload completed but document not found in store list (propagation delay)." },
         { status: 500 }
       );
     }
 
-    console.log(`✅ Document uploaded to Gemini: ${createdDocName}`);
+    logger.info("upload: document uploaded to Gemini", { createdDocName });
 
     // NUEVO: También subir a OpenAI si está configurado
     let openaiFileId: string | null = null;
 
     if (env.OPENAI_API_KEY && env.OPENAI_VECTOR_STORE_ID) {
       try {
-        console.log("🔵 Uploading to OpenAI...");
+        logger.info("upload: uploading to OpenAI Vector Store");
         const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
         // Subir archivo a OpenAI usando Buffer para SDK v4+
@@ -289,7 +267,7 @@ export async function POST(request: NextRequest) {
         await vectorStoreResponse.json();
 
         openaiFileId = openaiFile.id;
-        console.log(`✅ Document also uploaded to OpenAI: ${openaiFile.id}`);
+        logger.info("upload: document uploaded to OpenAI", { fileId: openaiFile.id });
       } catch (e: any) {
         // Log only the safe message; stack traces and raw error objects may include
         // headers or payload bytes with sensitive data.

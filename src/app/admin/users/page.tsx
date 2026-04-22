@@ -1,71 +1,73 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { Database } from "@/types/database.types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { AdminUsersClient } from "./AdminUsersClient";
+import { UsersPagination } from "./UsersPagination";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
-type UserData = Profile & {
-  email?: string;
-};
-
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage() {
+const PAGE_SIZE = 50;
+
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function AdminUsersPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const rawPage = parseInt(params.page ?? "1", 10);
+  const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
+
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
-  // 1. Fetch profiles (users) from public schema
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .returns<Profile[]>();
+  const [profilesResult, authResult, sessionResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to)
+      .returns<Profile[]>(),
+    // Supabase auth.admin.listUsers is paginated; use same page/perPage.
+    adminSupabase.auth.admin.listUsers({ page, perPage: PAGE_SIZE }),
+    supabase.auth.getUser(),
+  ]);
 
-  if (profilesError) {
-    return <div className="p-8 text-red-400">Error cargando perfiles: {profilesError.message}</div>;
-  }
-
-  // 2. Fetch all users from Auth API (needs Service Role)
-  // Note: listUsers() defaults to 50 users per page. For production with many users, implement pagination.
-  const {
-    data: { users: authUsers },
-    error: authError,
-  } = await adminSupabase.auth.admin.listUsers({
-    perPage: 1000, // Temporary limit for MVP
-  });
-
-  if (authError) {
-    console.error("Error fetching auth users:", authError);
-    // Continue but show profiles without emails if auth fails?
-    // Or show error. Let's show error for admin to know something is wrong.
+  if (profilesResult.error) {
     return (
       <div className="p-8 text-red-400">
-        Error cargando datos de autenticación: {authError.message}
+        Error cargando perfiles: {profilesResult.error.message}
       </div>
     );
   }
 
-  // 3. Merge data
-  const users: UserData[] = profiles.map((profile) => {
-    const authUser = authUsers.find((u) => u.id === profile.id);
-    return {
-      ...profile,
-      email: authUser?.email,
-    };
-  });
+  if (authResult.error) {
+    return (
+      <div className="p-8 text-red-400">
+        Error cargando datos de autenticación: {authResult.error.message}
+      </div>
+    );
+  }
+
+  const authUsersById = Object.fromEntries(authResult.data.users.map((u) => [u.id, u.email]));
+
+  const users = profilesResult.data.map((profile) => ({
+    id: profile.id,
+    full_name: profile.full_name,
+    avatar_url: profile.avatar_url,
+    role: profile.role,
+    created_at: profile.created_at,
+    email: authUsersById[profile.id],
+  }));
+
+  const currentUserId = sessionResult.data.user?.id ?? "";
+  const totalCount = profilesResult.count ?? users.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
     <div className="space-y-8 p-8">
@@ -78,61 +80,18 @@ export default async function AdminUsersPage() {
 
       <Card className="border-law-accent/20 bg-gem-slate">
         <CardHeader>
-          <CardTitle className="text-gem-offwhite">Usuarios ({users.length})</CardTitle>
+          <CardTitle className="text-gem-offwhite">
+            Usuarios · {totalCount.toLocaleString()} total
+            {totalPages > 1 && (
+              <span className="ml-2 text-sm font-normal text-gem-offwhite/50">
+                (página {page} de {totalPages})
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-law-accent/20 hover:bg-white/5">
-                <TableHead className="text-law-gold">Usuario</TableHead>
-                <TableHead className="text-law-gold">Email</TableHead>
-                <TableHead className="text-law-gold">Rol</TableHead>
-                <TableHead className="text-law-gold">Fecha Registro</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id} className="border-law-accent/10 hover:bg-white/5">
-                  <TableCell className="font-medium text-gem-offwhite">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 border border-law-accent/30">
-                        <AvatarImage src={user.avatar_url || ""} />
-                        <AvatarFallback className="bg-law-primary text-xs text-law-gold">
-                          {user.full_name?.slice(0, 2).toUpperCase() || "US"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span>{user.full_name || "Sin nombre"}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-gem-offwhite/80">{user.email || "N/A"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={user.role === "admin" ? "default" : "secondary"}
-                      className={
-                        user.role === "admin"
-                          ? "text-law-primary bg-law-gold hover:bg-law-gold/80"
-                          : "bg-white/10 text-white hover:bg-white/20"
-                      }
-                    >
-                      {user.role || "user"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gem-offwhite/60">
-                    {user.created_at
-                      ? format(new Date(user.created_at), "PPp", { locale: es })
-                      : "-"}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!users.length && (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-gem-offwhite/50">
-                    No se encontraron usuarios.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+        <CardContent className="space-y-4">
+          <AdminUsersClient users={users} currentUserId={currentUserId} />
+          {totalPages > 1 && <UsersPagination currentPage={page} totalPages={totalPages} />}
         </CardContent>
       </Card>
     </div>
