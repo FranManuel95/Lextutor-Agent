@@ -40,13 +40,20 @@ export function ExamsFilters({ currentArea, currentType, currentStatus }: Props)
   const hasAnyFilter = currentArea !== "all" || currentType !== "all" || currentStatus !== "all";
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
+    <div className="flex flex-wrap items-end gap-3" role="toolbar" aria-label="Filtros de exámenes">
       <div className="w-40">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50">
+        <label
+          htmlFor="filter-area"
+          className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50"
+        >
           Área
         </label>
         <Select value={currentArea} onValueChange={(v) => setFilter("area", v)}>
-          <SelectTrigger className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
+          <SelectTrigger
+            id="filter-area"
+            aria-label="Filtrar por área"
+            className="border-law-accent/20 bg-gem-onyx text-gem-offwhite"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
@@ -62,11 +69,18 @@ export function ExamsFilters({ currentArea, currentType, currentStatus }: Props)
       </div>
 
       <div className="w-40">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50">
+        <label
+          htmlFor="filter-type"
+          className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50"
+        >
           Tipo
         </label>
         <Select value={currentType} onValueChange={(v) => setFilter("type", v)}>
-          <SelectTrigger className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
+          <SelectTrigger
+            id="filter-type"
+            aria-label="Filtrar por tipo de examen"
+            className="border-law-accent/20 bg-gem-onyx text-gem-offwhite"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
@@ -79,11 +93,18 @@ export function ExamsFilters({ currentArea, currentType, currentStatus }: Props)
       </div>
 
       <div className="w-40">
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50">
+        <label
+          htmlFor="filter-status"
+          className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50"
+        >
           Estado
         </label>
         <Select value={currentStatus} onValueChange={(v) => setFilter("status", v)}>
-          <SelectTrigger className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
+          <SelectTrigger
+            id="filter-status"
+            aria-label="Filtrar por estado"
+            className="border-law-accent/20 bg-gem-onyx text-gem-offwhite"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">

@@ -172,16 +172,17 @@ export function ProgressExportButton({ data }: Props) {
       disabled={loading}
       size="sm"
       variant="outline"
+      aria-label={loading ? "Generando PDF de progreso" : "Exportar progreso a PDF"}
       className="gap-2 border-law-gold/30 bg-law-gold/5 text-law-gold hover:bg-law-gold/10 hover:text-law-gold"
     >
       {loading ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           Generando…
         </>
       ) : (
         <>
-          <Download className="h-4 w-4" />
+          <Download className="h-4 w-4" aria-hidden="true" />
           Exportar PDF
         </>
       )}

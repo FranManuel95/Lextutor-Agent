@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#020617"/>
+  <g transform="translate(256 256)">
+    <!-- Scales of justice — evocando al icono ⚖️ usado en la app -->
+    <g fill="none" stroke="#d4af37" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+      <!-- vertical axis -->
+      <line x1="0" y1="-140" x2="0" y2="140"/>
+      <!-- base -->
+      <line x1="-60" y1="140" x2="60" y2="140"/>
+      <!-- horizontal beam -->
+      <line x1="-130" y1="-80" x2="130" y2="-80"/>
+      <!-- left tray -->
+      <path d="M -130 -80 L -170 -10 A 40 40 0 0 0 -90 -10 Z"/>
+      <!-- right tray -->
+      <path d="M 130 -80 L 90 -10 A 40 40 0 0 0 170 -10 Z"/>
+      <!-- top ornament -->
+      <circle cx="0" cy="-140" r="12" fill="#d4af37"/>
+    </g>
+  </g>
+</svg>

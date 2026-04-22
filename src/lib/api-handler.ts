@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { RateLimitConfig, checkRateLimit } from "./rateLimit";
+import { verifyOrigin } from "./csrf";
 
 type ApiHandlerContext<TBody = any> = {
   user: any;
@@ -13,6 +14,9 @@ type ApiHandlerOptions<TBody extends z.ZodType> = {
   schema?: TBody;
   rateLimit?: RateLimitConfig;
   requireAdmin?: boolean;
+  // Set to false to skip the CSRF Origin check on this handler (rare, for
+  // endpoints intentionally called cross-origin with CORS). Default: true.
+  csrfCheck?: boolean;
 };
 
 /**
@@ -27,6 +31,14 @@ export function createApiHandler<TBody extends z.ZodType>(
     const supabase = await createClient();
 
     try {
+      // 0. CSRF Origin check (default on for state-changing methods)
+      if (options.csrfCheck !== false) {
+        const csrf = verifyOrigin(request);
+        if (!csrf.ok) {
+          return NextResponse.json({ error: `CSRF check failed: ${csrf.reason}` }, { status: 403 });
+        }
+      }
+
       // 1. Authentication
       const {
         data: { user },

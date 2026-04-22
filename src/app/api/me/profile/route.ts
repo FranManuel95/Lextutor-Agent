@@ -13,13 +13,14 @@ const profileSchema = z
       .nullable()
       .optional(),
     age: z.number().int().min(0).max(120).optional(),
+    email_weekly_summary: z.boolean().optional(),
   })
   .strict();
 
 export const GET = createApiHandler(async ({ user, supabase }) => {
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, birth_date, age, role")
+    .select("full_name, avatar_url, birth_date, age, role, email_weekly_summary")
     .eq("id", user.id)
     .single();
 

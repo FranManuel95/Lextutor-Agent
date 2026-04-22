@@ -14,9 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Search, ShieldCheck, User, ExternalLink } from "lucide-react";
+import { Search, ShieldCheck, User, ExternalLink, Loader2 } from "lucide-react";
 
 type UserRow = {
   id: string;
@@ -39,6 +40,46 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
   const [pending, startTransition] = useTransition();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkUpdateRole(newRole: "admin" | "student") {
+    if (selected.size === 0) return;
+    setBulkLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/users/bulk-role", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selected), role: newRole }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Error al cambiar roles en masa");
+        return;
+      }
+      // Optimistic local update
+      setLocalRoles((prev) => {
+        const next = { ...prev };
+        for (const id of selected) next[id] = newRole;
+        return next;
+      });
+      setSelected(new Set());
+    } catch {
+      setError("Error de red al cambiar roles en masa");
+    } finally {
+      setBulkLoading(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -119,14 +160,53 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
         </p>
       )}
 
-      <p className="text-sm text-gem-offwhite/50">
-        {filtered.length} usuario{filtered.length !== 1 ? "s" : ""}
-        {search || roleFilter !== "all" ? " encontrados" : " registrados"}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gem-offwhite/50">
+          {filtered.length} usuario{filtered.length !== 1 ? "s" : ""}
+          {search || roleFilter !== "all" ? " encontrados" : " registrados"}
+        </p>
+
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gem-offwhite/60">
+              {selected.size} seleccionado{selected.size !== 1 ? "s" : ""}
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkLoading}
+              onClick={() => bulkUpdateRole("admin")}
+              className="gap-1 text-xs text-law-gold hover:bg-law-gold/10"
+            >
+              {bulkLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ShieldCheck className="h-3.5 w-3.5" />
+              )}
+              Hacer admin
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkLoading}
+              onClick={() => bulkUpdateRole("student")}
+              className="gap-1 text-xs text-gem-offwhite/60 hover:bg-white/5 hover:text-gem-offwhite"
+            >
+              {bulkLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <User className="h-3.5 w-3.5" />
+              )}
+              Quitar admin
+            </Button>
+          </div>
+        )}
+      </div>
 
       <Table>
         <TableHeader>
           <TableRow className="border-law-accent/20 hover:bg-white/5">
+            <TableHead className="w-8"></TableHead>
             <TableHead className="text-law-gold">Usuario</TableHead>
             <TableHead className="text-law-gold">Email</TableHead>
             <TableHead className="text-law-gold">Rol</TableHead>
@@ -139,9 +219,23 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
             const role = localRoles[user.id] ?? user.role ?? "student";
             const isSelf = user.id === currentUserId;
             const isLoading = loadingId === user.id;
+            const isChecked = selected.has(user.id);
 
             return (
-              <TableRow key={user.id} className="border-law-accent/10 hover:bg-white/5">
+              <TableRow
+                key={user.id}
+                className={`border-law-accent/10 hover:bg-white/5 ${
+                  isChecked ? "bg-law-gold/5" : ""
+                }`}
+              >
+                <TableCell>
+                  <Checkbox
+                    checked={isChecked}
+                    onCheckedChange={() => toggleSelected(user.id)}
+                    disabled={isSelf}
+                    aria-label={`Seleccionar ${user.full_name ?? "usuario"}`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium text-gem-offwhite">
                   <Link
                     href={`/admin/users/${user.id}`}
@@ -206,7 +300,7 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
           })}
           {!filtered.length && (
             <TableRow>
-              <TableCell colSpan={5} className="py-8 text-center text-gem-offwhite/50">
+              <TableCell colSpan={6} className="py-8 text-center text-gem-offwhite/50">
                 {search || roleFilter !== "all"
                   ? "Sin resultados para la búsqueda."
                   : "No se encontraron usuarios."}
