@@ -1,5 +1,11 @@
+import { config } from "dotenv";
+import { resolve } from "path";
 import { createClient } from "@supabase/supabase-js";
 import type { FullConfig } from "@playwright/test";
+
+// Playwright global-setup runs in plain Node.js — .env.local is not loaded
+// automatically (unlike Next.js). Load it explicitly before reading any vars.
+config({ path: resolve(process.cwd(), ".env.local") });
 
 export default async function globalSetup(_config: FullConfig) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,4 +36,6 @@ export default async function globalSetup(_config: FullConfig) {
   if (error && !error.message.toLowerCase().includes("already been registered")) {
     throw new Error(`[E2E Setup] Could not create test user: ${error.message}`);
   }
+
+  console.log(`[E2E Setup] Test user ready: ${email}`);
 }
