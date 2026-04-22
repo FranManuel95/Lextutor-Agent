@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Crimson_Pro } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { SwRegister } from "@/components/sw-register";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${crimsonPro.variable} font-sans`}>
         {children}
         <Toaster />
+        <SwRegister />
       </body>
     </html>
   );

@@ -19,7 +19,7 @@ export async function PATCH(request: NextRequest) {
 
     const { error, count } = await supabase
       .from("question_flags")
-      .update({ status } as unknown as never, { count: "exact" })
+      .update({ status }, { count: "exact" })
       .in("id", ids);
 
     if (error) {

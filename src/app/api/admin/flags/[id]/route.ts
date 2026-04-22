@@ -17,10 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const json = await request.json();
     const { status } = patchSchema.parse(json);
 
-    const { error } = await supabase
-      .from("question_flags")
-      .update({ status } as unknown as never)
-      .eq("id", id);
+    const { error } = await supabase.from("question_flags").update({ status }).eq("id", id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

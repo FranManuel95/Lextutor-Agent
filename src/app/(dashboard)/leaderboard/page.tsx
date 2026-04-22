@@ -32,7 +32,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   const { data } = await supabase.rpc("get_leaderboard", {
     p_metric: metric,
     p_limit: 20,
-  } as any);
+  });
 
   const rows = (Array.isArray(data) ? (data as Row[]) : []).sort((a, b) => b.value - a.value);
 
