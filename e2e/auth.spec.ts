@@ -19,7 +19,12 @@ test.describe("Authentication flow", () => {
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await page.goto("/login");
-    await page.waitForLoadState("networkidle");
+    // Submit with dummy creds to trigger server action compilation on-demand.
+    // The auth will fail but that's fine — we just need the POST to be compiled.
+    await page.fill("#email", "warmup@example.com");
+    await page.fill("#password", "warmup-password");
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/login.*message=/, { timeout: 45_000 }).catch(() => {});
     await page.close();
   });
 

@@ -15,6 +15,7 @@ export default defineConfig({
   // Creates the E2E test user in Supabase before any test runs.
   globalSetup: "./playwright/global-setup.ts",
 
+  timeout: 60_000,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
