@@ -67,4 +67,5 @@ export const RATE_LIMITS = {
   RAG_DOCS_LIST: { endpoint: "/api/rag/documents", limit: 60, windowMinutes: 60 },
   EXAM_GRADE: { endpoint: "/api/exam/grade", limit: 30, windowMinutes: 1440 }, // 24h
   QUIZ_GRADE: { endpoint: "/api/quiz/grade", limit: 50, windowMinutes: 1440 }, // 24h
+  QUESTION_FLAG: { endpoint: "/api/quiz/flag", limit: 30, windowMinutes: 1440 }, // 24h
 } as const;

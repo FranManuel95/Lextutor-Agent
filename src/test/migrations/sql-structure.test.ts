@@ -103,6 +103,46 @@ describe("SQL migrations — get_platform_activity", () => {
   });
 });
 
+describe("SQL migrations — question_flags", () => {
+  const sql = readMigration("20260423000000_question_flags.sql");
+
+  it("creates question_flags table with expected columns", () => {
+    expect(sql).toMatch(/CREATE\s+TABLE\s+(IF\s+NOT\s+EXISTS\s+)?public\.question_flags/i);
+    expect(sql).toMatch(/\buser_id\s+uuid\b/i);
+    expect(sql).toMatch(/\bquestion_id\s+text\b/i);
+    expect(sql).toMatch(/\breason\s+text\b/i);
+    expect(sql).toMatch(/\bstatus\s+text\b/i);
+  });
+
+  it("constrains reason to the expected enum values", () => {
+    expect(sql).toMatch(
+      /reason\s+IN\s*\(\s*'incorrect'\s*,\s*'ambiguous'\s*,\s*'off_topic'\s*,\s*'other'\s*\)/i
+    );
+  });
+
+  it("constrains status to the expected enum values", () => {
+    expect(sql).toMatch(/status\s+IN\s*\(\s*'open'\s*,\s*'reviewed'\s*,\s*'dismissed'\s*\)/i);
+  });
+
+  it("enables row-level security", () => {
+    expect(sql).toMatch(/ENABLE\s+ROW\s+LEVEL\s+SECURITY/i);
+  });
+
+  it("has a policy restricting inserts to the owner", () => {
+    expect(sql).toMatch(/FOR\s+INSERT[\s\S]*auth\.uid\(\)\s*=\s*user_id/i);
+  });
+
+  it("has a policy restricting selects to the owner", () => {
+    expect(sql).toMatch(/FOR\s+SELECT[\s\S]*auth\.uid\(\)\s*=\s*user_id/i);
+  });
+
+  it("indexes status column for the admin filter", () => {
+    expect(sql).toMatch(
+      /CREATE\s+INDEX\s+(IF\s+NOT\s+EXISTS\s+)?question_flags_status_idx[\s\S]*status/i
+    );
+  });
+});
+
 describe("SQL migrations — rate limit function contract", () => {
   // Rate limit is called as an RPC from src/lib/rateLimit.ts with these params.
   // Ensures the DB function signature matches what the code expects.
