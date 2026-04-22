@@ -14,6 +14,15 @@ async function loginAs(page: Page, userEmail: string, userPassword: string) {
 test.describe("Authentication flow", () => {
   test.skip(!hasCredentials, "TEST_USER_EMAIL / TEST_USER_PASSWORD not configured");
 
+  // Warm up the Next.js dev server so the login server action is compiled
+  // before the first timed test runs.
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await page.goto("/login");
+    await page.waitForLoadState("networkidle");
+    await page.close();
+  });
+
   test("successful login redirects to /chat", async ({ page }) => {
     await loginAs(page, email, password);
     await page.waitForURL(/\/chat/, { timeout: 30_000 });
