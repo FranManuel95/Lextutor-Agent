@@ -351,7 +351,7 @@ export async function generateResponse(params: {
 
 const HAS_GEMINI_RAG = !!process.env.GEMINI_FILESEARCH_STORE_ID;
 
-function extractJsonFromText(text: string): any {
+export function extractJsonFromText(text: string): any {
   const cleaned = text
     .replace(/```json/g, "")
     .replace(/```/g, "")

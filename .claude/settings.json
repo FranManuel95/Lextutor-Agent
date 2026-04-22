@@ -32,6 +32,11 @@
       "command": "bash",
       "args": [".claude/scripts/supabase-mcp.sh"],
       "description": "Supabase Management API — execute SQL, apply migrations, inspect schema on the PRODUCTION project. Requires SUPABASE_ACCESS_TOKEN in .env.local (get it at https://supabase.com/dashboard/account/tokens). Optionally set SUPABASE_PROJECT_ID in .env.local to scope to one project."
+    },
+    "github": {
+      "command": "bash",
+      "args": [".claude/scripts/github-mcp.sh"],
+      "description": "GitHub REST + GraphQL API — create/merge PRs, read issues, CI status, file contents. Requires GITHUB_PERSONAL_ACCESS_TOKEN in .env.local (create at https://github.com/settings/tokens/new, scopes: repo, workflow, read:org)."
     }
   },
   "hooks": {
@@ -118,7 +123,18 @@
       "mcp__github__list_pull_requests",
       "mcp__github__pull_request_read",
       "mcp__github__issue_read",
-      "mcp__github__list_issues"
+      "mcp__github__list_issues",
+      "mcp__github__create_pull_request",
+      "mcp__github__merge_pull_request",
+      "mcp__github__update_pull_request",
+      "mcp__github__create_branch",
+      "mcp__github__add_issue_comment",
+      "mcp__github__add_comment_to_pending_review",
+      "mcp__github__get_me",
+      "mcp__github__get_commit",
+      "mcp__github__search_code",
+      "mcp__github__search_issues",
+      "mcp__github__search_pull_requests"
     ]
   }
 }
