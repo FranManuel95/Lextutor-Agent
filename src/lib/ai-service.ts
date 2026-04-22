@@ -1,24 +1,23 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
+import { env } from "@/lib/env";
 
 // --- Configuration ---
-export const AI_PROVIDER = (process.env.AI_PROVIDER || "gemini").toLowerCase() as
-  | "gemini"
-  | "openai";
+export const AI_PROVIDER = env.AI_PROVIDER;
 export const isOpenAI = AI_PROVIDER === "openai";
 export const isGemini = AI_PROVIDER === "gemini";
 
-const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY!, apiVersion: "v1beta" });
-export const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY, apiVersion: "v1beta" });
+export const openaiClient = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 
-const GEMINI_STORE_ID = (process.env.GEMINI_FILESEARCH_STORE_ID || "").startsWith(
-  "fileSearchStores/"
-)
-  ? process.env.GEMINI_FILESEARCH_STORE_ID!
-  : `fileSearchStores/${process.env.GEMINI_FILESEARCH_STORE_ID}`;
+const GEMINI_STORE_ID = env.GEMINI_FILESEARCH_STORE_ID
+  ? env.GEMINI_FILESEARCH_STORE_ID.startsWith("fileSearchStores/")
+    ? env.GEMINI_FILESEARCH_STORE_ID
+    : `fileSearchStores/${env.GEMINI_FILESEARCH_STORE_ID}`
+  : "";
 
-const OPENAI_ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
+const OPENAI_ASSISTANT_ID = env.OPENAI_ASSISTANT_ID!;
 
 // --- Shared Logic ---
 
@@ -350,80 +349,123 @@ export async function generateResponse(params: {
   }
 }
 
-/**
- * Unified Quiz Generation
- */
-export async function generateQuiz(params: { area: string; difficulty: string; count: number }) {
-  const { area, difficulty, count } = params;
-  const prompt = `Genera un TEST de Derecho ${area.toUpperCase()} (Dificultad: ${difficulty.toUpperCase()}) con ${count} preguntas tipo test.
-    IMPORTANTE: Debes basarte EXCLUSIVAMENTE en la BASE DE CONOCIMIENTO (documentos adjuntos) para generar las preguntas.
-    Devuelve JSON con "questions": Array de objetos:
-    - id: number, text: string, options: string[], correctIndex: number, explanation: string.
-    Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
+const HAS_GEMINI_RAG = !!process.env.GEMINI_FILESEARCH_STORE_ID;
 
-  // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
-  console.log("🤖 [MODELO] Generación Quiz → Intentando Gemini 2.0 Flash...");
-
-  let res;
-  try {
-    res = await retryOperation(() =>
-      geminiClient.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any],
-        config: {
-          responseMimeType: "application/json",
-        },
-      } as any)
-    );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
-      res = await retryOperation(() =>
-        geminiClient.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any],
-          config: {
-            responseMimeType: "application/json",
-          },
-        } as any)
-      );
-    } else {
-      throw error;
-    }
-  }
-
-  if (res.usageMetadata) {
-    logUsage("gemini", {
-      prompt: res.usageMetadata.promptTokenCount ?? 0,
-      completion: res.usageMetadata.candidatesTokenCount ?? 0,
-      total: res.usageMetadata.totalTokenCount ?? 0,
-    });
-  }
-
-  const raw = res.text || "{}";
-  const cleaned = raw
+function extractJsonFromText(text: string): any {
+  const cleaned = text
     .replace(/```json/g, "")
     .replace(/```/g, "")
     .trim();
-  const generated = JSON.parse(cleaned);
-  const grounding = res.candidates?.[0]?.groundingMetadata;
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Try to find a JSON object anywhere in the text
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
 
-  // Extract sources
+function buildQuizPrompt(area: string, difficulty: string, count: number) {
+  return `Eres un experto en derecho español. Genera ${count} preguntas tipo test sobre Derecho ${area.toUpperCase()} con dificultad ${difficulty.toUpperCase()}.
+
+Responde ÚNICAMENTE con este JSON (sin texto adicional, sin markdown):
+{"questions":[{"id":1,"text":"Pregunta aquí","options":["A) opción1","B) opción2","C) opción3","D) opción4"],"correctIndex":0,"explanation":"Explicación breve"}]}
+
+Legislación española vigente. El array questions debe tener exactamente ${count} objetos.`;
+}
+
+async function callGeminiContent(prompt: string, tools?: any[]) {
+  return retryOperation(
+    () =>
+      geminiClient.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        ...(tools ? { tools } : {}),
+      } as any),
+    2,
+    1000
+  );
+}
+
+/**
+ * Unified Quiz Generation — Option A: fileSearch sin JSON mode, fallback a conocimiento general
+ */
+export async function generateQuiz(params: { area: string; difficulty: string; count: number }) {
+  const { area, difficulty, count } = params;
+  const prompt = buildQuizPrompt(area, difficulty, count);
+
+  let questions: any[] = [];
+  let grounding: any = null;
+
+  // Intento 1: con fileSearch (sin JSON mode — compatible con Gemini 2.5 Flash thinking)
+  if (HAS_GEMINI_RAG) {
+    console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash + fileSearch (sin JSON mode)");
+    try {
+      const ragTools = [
+        { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any,
+      ];
+      const res = await callGeminiContent(prompt, ragTools);
+      grounding = res.candidates?.[0]?.groundingMetadata ?? null;
+      if (res.usageMetadata) {
+        logUsage("gemini", {
+          prompt: res.usageMetadata.promptTokenCount ?? 0,
+          completion: res.usageMetadata.candidatesTokenCount ?? 0,
+          total: res.usageMetadata.totalTokenCount ?? 0,
+        });
+      }
+      const parsed = extractJsonFromText(res.text || "");
+      questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+      if (questions.length > 0) {
+        console.log(`✅ fileSearch generó ${questions.length} preguntas`);
+      } else {
+        console.warn("⚠️ fileSearch devolvió 0 preguntas, usando conocimiento general");
+      }
+    } catch (e: any) {
+      console.warn(`⚠️ fileSearch falló (${e.message}), usando conocimiento general`);
+    }
+  }
+
+  // Intento 2: conocimiento general (sin herramientas)
+  if (questions.length === 0) {
+    console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash (conocimiento general)");
+    const res = await callGeminiContent(prompt);
+    if (res.usageMetadata) {
+      logUsage("gemini", {
+        prompt: res.usageMetadata.promptTokenCount ?? 0,
+        completion: res.usageMetadata.candidatesTokenCount ?? 0,
+        total: res.usageMetadata.totalTokenCount ?? 0,
+      });
+    }
+    const parsed = extractJsonFromText(res.text || "");
+    questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+    console.log(
+      `📝 Conocimiento general generó ${questions.length} preguntas. Raw: ${(res.text || "").slice(0, 200)}`
+    );
+  }
+
+  if (questions.length === 0) {
+    throw new Error(
+      "No se pudieron generar preguntas. Por favor, inténtalo de nuevo en unos momentos."
+    );
+  }
+
   const sources: string[] = [];
   if (grounding?.groundingChunks) {
     grounding.groundingChunks.forEach((chunk: any) => {
-      if (chunk.retrievedContext?.title) {
-        sources.push(chunk.retrievedContext.title);
-      } else if (chunk.web?.title) {
-        sources.push(chunk.web.title);
-      }
+      if (chunk.retrievedContext?.title) sources.push(chunk.retrievedContext.title);
+      else if (chunk.web?.title) sources.push(chunk.web.title);
     });
   }
 
   return {
-    questions: generated.questions,
+    questions,
     ragUsed: (grounding?.groundingChunks?.length || 0) > 0,
     sources: Array.from(new Set(sources)),
   };

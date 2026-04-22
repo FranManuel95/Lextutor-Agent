@@ -3,8 +3,9 @@
 import { generateLegalInfographic } from "@/lib/imagen-service";
 import { createClient } from "@/utils/supabase/server";
 import { GoogleGenAI } from "@google/genai";
+import { env } from "@/lib/env";
 
-const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 export async function generateInfographicAction(
   chatId: string
@@ -15,7 +16,7 @@ export async function generateInfographicAction(
 
   try {
     // 1. Fetch Chat History
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: messages } = await supabase
       .from("messages")
       .select("content, role")

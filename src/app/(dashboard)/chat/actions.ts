@@ -9,7 +9,7 @@ type TutorPrefs = { area: string; modes: string[]; detailLevel: string };
 type ProfileWithPrefs = { tutor_prefs: TutorPrefs | null; full_name: string | null } | null;
 
 export async function createChat() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -92,7 +92,7 @@ export async function sendMessage(
     preset?: string;
   }
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -199,7 +199,7 @@ export async function sendMessage(
 }
 
 export async function renameChat(chatId: string, newTitle: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -3,12 +3,13 @@ import { createClient } from "@/utils/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { generateAudioResponseStream } from "@/lib/ai-service-stream";
 import { constructEliteSystemPrompt } from "@/lib/ai-service";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs"; // Required for stream handling
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1. Auth Guard
   const {
@@ -29,8 +30,8 @@ export async function POST(request: NextRequest) {
     // 2. Download Audio from Storage (Service Role)
     // Use Admin Client to ensure we can read the file regardless of RLS policies
     const adminSupabase = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.SUPABASE_SERVICE_ROLE_KEY
     );
 
     const { data: fileData, error: downloadError } = await adminSupabase.storage

@@ -21,9 +21,21 @@ create index if not exists idx_rate_limits_user_endpoint_window
 -- RLS: Users can only see their own rate limit data
 alter table public.rate_limits enable row level security;
 
-create policy "Users can view own rate limits"
-  on public.rate_limits for select
-  using ( auth.uid() = user_id );
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'rate_limits'
+      and policyname = 'Users can view own rate limits'
+  ) then
+    execute $policy$
+      create policy "Users can view own rate limits"
+        on public.rate_limits for select
+        using ( auth.uid() = user_id )
+    $policy$;
+  end if;
+end $$;
 
 -- Auto-cleanup old records (older than 24 hours)
 create or replace function public.cleanup_old_rate_limits()
