@@ -115,7 +115,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       : null;
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="space-y-6 p-4 sm:p-6 md:space-y-8 md:p-8">
       {/* Back link */}
       <Link
         href="/admin/users"
@@ -127,16 +127,16 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
       {/* Header card */}
       <Card className="border-law-accent/20 bg-gem-slate">
-        <CardContent className="flex flex-col items-start gap-6 p-6 sm:flex-row sm:items-center">
-          <Avatar className="h-20 w-20 border border-law-gold/40">
+        <CardContent className="flex flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
+          <Avatar className="h-16 w-16 border border-law-gold/40 sm:h-20 sm:w-20">
             <AvatarImage src={profile.avatar_url ?? ""} />
             <AvatarFallback className="bg-law-primary text-lg text-law-gold">
               {profile.full_name?.slice(0, 2).toUpperCase() ?? "US"}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-3">
-              <h1 className="font-serif text-2xl italic text-white">
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="break-words font-serif text-xl italic text-white sm:text-2xl">
                 {profile.full_name ?? "Sin nombre"}
               </h1>
               <Badge

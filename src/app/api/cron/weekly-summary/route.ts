@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { captureException } from "@/lib/telemetry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -235,7 +236,10 @@ export async function POST(request: NextRequest) {
       }
     } catch (e: any) {
       errors += 1;
-      logger.warn("weekly-summary: send threw", { userId, message: e?.message });
+      captureException(e, {
+        user: { id: userId },
+        tags: { job: "weekly-summary", step: "send" },
+      });
     }
   }
 

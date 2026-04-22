@@ -41,7 +41,7 @@ export function ExamsFilters({ currentArea, currentType, currentStatus }: Props)
 
   return (
     <div className="flex flex-wrap items-end gap-3" role="toolbar" aria-label="Filtros de exámenes">
-      <div className="w-40">
+      <div className="w-full sm:w-40">
         <label
           htmlFor="filter-area"
           className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50"
@@ -68,7 +68,7 @@ export function ExamsFilters({ currentArea, currentType, currentStatus }: Props)
         </Select>
       </div>
 
-      <div className="w-40">
+      <div className="w-full sm:w-40">
         <label
           htmlFor="filter-type"
           className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50"
@@ -92,7 +92,7 @@ export function ExamsFilters({ currentArea, currentType, currentStatus }: Props)
         </Select>
       </div>
 
-      <div className="w-40">
+      <div className="w-full sm:w-40">
         <label
           htmlFor="filter-status"
           className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/50"

@@ -47,14 +47,16 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gem-onyx font-sans text-gem-offwhite">
-      <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-6 backdrop-blur-sm md:px-10">
-        <div className="mx-auto flex max-w-5xl items-center justify-between py-6 md:pb-4 md:pt-8">
-          <h1 className="text-shadow-sm font-serif text-3xl italic text-white">Ranking</h1>
+      <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-4 backdrop-blur-sm sm:px-6 md:px-10">
+        <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center sm:py-6 md:pb-4 md:pt-8">
+          <h1 className="text-shadow-sm font-serif text-2xl italic text-white sm:text-3xl">
+            Ranking
+          </h1>
           <LeaderboardTabs current={metric} />
         </div>
       </div>
 
-      <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-6 md:px-16">
+      <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:px-10 lg:px-16">
         <div className="mx-auto max-w-3xl space-y-6 pb-10">
           <div className="flex items-center gap-3 rounded-xl border border-law-gold/20 bg-law-gold/5 p-4 text-sm">
             {metric === "streak" ? (

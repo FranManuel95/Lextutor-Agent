@@ -29,14 +29,14 @@ export function ActivityChart({ data }: Props) {
   return (
     <section
       aria-label="Gráfico de actividad de los últimos 7 días"
-      className="rounded-2xl border border-law-accent/20 bg-gem-slate p-6"
+      className="rounded-2xl border border-law-accent/20 bg-gem-slate p-4 sm:p-6"
     >
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 font-serif text-xl text-law-gold">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="flex items-center gap-2 font-serif text-lg text-law-gold sm:text-xl">
           <BarChart3 size={20} aria-hidden="true" />
           Actividad últimos 7 días
         </h2>
-        <div className="flex items-center gap-4 text-xs text-gem-offwhite/60">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-gem-offwhite/60 sm:gap-4">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-sm bg-law-gold/80" />
             Exámenes ({totalExams})
