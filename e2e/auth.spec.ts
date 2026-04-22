@@ -14,17 +14,18 @@ async function loginAs(page: Page, userEmail: string, userPassword: string) {
 test.describe("Authentication flow", () => {
   test.skip(!hasCredentials, "TEST_USER_EMAIL / TEST_USER_PASSWORD not configured");
 
-  // Warm up the Next.js dev server so the login server action is compiled
-  // before the first timed test runs.
+  // Warm up the Next.js dev server so the login server action AND the
+  // /chat destination page are both compiled before the first timed test.
+  // Uses the real test credentials so the redirect to /chat actually
+  // triggers /chat compilation.
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await page.goto("/login");
-    // Submit with dummy creds to trigger server action compilation on-demand.
-    // The auth will fail but that's fine — we just need the POST to be compiled.
-    await page.fill("#email", "warmup@example.com");
-    await page.fill("#password", "warmup-password");
+    await page.fill("#email", email);
+    await page.fill("#password", password);
     await page.click('button[type="submit"]');
-    await page.waitForURL(/\/login.*message=/, { timeout: 45_000 }).catch(() => {});
+    await page.waitForURL(/\/chat/, { timeout: 90_000 }).catch(() => {});
+    await page.waitForLoadState("networkidle").catch(() => {});
     await page.close();
   });
 
