@@ -13,6 +13,9 @@ const envSchema = z.object({
   OPENAI_ASSISTANT_ID: z.string().optional(),
   OPENAI_MODEL: z.string().optional(),
   AI_PROVIDER: z.enum(["gemini", "openai"]).default("gemini"),
+  // Shared secret for scheduled/cron-like endpoints (e.g. weekly summary email).
+  // When absent, those endpoints will reject every request.
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 type Env = z.infer<typeof envSchema>;

@@ -1,6 +1,14 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import { ShieldCheck, FileText, Users, Activity, LogOut, MessageSquare } from "lucide-react";
+import {
+  ShieldCheck,
+  FileText,
+  Users,
+  Activity,
+  MessageSquare,
+  ClipboardList,
+  Flag,
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminMobileSidebar } from "@/components/admin-mobile-sidebar";
@@ -62,15 +70,31 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Gestión RAG
             </Button>
           </Link>
-          {/* Placeholder for Users */}
           <Link href="/admin/users">
             <Button
               variant="ghost"
               className="w-full justify-start gap-3 transition-colors hover:bg-law-gold/10 hover:text-law-gold"
-              disabled
             >
               <Users className="h-4 w-4" />
-              Usuarios (Próximamente)
+              Usuarios
+            </Button>
+          </Link>
+          <Link href="/admin/exams">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 transition-colors hover:bg-law-gold/10 hover:text-law-gold"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Exámenes
+            </Button>
+          </Link>
+          <Link href="/admin/flags">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 transition-colors hover:bg-law-gold/10 hover:text-law-gold"
+            >
+              <Flag className="h-4 w-4" />
+              Reportes
             </Button>
           </Link>
         </nav>
