@@ -4,86 +4,102 @@ import { ShieldCheck, FileText, Users, Activity, LogOut, MessageSquare } from "l
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminMobileSidebar } from "@/components/admin-mobile-sidebar";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    const supabase = createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+const profileSchema = z.object({ role: z.string() });
 
-    if (authError || !user) {
-        redirect("/login");
-    }
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-    const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+  if (authError || !user) {
+    redirect("/login");
+  }
 
-    if (!profile || (profile as any).role !== "admin") {
-        redirect("/chat?error=forbidden");
-    }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-    return (
-        <div className="flex min-h-screen bg-gem-onyx text-gem-offwhite font-sans">
-            {/* Sidebar (Desktop) */}
-            <aside className="w-64 bg-gem-slate border-r border-law-accent/20 hidden md:flex flex-col">
-                <div className="p-6 border-b border-law-accent/10">
-                    <h1 className="text-xl font-serif text-law-gold flex items-center gap-2">
-                        <ShieldCheck className="w-6 h-6" />
-                        Admin Panel
-                    </h1>
-                </div>
+  const parsed = profileSchema.safeParse(profile);
+  if (!parsed.success || parsed.data.role !== "admin") {
+    redirect("/chat?error=forbidden");
+  }
 
-                <nav className="flex-1 p-4 space-y-2">
-                    <Link href="/admin">
-                        <Button variant="ghost" className="w-full justify-start gap-3 hover:bg-law-gold/10 hover:text-law-gold transition-colors">
-                            <Activity className="w-4 h-4" />
-                            Dashboard
-                        </Button>
-                    </Link>
-                    <Link href="/admin/rag">
-                        <Button variant="ghost" className="w-full justify-start gap-3 hover:bg-law-gold/10 hover:text-law-gold transition-colors">
-                            <FileText className="w-4 h-4" />
-                            Gestión RAG
-                        </Button>
-                    </Link>
-                    {/* Placeholder for Users */}
-                    <Link href="/admin/users">
-                        <Button variant="ghost" className="w-full justify-start gap-3 hover:bg-law-gold/10 hover:text-law-gold transition-colors" disabled>
-                            <Users className="w-4 h-4" />
-                            Usuarios (Próximamente)
-                        </Button>
-                    </Link>
-                </nav>
-
-                <div className="p-4 border-t border-law-accent/10">
-                    <Link href="/chat">
-                        <Button variant="ghost" className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all duration-300">
-                            <MessageSquare className="w-4 h-4" />
-                            Volver al Chat
-                        </Button>
-                    </Link>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto flex flex-col">
-                {/* Mobile Header */}
-                <div className="md:hidden p-4 border-b border-law-accent/10 flex items-center justify-between bg-gem-slate">
-                    <h1 className="text-lg font-serif text-law-gold flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5" />
-                        Admin Panel
-                    </h1>
-                    <AdminMobileSidebar />
-                </div>
-                {children}
-            </main>
+  return (
+    <div className="flex min-h-screen bg-gem-onyx font-sans text-gem-offwhite">
+      {/* Sidebar (Desktop) */}
+      <aside className="hidden w-64 flex-col border-r border-law-accent/20 bg-gem-slate md:flex">
+        <div className="border-b border-law-accent/10 p-6">
+          <h1 className="flex items-center gap-2 font-serif text-xl text-law-gold">
+            <ShieldCheck className="h-6 w-6" />
+            Admin Panel
+          </h1>
         </div>
-    );
+
+        <nav className="flex-1 space-y-2 p-4">
+          <Link href="/admin">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 transition-colors hover:bg-law-gold/10 hover:text-law-gold"
+            >
+              <Activity className="h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+          <Link href="/admin/rag">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 transition-colors hover:bg-law-gold/10 hover:text-law-gold"
+            >
+              <FileText className="h-4 w-4" />
+              Gestión RAG
+            </Button>
+          </Link>
+          {/* Placeholder for Users */}
+          <Link href="/admin/users">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 transition-colors hover:bg-law-gold/10 hover:text-law-gold"
+              disabled
+            >
+              <Users className="h-4 w-4" />
+              Usuarios (Próximamente)
+            </Button>
+          </Link>
+        </nav>
+
+        <div className="border-t border-law-accent/10 p-4">
+          <Link href="/chat">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 text-gray-400 transition-all duration-300 hover:bg-white/5 hover:text-white"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Volver al Chat
+            </Button>
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex flex-1 flex-col overflow-y-auto">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between border-b border-law-accent/10 bg-gem-slate p-4 md:hidden">
+          <h1 className="flex items-center gap-2 font-serif text-lg text-law-gold">
+            <ShieldCheck className="h-5 w-5" />
+            Admin Panel
+          </h1>
+          <AdminMobileSidebar />
+        </div>
+        {children}
+      </main>
+    </div>
+  );
 }

@@ -1,15 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database.types'
+import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database.types";
+import { env } from "@/lib/env";
 
 export const createAdminClient = () => {
-    return createClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-            },
-        }
-    )
-}
+  return createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+};

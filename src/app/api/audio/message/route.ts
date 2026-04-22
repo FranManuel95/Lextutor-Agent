@@ -5,6 +5,7 @@ import { constructEliteSystemPrompt, generateAudioResponse } from "@/lib/ai-serv
 import { z } from "zod";
 import { Database } from "@/types/database.types";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,12 +38,10 @@ export const POST = createApiHandler(
     const { chatId, audioPath, settings, area, studyMode } = body;
 
     // 1. Setup Admin Client for Storage Access
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!serviceRoleKey) {
-      console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY missing in message route");
-      throw new Error("Server Configuration Error");
-    }
-    const adminSupabase = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+    const adminSupabase = createAdminClient(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
     // 2. Normalize Settings
     const fallbackModes: string[] = studyMode && studyMode !== "tutor" ? [studyMode] : [];

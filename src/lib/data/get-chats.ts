@@ -1,31 +1,30 @@
-import { unstable_cache } from 'next/cache'
-import { createClient } from '@supabase/supabase-js'
-import { Chat } from '@/types/chat'
+import "server-only";
+import { unstable_cache } from "next/cache";
+import { createClient } from "@supabase/supabase-js";
+import { Chat } from "@/types/chat";
+import { env } from "@/lib/env";
 
 export const getCachedChats = async (userId: string) => {
-    const getChats = unstable_cache(
-        async () => {
-            // Use Admin Client to bypass cookies requirements context in cache
-            const supabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!
-            )
+  const getChats = unstable_cache(
+    async () => {
+      // Use Admin Client to bypass cookies requirements context in cache
+      const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
-            const { data } = await supabase
-                .from('chats')
-                .select('id, title, updated_at')
-                .eq('user_id', userId)
-                .order('updated_at', { ascending: false })
-                .limit(50)
+      const { data } = await supabase
+        .from("chats")
+        .select("id, title, updated_at")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: false })
+        .limit(50);
 
-            return (data as Chat[]) || []
-        },
-        ['user-chats', userId],
-        {
-            revalidate: 3600,
-            tags: ['chats', `chats-${userId}`]
-        }
-    )
+      return (data as Chat[]) || [];
+    },
+    ["user-chats", userId],
+    {
+      revalidate: 3600,
+      tags: ["chats", `chats-${userId}`],
+    }
+  );
 
-    return getChats()
-}
+  return getChats();
+};

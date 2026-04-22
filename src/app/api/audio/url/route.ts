@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -31,13 +32,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Generate Signed URL using Service Role (Private Bucket)
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    console.error("FATAL: SUPABASE_SERVICE_ROLE_KEY missing");
-    return NextResponse.json({ error: "Server Config Error" }, { status: 500 });
-  }
-
-  const adminSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
+  const adminSupabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
   try {
     const { data, error: storageError } = await adminSupabase.storage

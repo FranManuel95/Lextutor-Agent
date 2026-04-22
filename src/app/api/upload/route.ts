@@ -6,12 +6,13 @@ import path from "path";
 import os from "os";
 import OpenAI from "openai";
 import fs from "fs";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-const STORE_ID = process.env.GEMINI_FILESEARCH_STORE_ID!; // fileSearchStores/...
+const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+const STORE_ID = env.GEMINI_FILESEARCH_STORE_ID ?? ""; // fileSearchStores/...
 
 function safeBaseName(input: string) {
   const base = input.toLowerCase().replace(/\.[a-z0-9]+$/i, "");
@@ -248,10 +249,10 @@ export async function POST(request: NextRequest) {
     // NUEVO: También subir a OpenAI si está configurado
     let openaiFileId: string | null = null;
 
-    if (process.env.OPENAI_API_KEY && process.env.OPENAI_VECTOR_STORE_ID) {
+    if (env.OPENAI_API_KEY && env.OPENAI_VECTOR_STORE_ID) {
       try {
         console.log("🔵 Uploading to OpenAI...");
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
         // Subir archivo a OpenAI usando Buffer para SDK v4+
         const fileBuffer = Buffer.from(await file.arrayBuffer());
@@ -267,11 +268,11 @@ export async function POST(request: NextRequest) {
 
         // Añadir al Vector Store usando API directa (SDK tiene problemas de tipos)
         const vectorStoreResponse = await fetch(
-          `https://api.openai.com/v1/vector_stores/${process.env.OPENAI_VECTOR_STORE_ID}/files`,
+          `https://api.openai.com/v1/vector_stores/${env.OPENAI_VECTOR_STORE_ID}/files`,
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+              Authorization: `Bearer ${env.OPENAI_API_KEY}`,
               "Content-Type": "application/json",
               "OpenAI-Beta": "assistants=v2",
             },

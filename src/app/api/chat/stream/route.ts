@@ -4,6 +4,10 @@ import { createClient } from "@/utils/supabase/server";
 import { generateResponseStream } from "@/lib/ai-service-stream";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
+type ChatOwnership = { user_id: string; title: string | null };
+type ProfileName = { full_name: string | null };
+type HistoryRow = { role: string; content: string };
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -59,13 +63,14 @@ export async function POST(request: NextRequest) {
   }
 
   // 1. Verify chat ownership
-  const { data: chat } = await supabase
+  const { data: chatRaw } = await supabase
     .from("chats")
     .select("user_id, title")
     .eq("id", chatId)
     .maybeSingle();
 
-  if (!chat || (chat as any).user_id !== user.id) {
+  const chat = chatRaw as ChatOwnership | null;
+  if (!chat || chat.user_id !== user.id) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
@@ -88,16 +93,17 @@ export async function POST(request: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  const history = (recentMessages || []).reverse();
+  const history = ((recentMessages as HistoryRow[] | null) || []).reverse();
 
   // 4. Get user profile
-  const { data: profile } = await supabase
+  const { data: profileRaw } = await supabase
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
     .single();
 
-  const userName = (profile as any)?.full_name?.split(" ")[0] || "";
+  const profile = profileRaw as ProfileName | null;
+  const userName = profile?.full_name?.split(" ")[0] || "";
 
   // 5. Create streaming response
   const encoder = new TextEncoder();
@@ -113,7 +119,7 @@ export async function POST(request: NextRequest) {
         // Get AI stream
         const geminiStream = await generateResponseStream({
           message,
-          history: history.filter((m) => (m as any).content !== message),
+          history: history.filter((m) => m.content !== message),
           settings: {
             area: settings?.area || "general",
             modes: settings?.modes || [],
@@ -121,7 +127,7 @@ export async function POST(request: NextRequest) {
           },
           options: {
             userName,
-            isFirstInteraction: !history.some((m) => (m as any).role === "assistant"),
+            isFirstInteraction: !history.some((m) => m.role === "assistant"),
           },
         });
 
@@ -166,7 +172,7 @@ export async function POST(request: NextRequest) {
           chatId,
           user.id,
           fullResponse,
-          (chat as any).title,
+          chat.title,
           message,
           settings
         );

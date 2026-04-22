@@ -1,24 +1,23 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
+import { env } from "@/lib/env";
 
 // --- Configuration ---
-export const AI_PROVIDER = (process.env.AI_PROVIDER || "gemini").toLowerCase() as
-  | "gemini"
-  | "openai";
+export const AI_PROVIDER = env.AI_PROVIDER;
 export const isOpenAI = AI_PROVIDER === "openai";
 export const isGemini = AI_PROVIDER === "gemini";
 
-const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY!, apiVersion: "v1beta" });
-export const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY, apiVersion: "v1beta" });
+export const openaiClient = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 
-const GEMINI_STORE_ID = (process.env.GEMINI_FILESEARCH_STORE_ID || "").startsWith(
-  "fileSearchStores/"
-)
-  ? process.env.GEMINI_FILESEARCH_STORE_ID!
-  : `fileSearchStores/${process.env.GEMINI_FILESEARCH_STORE_ID}`;
+const GEMINI_STORE_ID = env.GEMINI_FILESEARCH_STORE_ID
+  ? env.GEMINI_FILESEARCH_STORE_ID.startsWith("fileSearchStores/")
+    ? env.GEMINI_FILESEARCH_STORE_ID
+    : `fileSearchStores/${env.GEMINI_FILESEARCH_STORE_ID}`
+  : "";
 
-const OPENAI_ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID!;
+const OPENAI_ASSISTANT_ID = env.OPENAI_ASSISTANT_ID!;
 
 // --- Shared Logic ---
 

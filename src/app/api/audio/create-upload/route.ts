@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/utils/supabase/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,15 +23,10 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ error: "Too many upload requests." }, { status: 429 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.error("FATAL: Supabase service-role config missing");
-    return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
-  }
-
-  const adminSupabase = createAdminClient(supabaseUrl, serviceRoleKey);
+  const adminSupabase = createAdminClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.SUPABASE_SERVICE_ROLE_KEY
+  );
 
   try {
     // Path is server-generated under the authenticated user's namespace;

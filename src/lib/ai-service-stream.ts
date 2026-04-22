@@ -8,8 +8,9 @@ import {
   isOpenAI,
   openaiClient,
 } from "./ai-service";
+import { env } from "@/lib/env";
 
-const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 /**
  * Generates AI response with STREAMING support for Gemini or OpenAI
@@ -44,8 +45,8 @@ export async function generateResponseStream(params: {
     });
 
     // Ensure we have an assistant ID
-    const assistantId = process.env.OPENAI_ASSISTANT_ID;
-    const vectorStoreId = process.env.OPENAI_VECTOR_STORE_ID;
+    const assistantId = env.OPENAI_ASSISTANT_ID;
+    const vectorStoreId = env.OPENAI_VECTOR_STORE_ID;
 
     if (!assistantId) throw new Error("OPENAI_ASSISTANT_ID is missing.");
 
