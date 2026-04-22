@@ -7,8 +7,10 @@ const withBundleAnalyzer = bundleAnalyzer({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     transpilePackages: ['@react-pdf/renderer'],
-    serverActions: {
-        bodySizeLimit: '10mb',
+    experimental: {
+        serverActions: {
+            bodySizeLimit: '10mb',
+        },
     },
     images: {
         remotePatterns: [
