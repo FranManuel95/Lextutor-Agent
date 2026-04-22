@@ -5,7 +5,7 @@ import { FileText, Users, MessageSquare, Database } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Fetch Stats
   // 1. Total Documents

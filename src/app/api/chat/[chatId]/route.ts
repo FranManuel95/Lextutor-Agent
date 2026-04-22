@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const chatIdSchema = z.string().uuid();
 
 export async function DELETE(request: NextRequest, { params }: { params: { chatId: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

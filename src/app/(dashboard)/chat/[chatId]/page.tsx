@@ -8,7 +8,7 @@ import { Suspense } from "react";
 
 // Separate async component for messages (can load independently)
 async function ChatMessagesLoader({ chatId, userId }: { chatId: string; userId: string }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: messages } = await supabase
     .from("messages")
@@ -52,7 +52,7 @@ function ChatSkeleton() {
 
 export default async function ChatIdPage({ params }: { params: Promise<{ chatId: string }> }) {
   const { chatId } = await params;
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   // Auth check (standard)
   const { createClient: createServerClient } = await import("@/utils/supabase/server");
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
     error,

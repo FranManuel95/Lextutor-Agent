@@ -4,7 +4,7 @@ import { z } from "zod";
 const profileSchema = z.object({ role: z.string() });
 
 export async function requireAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

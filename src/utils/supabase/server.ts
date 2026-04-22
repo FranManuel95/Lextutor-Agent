@@ -6,8 +6,8 @@ import { env } from "@/lib/env";
 
 // @supabase/ssr v0.5.2 returns SupabaseClient with old 3-param API, incompatible with supabase-js v2.95+ 5-param API.
 // The cast restores correct type inference without changing runtime behavior.
-export const createClient = (): SupabaseClient<Database> => {
-  const cookieStore = cookies();
+export const createClient = async (): Promise<SupabaseClient<Database>> => {
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,

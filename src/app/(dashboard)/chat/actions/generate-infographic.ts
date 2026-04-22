@@ -16,7 +16,7 @@ export async function generateInfographicAction(
 
   try {
     // 1. Fetch Chat History
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: messages } = await supabase
       .from("messages")
       .select("content, role")

@@ -27,7 +27,7 @@ export async function checkRateLimit(
   userId: string,
   config: RateLimitConfig
 ): Promise<RateLimitResult> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("check_rate_limit", {
     p_user_id: userId,

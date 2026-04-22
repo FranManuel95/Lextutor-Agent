@@ -9,7 +9,7 @@ export const runtime = "nodejs"; // Required for stream handling
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1. Auth Guard
   const {
