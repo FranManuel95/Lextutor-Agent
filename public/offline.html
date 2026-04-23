@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sin conexión — Lextutor</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #020617;
+        color: #e2e8f0;
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+        padding: 1.5rem;
+      }
+      .card {
+        text-align: center;
+        max-width: 380px;
+      }
+      .icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #d4af37;
+        margin-bottom: 0.75rem;
+        font-style: italic;
+      }
+      p {
+        font-size: 0.875rem;
+        color: rgba(226, 232, 240, 0.6);
+        line-height: 1.6;
+        margin-bottom: 2rem;
+      }
+      button {
+        background: rgba(212, 175, 55, 0.1);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        color: #d4af37;
+        padding: 0.625rem 1.5rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: rgba(212, 175, 55, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="icon">⚖️</div>
+      <h1>Sin conexión</h1>
+      <p>
+        Parece que no hay acceso a internet en este momento. Vuelve a intentarlo cuando recuperes la
+        conexión.
+      </p>
+      <button onclick="window.location.reload()">Reintentar</button>
+    </div>
+  </body>
+</html>

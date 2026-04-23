@@ -168,6 +168,36 @@ export default async function ProgressPage() {
 
       <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 md:px-10 md:pt-3 lg:px-16">
         <div className="mx-auto max-w-6xl space-y-8 pb-10">
+          {/* New user empty state */}
+          {totalAnswers === 0 && (
+            <div className="flex flex-col items-center gap-4 rounded-2xl border border-law-gold/20 bg-law-gold/5 px-6 py-12 text-center">
+              <Trophy className="h-12 w-12 text-law-gold/40" />
+              <div>
+                <h2 className="mb-2 font-serif text-xl italic text-gem-offwhite">
+                  ¡Bienvenido a Estudiante Elite!
+                </h2>
+                <p className="max-w-md text-sm text-gem-offwhite/60">
+                  Aún no tienes actividad registrada. Empieza un chat con el tutor, realiza un quiz
+                  o completa un examen para ver tu progreso aquí.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link
+                  href="/chat"
+                  className="inline-flex items-center gap-2 rounded-lg border border-law-gold/30 bg-law-gold/10 px-4 py-2 text-sm font-semibold text-law-gold transition hover:bg-law-gold/20"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Ir al tutor
+                </Link>
+                <Link
+                  href="/quiz"
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gem-offwhite/70 transition hover:bg-white/10"
+                >
+                  Hacer un quiz
+                </Link>
+              </div>
+            </div>
+          )}
           {/* KPI Row 1 */}
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <KpiCard icon={Activity} label="Total Preguntas" value={totalAnswers} unit="" />

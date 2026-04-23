@@ -1,5 +1,5 @@
 const CACHE_NAME = "lextutor-v1";
-const STATIC_ASSETS = ["/", "/manifest.json", "/icon.svg"];
+const STATIC_ASSETS = ["/", "/manifest.json", "/icon.svg", "/offline.html"];
 
 // Install: pre-cache shell assets
 self.addEventListener("install", (event) => {
@@ -33,7 +33,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request).catch(() =>
-        caches.match("/").then((r) => r ?? new Response("Offline", { status: 503 }))
+        caches.match("/offline.html").then((r) => r ?? new Response("Offline", { status: 503 }))
       )
     );
     return;
