@@ -650,3 +650,66 @@ export async function generateAudioResponse(params: { base64Audio: string; promp
 
   return citations ? `${text}\n\n${citations}` : text;
 }
+
+export type RagSearchResult = {
+  answer: string;
+  sources: string[];
+  hasRag: boolean;
+};
+
+/**
+ * Semantic search against the Google File Search store.
+ * Uses Gemini with the fileSearch grounding tool to retrieve relevant legal passages.
+ * Returns the synthesised answer and the unique source document names.
+ */
+export async function searchRagDocs(query: string): Promise<RagSearchResult> {
+  if (!GEMINI_STORE_ID) {
+    return { answer: "", sources: [], hasRag: false };
+  }
+
+  const res = await geminiClient.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `Eres un asistente jurídico de derecho español. Busca en los documentos legales disponibles y responde a la siguiente consulta citando los fragmentos más relevantes. Consulta: "${query}"\n\nSi no hay información relevante en los documentos, indícalo brevemente.`,
+          },
+        ],
+      },
+    ],
+    tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 6 } } as any],
+  } as any);
+
+  if (res.usageMetadata) {
+    logUsage("gemini", {
+      prompt: res.usageMetadata.promptTokenCount ?? 0,
+      completion: res.usageMetadata.candidatesTokenCount ?? 0,
+      total: res.usageMetadata.totalTokenCount ?? 0,
+    });
+  }
+
+  const answer = res.text ?? "";
+  const grounding = res.candidates?.[0]?.groundingMetadata;
+  const hasRag = (grounding?.groundingChunks?.length ?? 0) > 0;
+
+  const seen = new Set<string>();
+  const sources: string[] = [];
+  (grounding?.groundingChunks ?? []).forEach((chunk: any) => {
+    const raw = chunk.retrievedContext?.title ?? chunk.retrievedContext?.uri ?? "";
+    if (!raw) return;
+    const clean = raw
+      .split("/")
+      .pop()!
+      .replace(/[_-]/g, " ")
+      .replace(/\.(pdf|docx?|txt|php)$/i, "")
+      .trim();
+    if (clean && !seen.has(clean)) {
+      seen.add(clean);
+      sources.push(clean);
+    }
+  });
+
+  return { answer, sources, hasRag };
+}
