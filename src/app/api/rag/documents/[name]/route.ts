@@ -42,8 +42,10 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
         const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
         await openai.files.del(doc.openai_file_id);
         console.log(`✅ Document also deleted from OpenAI: ${doc.openai_file_id}`);
-      } catch (e: any) {
-        logger.warn("OpenAI delete failed (continuing)", { message: e?.message });
+      } catch (e: unknown) {
+        logger.warn("OpenAI delete failed (continuing)", {
+          message: e instanceof Error ? e.message : String(e),
+        });
         // Continuar aunque falle
       }
     }
@@ -58,10 +60,10 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
       } else if (isFile) {
         await ai.files.delete({ name: documentName });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.warn("Gemini delete failed (continuing to DB cleanup)", {
-        status: e?.status,
-        message: e?.message,
+        status: (e as { status?: number })?.status,
+        message: e instanceof Error ? e.message : String(e),
       });
       // Ignorar 404 para permitir limpieza de DB
     }
@@ -75,8 +77,8 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    const msg = e?.message || "Internal Server Error";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
     logger.error("DELETE /api/rag/documents/[name] failed", e, {
       route: "/api/rag/documents/[name]",

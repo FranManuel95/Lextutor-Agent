@@ -273,6 +273,15 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_user_id: string;
+          p_endpoint: string;
+          p_limit: number;
+          p_window_minutes: number;
+        };
+        Returns: Json;
+      };
       get_exam_stats: {
         Args: { p_user_id: string };
         Returns: Json;

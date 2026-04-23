@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -134,7 +135,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
             <div className="flex flex-col items-center gap-4">
               <div className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-law-gold/50 bg-black/20">
                 {form.avatar_url ? (
-                  <img src={form.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                  <Image src={form.avatar_url} alt="Avatar" fill className="object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-law-gold/50">
                     <User size={40} />

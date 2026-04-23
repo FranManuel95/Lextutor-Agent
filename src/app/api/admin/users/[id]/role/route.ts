@@ -36,8 +36,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     logger.info("admin: role updated", { targetUserId: id, newRole: role, adminId: adminUser.id });
 
     return NextResponse.json({ success: true, role });
-  } catch (e: any) {
-    const msg = e?.message || "Internal Server Error";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
     logger.error("PATCH /api/admin/users/[id]/role failed", e);
     return NextResponse.json({ error: msg }, { status });

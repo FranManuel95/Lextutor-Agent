@@ -34,7 +34,9 @@ const STATUSES = ["open", "reviewed", "dismissed"] as const;
 export default async function AdminFlagsPage({ searchParams }: PageProps) {
   await requireAdmin();
   const params = await searchParams;
-  const status = STATUSES.includes(params.status as any) ? params.status! : "open";
+  const status: (typeof STATUSES)[number] = STATUSES.includes(params.status as any)
+    ? (params.status as (typeof STATUSES)[number])
+    : "open";
 
   const adminSupabase = createAdminClient();
 

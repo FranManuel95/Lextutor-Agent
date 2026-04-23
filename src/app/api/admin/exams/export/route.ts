@@ -14,8 +14,8 @@ const STATUSES = ["finished", "in_progress"];
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin();
-  } catch (e: any) {
-    const msg = e?.message ?? "Forbidden";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Forbidden";
     const status = msg === "Unauthorized" ? 401 : 403;
     return NextResponse.json({ error: msg }, { status });
   }

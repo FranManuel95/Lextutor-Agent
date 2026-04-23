@@ -2,6 +2,7 @@
 
 import { Message } from "@/types/chat";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import { Bot, User, Play, Pause, FileText, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -154,7 +155,7 @@ export function ChatMessage({ message, userAvatar, isStreaming = false }: ChatMe
         )}
       >
         {isUser && userAvatar ? (
-          <img src={userAvatar} alt="User" className="h-full w-full object-cover" />
+          <Image src={userAvatar} alt="User" width={32} height={32} className="object-cover" />
         ) : isUser ? (
           <User size={16} />
         ) : (

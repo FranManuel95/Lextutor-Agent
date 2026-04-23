@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
     const result = await requireAdmin();
     user = result.user;
     supabase = result.supabase;
-  } catch (e: any) {
-    const msg = e?.message || "Forbidden";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Forbidden";
     const status = msg === "Unauthorized" ? 401 : 403;
     return NextResponse.json({ error: msg }, { status });
   }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   let formData;
   try {
     formData = await request.formData();
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("❌ Error parsing FormData (posible exceso de tamaño):", e);
     return NextResponse.json(
       {
@@ -193,8 +193,11 @@ export async function POST(request: NextRequest) {
               docs = response;
             }
             pageToken = (response as any)?.nextPageToken;
-          } catch (e: any) {
-            console.warn(`⚠️ Error listando docs (intento ${attempt}):`, e.message);
+          } catch (e: unknown) {
+            console.warn(
+              `⚠️ Error listando docs (intento ${attempt}):`,
+              e instanceof Error ? e.message : String(e)
+            );
             break;
           }
 
@@ -268,10 +271,13 @@ export async function POST(request: NextRequest) {
 
         openaiFileId = openaiFile.id;
         logger.info("upload: document uploaded to OpenAI", { fileId: openaiFile.id });
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Log only the safe message; stack traces and raw error objects may include
         // headers or payload bytes with sensitive data.
-        console.error("⚠️ OpenAI upload failed (non-critical):", e?.message || "unknown error");
+        console.error(
+          "⚠️ OpenAI upload failed (non-critical):",
+          e instanceof Error ? e.message : "unknown error"
+        );
       }
     }
 
@@ -301,14 +307,19 @@ export async function POST(request: NextRequest) {
       area,
       openai_synced: !!openaiFileId,
     });
-  } catch (error: any) {
-    logger.error("upload failed", error, { status: error?.status });
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+  } catch (error: unknown) {
+    logger.error("upload failed", error, { status: (error as { status?: number })?.status });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Upload failed" },
+      { status: 500 }
+    );
   } finally {
     try {
       await unlink(tempPath);
-    } catch (e: any) {
-      logger.warn("Failed to delete temp upload file", { message: e?.message });
+    } catch (e: unknown) {
+      logger.warn("Failed to delete temp upload file", {
+        message: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 }

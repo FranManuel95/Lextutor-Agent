@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
       } else {
         sent += 1;
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       errors += 1;
       captureException(e, {
         user: { id: userId },

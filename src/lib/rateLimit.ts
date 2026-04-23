@@ -49,7 +49,7 @@ export async function checkRateLimit(
     };
   }
 
-  return data as RateLimitResult;
+  return data as unknown as RateLimitResult;
 }
 
 /**
