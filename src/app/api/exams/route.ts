@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
   // 2. Stats via SQL function — O(1) rows returned regardless of history size
   const [{ data: items, count, error }, { data: stats }] = await Promise.all([
     query,
-    supabase.rpc("get_exam_stats", { p_user_id: user.id } as any),
+    supabase.rpc("get_exam_stats", { p_user_id: user.id }),
   ]);
 
   if (error) {

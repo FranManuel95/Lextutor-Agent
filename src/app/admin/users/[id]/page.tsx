@@ -85,7 +85,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(20),
-    adminSupabase.rpc("get_exam_stats", { p_user_id: id } as any),
+    adminSupabase.rpc("get_exam_stats", { p_user_id: id }),
   ]);
 
   if (!profileRes.data) {

@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database.types";
 import { env } from "@/lib/env";
 
 type DayData = { date: string; exams: number; messages: number };
@@ -20,14 +21,17 @@ export const getCachedAdminStats = unstable_cache(
   async (): Promise<AdminStats> => {
     // Use service-role client: unstable_cache can't capture per-request cookies,
     // and this function is only called from the admin page which already gates access.
-    const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient<Database>(
+      env.NEXT_PUBLIC_SUPABASE_URL,
+      env.SUPABASE_SERVICE_ROLE_KEY
+    );
 
     const [docsRes, usersRes, msgsRes, attemptsRes, activityRes] = await Promise.all([
       supabase.from("rag_documents").select("id", { count: "exact", head: true }),
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("messages").select("id", { count: "exact", head: true }),
       supabase.from("exam_attempts").select("id", { count: "exact", head: true }),
-      supabase.rpc("get_platform_activity", { p_days: 7 } as any),
+      supabase.rpc("get_platform_activity", { p_days: 7 }),
     ]);
 
     return {

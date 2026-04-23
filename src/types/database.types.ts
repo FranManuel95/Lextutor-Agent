@@ -12,6 +12,7 @@ export interface Database {
           birthdate: string | null;
           avatar_url: string | null;
           tutor_prefs: Json | null;
+          email_weekly_summary: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -23,6 +24,7 @@ export interface Database {
           birthdate?: string | null;
           avatar_url?: string | null;
           tutor_prefs?: Json | null;
+          email_weekly_summary?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -34,6 +36,7 @@ export interface Database {
           birthdate?: string | null;
           avatar_url?: string | null;
           tutor_prefs?: Json | null;
+          email_weekly_summary?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -225,9 +228,64 @@ export interface Database {
         };
         Relationships: [];
       };
+      question_flags: {
+        Row: {
+          id: string;
+          user_id: string;
+          attempt_id: string | null;
+          session_id: string | null;
+          question_id: string;
+          question_text: string | null;
+          area: string | null;
+          reason: "incorrect" | "ambiguous" | "off_topic" | "other";
+          comment: string | null;
+          status: "open" | "reviewed" | "dismissed";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          attempt_id?: string | null;
+          session_id?: string | null;
+          question_id: string;
+          question_text?: string | null;
+          area?: string | null;
+          reason: "incorrect" | "ambiguous" | "off_topic" | "other";
+          comment?: string | null;
+          status?: "open" | "reviewed" | "dismissed";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          attempt_id?: string | null;
+          session_id?: string | null;
+          question_id?: string;
+          question_text?: string | null;
+          area?: string | null;
+          reason?: "incorrect" | "ambiguous" | "off_topic" | "other";
+          comment?: string | null;
+          status?: "open" | "reviewed" | "dismissed";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_exam_stats: {
+        Args: { p_user_id: string };
+        Returns: Json;
+      };
+      get_platform_activity: {
+        Args: { p_days?: number };
+        Returns: Json;
+      };
+      get_leaderboard: {
+        Args: { p_metric?: string; p_limit?: number };
+        Returns: Json;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

@@ -56,7 +56,7 @@ export default async function ProgressPage() {
       .eq("kind", "answer_submitted")
       .order("created_at", { ascending: false })
       .limit(1000),
-    supabase.rpc("get_exam_stats", { p_user_id: user.id } as any),
+    supabase.rpc("get_exam_stats", { p_user_id: user.id }),
     supabase
       .from("exam_attempts")
       .select("id", { count: "exact", head: true })

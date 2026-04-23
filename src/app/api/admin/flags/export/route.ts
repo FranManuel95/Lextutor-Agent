@@ -27,15 +27,20 @@ export async function GET() {
     return NextResponse.json({ error: flagsRes.error.message }, { status: 500 });
   }
 
-  const flags = (flagsRes.data ?? []) as any[];
+  const flags = flagsRes.data ?? [];
   const userIds = Array.from(new Set(flags.map((f) => f.user_id)));
 
+  type ProfileRow = { id: string; full_name: string | null };
   const profilesRes =
     userIds.length > 0
-      ? await admin.from("profiles").select("id, full_name").in("id", userIds)
-      : { data: [] as any[] };
+      ? await admin
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds)
+          .returns<ProfileRow[]>()
+      : { data: [] as ProfileRow[] };
   const namesById = Object.fromEntries(
-    (profilesRes.data ?? []).map((p: any) => [p.id, p.full_name ?? ""])
+    (profilesRes.data ?? []).map((p) => [p.id, p.full_name ?? ""])
   );
 
   const header = [

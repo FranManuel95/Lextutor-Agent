@@ -27,7 +27,7 @@ export const POST = createApiHandler(
       area: body.area ?? null,
       reason: body.reason,
       comment: body.comment ?? null,
-    } as any);
+    });
 
     if (error) throw error;
     return { success: true };
