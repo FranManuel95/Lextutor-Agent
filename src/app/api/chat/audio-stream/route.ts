@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { generateAudioResponseStream } from "@/lib/ai-service-stream";
 import { constructEliteSystemPrompt } from "@/lib/ai-service";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs"; // Required for stream handling
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       .download(audioPath);
 
     if (downloadError || !fileData) {
-      console.error("Storage Download Error:", downloadError);
+      logger.error("audio-stream: storage download failed", downloadError);
       throw new Error("Failed to retrieve audio file");
     }
 
@@ -141,11 +142,11 @@ export async function POST(request: NextRequest) {
           // Done signal
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
           controller.close();
-        } catch (streamError: any) {
-          console.error("Streaming Error:", streamError);
+        } catch (streamError: unknown) {
+          logger.error("audio-stream: streaming error", streamError);
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "error", message: streamError.message })}\n\n`
+              `data: ${JSON.stringify({ type: "error", message: streamError instanceof Error ? streamError.message : "Streaming error" })}\n\n`
             )
           );
           controller.close();
@@ -161,10 +162,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error("Audio Route Error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Internal Server Error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.error("audio-stream: route error", error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : "Internal Server Error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }

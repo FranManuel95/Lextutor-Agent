@@ -1,4 +1,5 @@
 import { createApiHandler } from "@/lib/api-handler";
+import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -17,21 +18,24 @@ const profileSchema = z
   })
   .strict();
 
-export const GET = createApiHandler(async ({ user, supabase }) => {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url, birth_date, age, role, email_weekly_summary")
-    .eq("id", user.id)
-    .single();
+export const GET = createApiHandler(
+  async ({ user, supabase }) => {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url, birth_date, age, role, email_weekly_summary")
+      .eq("id", user.id)
+      .single();
 
-  if (error) {
-    // Throwing error will be caught by api-handler and returned as 500 (or we can return NextResponse for 404?)
-    // If profile is strictly required, 500 or 404 is fine.
-    throw new Error(error.message);
-  }
+    if (error) {
+      // Throwing error will be caught by api-handler and returned as 500 (or we can return NextResponse for 404?)
+      // If profile is strictly required, 500 or 404 is fine.
+      throw new Error(error.message);
+    }
 
-  return profile;
-});
+    return profile;
+  },
+  { rateLimit: RATE_LIMITS.PROFILE_GET }
+);
 
 export const PATCH = createApiHandler(
   async ({ user, supabase, body }) => {
@@ -46,5 +50,6 @@ export const PATCH = createApiHandler(
   },
   {
     schema: profileSchema,
+    rateLimit: RATE_LIMITS.PROFILE_UPDATE,
   }
 );

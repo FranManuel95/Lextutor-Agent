@@ -59,7 +59,7 @@ export const POST = createApiHandler(
       .download(audioPath);
 
     if (downloadError || !fileData) {
-      console.error(`[AudioAPI] Download Error:`, downloadError);
+      logger.error("audio/message: download failed", downloadError);
       throw new Error(`Audio download failed: ${downloadError?.message}`);
     }
     logger.info("audio/message: downloaded", { bytes: fileData.size });
@@ -81,7 +81,7 @@ export const POST = createApiHandler(
       .single();
 
     const userMsg = userMsgData as Database["public"]["Tables"]["messages"]["Row"] | null;
-    if (userMsgError) console.error("[AudioAPI] DB Insert Error:", userMsgError);
+    if (userMsgError) logger.error("audio/message: db insert failed", userMsgError);
 
     // 5. Build System Prompt & Parsing Instruction
     // Fetch profile name for personalization
@@ -113,7 +113,7 @@ export const POST = createApiHandler(
         prompt,
       });
     } catch (aiErr) {
-      console.error("[AudioAPI] Gemini Error:", aiErr);
+      logger.error("audio/message: Gemini failed", aiErr);
       throw new Error("AI Processing Failed");
     }
     logger.info("audio/message: Gemini responded", { chars: responseText.length });
@@ -166,7 +166,9 @@ export const POST = createApiHandler(
         payload: { settings: effectiveSettings, audio: true },
       } as any);
     } catch (logErr) {
-      console.warn("[AudioAPI] Failed to log event", logErr);
+      logger.warn("audio/message: event log failed", {
+        message: logErr instanceof Error ? logErr.message : String(logErr),
+      });
     }
 
     return {

@@ -3,6 +3,7 @@ import { chatSchema } from "@/lib/server-utils";
 import { createApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { generateResponse } from "@/lib/ai-service";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,7 +59,7 @@ export const POST = createApiHandler(
           .from("chats")
           .update({ title: newTitle } as any)
           .eq("id", chatId);
-        if (titleError) console.error("Title update failed:", titleError.message);
+        if (titleError) logger.warn("chat: title update failed", { message: titleError.message });
       }
     }
 

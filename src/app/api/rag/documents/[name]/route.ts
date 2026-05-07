@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,12 @@ const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: string }> }) {
   try {
-    const { supabase } = await requireAdmin();
+    const { supabase, user } = await requireAdmin();
+
+    const rateLimit = await checkRateLimit(user.id, RATE_LIMITS.RAG_DOC_DELETE);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+    }
 
     const { name } = await ctx.params;
     const documentName = decodeURIComponent(name);

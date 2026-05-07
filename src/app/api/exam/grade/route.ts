@@ -3,6 +3,28 @@ import { gradeExam } from "@/lib/ai-service";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
 
+interface GradedQuestion {
+  correct: boolean;
+  explanation?: string;
+  [key: string]: unknown;
+}
+
+interface ExamQuestion {
+  id: string | number;
+  text: string;
+  [key: string]: unknown;
+}
+
+type SessionData = {
+  id: string;
+  user_id: string;
+  questions: ExamQuestion[];
+  rubric: Record<string, unknown>;
+  area?: string;
+  metadata?: { rag_used?: boolean };
+  [key: string]: unknown;
+};
+
 export const runtime = "nodejs";
 
 const gradeSchema = z.object({
@@ -24,8 +46,9 @@ export const POST = createApiHandler(
 
     if (sessionError || !session) throw new Error("Session not found");
 
-    const questions = (session as any).questions;
-    const rubric = (session as any).rubric;
+    const typedSession = session as SessionData;
+    const questions = typedSession.questions;
+    const rubric = typedSession.rubric;
 
     // 2. Grade via AI Service
     const gradingResult = await gradeExam({ questions, answers, rubric });
@@ -43,20 +66,20 @@ export const POST = createApiHandler(
         user_id: user.id,
         attempt_type: "exam_open",
         session_id: sessionId,
-        area: (session as any).area || "general",
+        area: typedSession.area || "general",
         score: finalScore,
         status: "finished",
         questions_count: questions.length,
         payload: {
           payload_version: 1,
-          questions: gradingResult.questions.map((g: any, i: number) => ({
+          questions: gradingResult.questions.map((g: GradedQuestion, i: number) => ({
             ...g,
             id: questions[i]?.id,
             question: questions[i]?.text,
             userAnswer: answers[String(questions[i]?.id)],
           })),
           attempt: gradingResult.attempt,
-          rag_used: (session as any).metadata?.rag_used || false,
+          rag_used: typedSession.metadata?.rag_used || false,
         },
       } as any)
       .select()
@@ -65,7 +88,7 @@ export const POST = createApiHandler(
     if (attemptError) throw attemptError;
 
     return {
-      attemptId: (attemptEntry as any).id,
+      attemptId: (attemptEntry as Record<string, unknown>)?.id as string,
       ...gradingResult,
     };
   },

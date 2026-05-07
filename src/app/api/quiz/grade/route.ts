@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -95,7 +96,7 @@ export const POST = createApiHandler(
     } as any);
 
     if (syncError) {
-      console.error("STATS SYNC ERROR:", syncError);
+      logger.error("quiz/grade: stats sync failed", syncError);
     }
 
     return {

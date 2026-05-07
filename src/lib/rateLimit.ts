@@ -69,4 +69,12 @@ export const RATE_LIMITS = {
   QUIZ_GRADE: { endpoint: "/api/quiz/grade", limit: 50, windowMinutes: 1440 }, // 24h
   QUESTION_FLAG: { endpoint: "/api/quiz/flag", limit: 30, windowMinutes: 1440 }, // 24h
   RAG_SEARCH: { endpoint: "/api/rag/search", limit: 20, windowMinutes: 60 },
+  PROFILE_GET: { endpoint: "/api/me/profile/get", limit: 120, windowMinutes: 60 },
+  PROFILE_UPDATE: { endpoint: "/api/me/profile/update", limit: 20, windowMinutes: 60 },
+  EXAMS_LIST: { endpoint: "/api/exams", limit: 120, windowMinutes: 60 },
+  EXAM_DETAIL: { endpoint: "/api/exams/:id", limit: 120, windowMinutes: 60 },
+  EXAM_DELETE: { endpoint: "/api/exams/delete", limit: 30, windowMinutes: 60 },
+  CHAT_SEARCH: { endpoint: "/api/chat/search", limit: 30, windowMinutes: 60 },
+  RAG_DOC_DELETE: { endpoint: "/api/rag/documents/delete", limit: 20, windowMinutes: 60 },
+  UPLOAD: { endpoint: "/api/upload", limit: 10, windowMinutes: 1440 },
 } as const;

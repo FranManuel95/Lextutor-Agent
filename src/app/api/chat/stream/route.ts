@@ -1,9 +1,17 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { generateResponseStream } from "@/lib/ai-service-stream";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+
+type ChatSettings = {
+  area?: string;
+  modes?: string[];
+  detailLevel?: string;
+  summary?: string;
+};
 
 type ChatOwnership = { user_id: string; title: string | null };
 type ProfileName = { full_name: string | null };
@@ -50,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Validate body
-  let chatId: string, message: string, settings: any;
+  let chatId: string, message: string, settings: ChatSettings | undefined;
   try {
     const parsed = streamSchema.parse(await request.json());
     chatId = parsed.chatId;
@@ -133,7 +141,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Stream chunks to client
-        let lastResponse: any = null;
+        let lastResponse: unknown = null;
         for await (const chunk of geminiStream) {
           const text = chunk.text || "";
           fullResponse += text;
@@ -145,8 +153,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Add citations if available
-        const lastChunk = lastResponse?.candidates?.[0];
-        const grounding = lastChunk?.groundingMetadata;
+        type GeminiChunk = { candidates?: Array<{ groundingMetadata?: unknown }> };
+        const lastChunkTyped = lastResponse as GeminiChunk | null;
+        const lastChunk = lastChunkTyped?.candidates?.[0];
+        const grounding = lastChunk?.groundingMetadata as
+          | { groundingChunks?: unknown[] }
+          | undefined;
 
         if (grounding?.groundingChunks && grounding.groundingChunks.length > 0) {
           const { formatGeminiCitations } = await import("@/lib/ai-service");
@@ -202,13 +214,13 @@ export async function POST(request: NextRequest) {
 
 // Background task to save assistant message
 async function saveAssistantMessage(
-  supabase: any,
+  supabase: SupabaseClient,
   chatId: string,
   userId: string,
   content: string,
   currentTitle: string | null,
   userMessage: string,
-  settings: any
+  settings: ChatSettings | undefined
 ) {
   try {
     // Save assistant message

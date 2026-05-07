@@ -3,6 +3,14 @@ import { RATE_LIMITS } from "@/lib/rateLimit";
 import { generateQuiz } from "@/lib/ai-service";
 import { z } from "zod";
 
+interface QuizQuestion {
+  id: string;
+  text: string;
+  options: string[];
+  correctIndex: number;
+  explanation?: string;
+}
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -42,14 +50,14 @@ export const POST = createApiHandler(
     if (error) throw error;
 
     // 3. Return sanitized questions (without correctIndex/explanation) to client
-    const clientQuestions = questions.map((q: any) => ({
+    const clientQuestions = (questions as QuizQuestion[]).map((q) => ({
       id: q.id,
       text: q.text,
       options: q.options,
     }));
 
     return {
-      sessionId: (session as any).id,
+      sessionId: (session as Record<string, unknown>).id as string,
       questions: clientQuestions,
       ragUsed,
       sources,

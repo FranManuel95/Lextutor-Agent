@@ -37,6 +37,7 @@ async function sleep(ms: number) {
 }
 
 import { requireAdmin } from "@/server/security/requireAdmin";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 // ... existing imports ...
 
@@ -54,6 +55,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status });
   }
 
+  const uploadRateLimit = await checkRateLimit(user.id, RATE_LIMITS.UPLOAD);
+  if (!uploadRateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Límite de subidas alcanzado (máx 10/día)." },
+      { status: 429 }
+    );
+  }
+
   if (!STORE_ID?.startsWith("fileSearchStores/")) {
     return NextResponse.json(
       { error: "Missing/invalid GEMINI_FILESEARCH_STORE_ID" },
@@ -65,7 +74,7 @@ export async function POST(request: NextRequest) {
   try {
     formData = await request.formData();
   } catch (e: unknown) {
-    console.error("❌ Error parsing FormData (posible exceso de tamaño):", e);
+    logger.error("upload: formData parse failed", e);
     return NextResponse.json(
       {
         error:
@@ -80,7 +89,7 @@ export async function POST(request: NextRequest) {
   const area = normalizeArea((formData.get("area") as string) || "general");
 
   if (!file) {
-    console.error("❌ No file found in FormData");
+    logger.warn("upload: no file in formData");
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
 
@@ -194,10 +203,9 @@ export async function POST(request: NextRequest) {
             }
             pageToken = (response as any)?.nextPageToken;
           } catch (e: unknown) {
-            console.warn(
-              `⚠️ Error listando docs (intento ${attempt}):`,
-              e instanceof Error ? e.message : String(e)
-            );
+            logger.warn(`upload: error listing docs (attempt ${attempt})`, {
+              message: e instanceof Error ? e.message : String(e),
+            });
             break;
           }
 
@@ -274,10 +282,9 @@ export async function POST(request: NextRequest) {
       } catch (e: unknown) {
         // Log only the safe message; stack traces and raw error objects may include
         // headers or payload bytes with sensitive data.
-        console.error(
-          "⚠️ OpenAI upload failed (non-critical):",
-          e instanceof Error ? e.message : "unknown error"
-        );
+        logger.warn("upload: OpenAI upload failed (non-critical)", {
+          message: e instanceof Error ? e.message : "unknown error",
+        });
       }
     }
 
