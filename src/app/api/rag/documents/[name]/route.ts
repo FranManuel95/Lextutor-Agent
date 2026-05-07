@@ -41,7 +41,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
       try {
         const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
         await openai.files.del(doc.openai_file_id);
-        console.log(`✅ Document also deleted from OpenAI: ${doc.openai_file_id}`);
+        logger.info("rag/documents: OpenAI file deleted", { fileId: doc.openai_file_id });
       } catch (e: unknown) {
         logger.warn("OpenAI delete failed (continuing)", {
           message: e instanceof Error ? e.message : String(e),

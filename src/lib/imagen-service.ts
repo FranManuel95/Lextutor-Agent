@@ -113,18 +113,17 @@ ${sections.length + 3}. **FOOTER NOTE**:
         JSON.stringify(response.candidates, null, 2)
       );
       return null; // Don't retry if we got a valid response but no image (likely content filter or format issue)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { message?: string; code?: number; response?: unknown };
       console.error(
         `❌ Error generando infografía legal (Intento ${attempt}/${MAX_RETRIES}):`,
-        error.message
+        err.message
       );
 
       // Check for 503 Overloaded or 429 Too Many Requests
       const isOverloaded =
-        error.code === 503 ||
-        error.message?.includes("503") ||
-        error.message?.includes("overloaded");
-      const isRateLimit = error.code === 429 || error.message?.includes("429");
+        err.code === 503 || err.message?.includes("503") || err.message?.includes("overloaded");
+      const isRateLimit = err.code === 429 || err.message?.includes("429");
 
       if ((isOverloaded || isRateLimit) && attempt < MAX_RETRIES) {
         const delayMs = INITIAL_RETRY_DELAY_MS * 2 ** (attempt - 1); // Exponential backoff: 2s, 4s
@@ -133,8 +132,8 @@ ${sections.length + 3}. **FOOTER NOTE**:
         continue;
       }
 
-      if (error.response) {
-        console.error("Error Response:", JSON.stringify(error.response, null, 2));
+      if (err.response) {
+        console.error("Error Response:", JSON.stringify(err.response, null, 2));
       }
       // If it's the last attempt or a non-retriable error, return null
       if (attempt === MAX_RETRIES) return null;

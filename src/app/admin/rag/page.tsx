@@ -126,11 +126,11 @@ export default function AdminRagPage() {
 
       setDocToDelete(null); // Close modal first
       fetchDocuments(); // Then refresh list
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
       toast({
         title: "Error al eliminar",
-        description: error.message || "No se pudo eliminar el documento.",
+        description: error instanceof Error ? error.message : "No se pudo eliminar el documento.",
         variant: "destructive",
       });
       setDocToDelete(null);

@@ -54,8 +54,8 @@ export default function QuizPage() {
             }
 
             setStep('taking')
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        } catch (error: unknown) {
+            toast({ title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido', variant: 'destructive' })
         } finally {
             setLoading(false)
         }
@@ -78,8 +78,8 @@ export default function QuizPage() {
 
             setResult(data)
             setStep('results')
-        } catch (error: any) {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' })
+        } catch (error: unknown) {
+            toast({ title: 'Error', description: error instanceof Error ? error.message : 'Error desconocido', variant: 'destructive' })
         } finally {
             setLoading(false)
         }

@@ -87,7 +87,7 @@ export function createApiHandler<TBody extends z.ZodType>(
       // 6. Return response
       if (result instanceof NextResponse) return result;
       return NextResponse.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("API Error:", error);
 
       if (error instanceof z.ZodError) {
@@ -102,7 +102,7 @@ export function createApiHandler<TBody extends z.ZodType>(
 
       return NextResponse.json(
         {
-          error: error.message || "Internal Server Error",
+          error: error instanceof Error ? error.message : "Internal Server Error",
         },
         { status: 500 }
       );

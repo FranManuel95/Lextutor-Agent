@@ -46,7 +46,7 @@ export async function POST(_request: NextRequest) {
       signedUrl: data.signedUrl,
       token: data.token,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("audio/create-upload failed", error, { userId: user.id });
     return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
   }

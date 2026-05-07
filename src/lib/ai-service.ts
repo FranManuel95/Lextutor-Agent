@@ -28,21 +28,22 @@ export async function retryOperation<T>(
 ): Promise<T> {
   try {
     return await operation();
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { status?: number; response?: { status?: number }; message?: string };
     if (
       retries > 0 &&
-      (String(error.status) === "503" ||
-        String(error.status) === "429" ||
-        String(error.response?.status) === "503" ||
-        String(error.response?.status) === "429" ||
-        error.message?.includes("overloaded") ||
-        error.message?.includes("503") ||
-        error.message?.includes("429") ||
-        error.message?.includes("RESOURCE_EXHAUSTED") ||
-        error.message?.includes("UNAVAILABLE"))
+      (String(err.status) === "503" ||
+        String(err.status) === "429" ||
+        String(err.response?.status) === "503" ||
+        String(err.response?.status) === "429" ||
+        err.message?.includes("overloaded") ||
+        err.message?.includes("503") ||
+        err.message?.includes("429") ||
+        err.message?.includes("RESOURCE_EXHAUSTED") ||
+        err.message?.includes("UNAVAILABLE"))
     ) {
       console.log(
-        `⚠️ Gemini API Error (${error.status || "Unknown"}). Retrying in ${delay}ms... (${retries} attempts left)`
+        `⚠️ Gemini API Error (${err.status || "Unknown"}). Retrying in ${delay}ms... (${retries} attempts left)`
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
       return retryOperation(operation, retries - 1, delay * 2); // Increased backoff factor for 429s
@@ -427,8 +428,8 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
       } else {
         console.warn("⚠️ fileSearch devolvió 0 preguntas, usando conocimiento general");
       }
-    } catch (e: any) {
-      console.warn(`⚠️ fileSearch falló (${e.message}), usando conocimiento general`);
+    } catch (e: unknown) {
+      console.warn(`⚠️ fileSearch falló (${e instanceof Error ? e.message : String(e)}), usando conocimiento general`);
     }
   }
 
@@ -496,8 +497,9 @@ export async function generateExam(params: { area: string; difficulty: string; c
         },
       } as any)
     );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
+  } catch (error: unknown) {
+    const err = error as { status?: number; message?: string };
+    if (String(err.status) === "429" || err.message?.includes("RESOURCE_EXHAUSTED")) {
       console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
       res = await retryOperation(() =>
         geminiClient.models.generateContent({
@@ -585,8 +587,9 @@ export async function gradeExam(params: {
         },
       })
     );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
+  } catch (error: unknown) {
+    const err = error as { status?: number; message?: string };
+    if (String(err.status) === "429" || err.message?.includes("RESOURCE_EXHAUSTED")) {
       console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
       res = await retryOperation(() =>
         geminiClient.models.generateContent({

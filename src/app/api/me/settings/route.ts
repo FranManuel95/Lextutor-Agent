@@ -110,13 +110,16 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json(newPrefs);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation Error", details: error.errors },
         { status: 400 }
       );
     }
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

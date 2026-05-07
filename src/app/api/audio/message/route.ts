@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Database } from "@/types/database.types";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,7 +53,7 @@ export const POST = createApiHandler(
     };
 
     // 3. Download Audio
-    console.log(`[AudioAPI] Downloading: ${audioPath}`);
+    logger.info("audio/message: downloading", { audioPath });
     const { data: fileData, error: downloadError } = await adminSupabase.storage
       .from("audio-notes")
       .download(audioPath);
@@ -61,7 +62,7 @@ export const POST = createApiHandler(
       console.error(`[AudioAPI] Download Error:`, downloadError);
       throw new Error(`Audio download failed: ${downloadError?.message}`);
     }
-    console.log(`[AudioAPI] Downloaded size: ${fileData.size} bytes`);
+    logger.info("audio/message: downloaded", { bytes: fileData.size });
 
     const arrayBuffer = await fileData.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString("base64");
@@ -104,7 +105,7 @@ export const POST = createApiHandler(
     const prompt = `${system}\n\nÁREA SUGERIDA: ${effectiveSettings.area?.toUpperCase() || "GENERAL"}\nINSTRUCCIÓN TÉCNICA (IMPORTANTE): Primero, transcribe el audio del usuario literalmente comenzando con "TRANSCRIPT: " y terminando con "|||". Después, responde a la consulta del estudiante siguiendo tu personalidad.`;
 
     // 6. Generate Response via AI Service
-    console.log(`[AudioAPI] Sending to Gemini...`);
+    logger.info("audio/message: sending to Gemini");
     let responseText = "";
     try {
       responseText = await generateAudioResponse({
@@ -115,7 +116,7 @@ export const POST = createApiHandler(
       console.error("[AudioAPI] Gemini Error:", aiErr);
       throw new Error("AI Processing Failed");
     }
-    console.log(`[AudioAPI] Gemini Responded (${responseText.length} chars)`);
+    logger.info("audio/message: Gemini responded", { chars: responseText.length });
 
     let transcript = "Audio recibido (Sin transcripción)";
     let assistantResponse = responseText;

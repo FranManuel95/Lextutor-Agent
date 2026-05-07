@@ -77,10 +77,10 @@ export function useChatStream() {
                     }
                 }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Stream error:', error);
             setIsStreaming(false);
-            onError(error.message || 'Failed to send message');
+            onError(error instanceof Error ? error.message : 'Failed to send message');
         }
     };
 

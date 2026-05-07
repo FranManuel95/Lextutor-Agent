@@ -142,10 +142,10 @@ export function ChatInput({ chatId }: ChatInputProps) {
                     }
                 }
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             removeOptimisticMessage(tempId)
             removeOptimisticMessage(assistantTempId)
-            toast({ title: "Error", description: e?.message ?? "Falló el envío", variant: "destructive" })
+            toast({ title: "Error", description: e instanceof Error ? e.message : "Falló el envío", variant: "destructive" })
         } finally {
             setIsSending(false)
         }
@@ -261,7 +261,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
                 }
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Audio Error:", error);
             removeOptimisticMessage(tempId);
             removeOptimisticMessage(assistantTempId);

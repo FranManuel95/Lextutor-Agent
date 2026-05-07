@@ -17,11 +17,11 @@ vi.mock("@/lib/api-handler", () => ({
       });
       if (result instanceof NextResponse) return result;
       return NextResponse.json(result);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof z.ZodError) {
         return NextResponse.json({ error: "Validation Error", details: e.errors }, { status: 400 });
       }
-      return NextResponse.json({ error: e?.message || "Internal Server Error" }, { status: 500 });
+      return NextResponse.json({ error: e instanceof Error ? e.message : "Internal Server Error" }, { status: 500 });
     }
   },
 }));

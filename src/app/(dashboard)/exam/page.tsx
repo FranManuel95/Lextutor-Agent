@@ -77,8 +77,8 @@ export default function ExamPage() {
       }
 
       setStep("taking");
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -101,8 +101,8 @@ export default function ExamPage() {
 
       setGrading(data);
       setStep("results");
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
     } finally {
       setLoading(false);
     }

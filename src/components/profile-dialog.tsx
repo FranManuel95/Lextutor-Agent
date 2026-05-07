@@ -83,8 +83,8 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       setForm((prev) => ({ ...prev, avatar_url: publicUrl }));
-    } catch (error: any) {
-      toast({ title: "Error subiendo imagen", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error subiendo imagen", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -104,8 +104,8 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
       toast({ title: "Perfil actualizado", className: "bg-green-500 text-white" });
       setOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
     } finally {
       setSaving(false);
     }

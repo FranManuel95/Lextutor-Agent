@@ -189,16 +189,16 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
     }
 
     return citations ? `${text}\n\n${citations}` : text;
-  } catch (error: any) {
-    console.error("❌ GPT-5.2 Error:", error?.message || error);
+  } catch (error: unknown) {
+    console.error("❌ GPT-5.2 Error:", error instanceof Error ? error.message : error);
 
     // Provide helpful error messages
-    if (error?.status === 400) {
+    if ((error as { status?: number })?.status === 400) {
       throw new Error(
         "GPT-5.2 configuración inválida. Verifica que OPENAI_VECTOR_STORE_ID esté configurado correctamente."
       );
     }
 
-    throw new Error(`GPT-5.2 Error: ${error?.message || "Unknown error"}`);
+    throw new Error(`GPT-5.2 Error: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

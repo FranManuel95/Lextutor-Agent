@@ -177,10 +177,10 @@ export async function POST(request: NextRequest) {
           message,
           settings
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("chat/stream failed", error, { chatId, userId: user.id });
         if (!streamSucceeded) {
-          const errorMessage = error?.message || "Unknown streaming error";
+          const errorMessage = error instanceof Error ? error.message : "Unknown streaming error";
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n\n`)
           );

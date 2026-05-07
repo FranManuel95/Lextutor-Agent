@@ -160,9 +160,9 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Audio Route Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Internal Server Error" }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
