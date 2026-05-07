@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase";
 import { RateLimitConfig, checkRateLimit } from "./rateLimit";
 import { verifyOrigin } from "./csrf";
+import { logger } from "./logger";
 
 type ApiHandlerContext<TBody = any> = {
   user: any;
@@ -88,7 +89,7 @@ export function createApiHandler<TBody extends z.ZodType>(
       if (result instanceof NextResponse) return result;
       return NextResponse.json(result);
     } catch (error: unknown) {
-      console.error("API Error:", error);
+      logger.error("API handler error", error);
 
       if (error instanceof z.ZodError) {
         return NextResponse.json(

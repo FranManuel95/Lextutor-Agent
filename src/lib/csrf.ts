@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { env } from "./env";
 
 /**
  * Verifies the Origin (or fallback Referer) of a state-changing request
@@ -45,7 +46,7 @@ export function verifyOrigin(request: NextRequest): { ok: true } | { ok: false; 
   }
 
   // Allow an explicit whitelist for known deploy URLs (Vercel previews, etc.)
-  const extra = (process.env.ALLOWED_ORIGINS ?? "")
+  const extra = (env.ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);

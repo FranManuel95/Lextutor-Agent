@@ -16,6 +16,9 @@ const envSchema = z.object({
   // Shared secret for scheduled/cron-like endpoints (e.g. weekly summary email).
   // When absent, those endpoints will reject every request.
   CRON_SECRET: z.string().min(16).optional(),
+  // Comma-separated list of allowed origins for CSRF checks (e.g. preview URLs).
+  // When absent, only the Host header of the current request is allowed.
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 type Env = z.infer<typeof envSchema>;
