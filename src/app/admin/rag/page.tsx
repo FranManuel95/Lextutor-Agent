@@ -1,22 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Loader2,
   Upload,
   FileText,
   Trash2,
   RefreshCw,
-  AlertTriangle,
   MessageSquare,
   LogOut,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { Copyright } from "@/components/copyright";
@@ -29,17 +37,73 @@ interface RagDocument {
   created_at: string;
 }
 
+const AREAS = [
+  { value: "general", label: "General" },
+  { value: "laboral", label: "Laboral" },
+  { value: "civil", label: "Civil" },
+  { value: "mercantil", label: "Mercantil" },
+  { value: "procesal", label: "Procesal" },
+  { value: "otro", label: "Otro" },
+] as const;
+
+const AREA_COLORS: Record<string, string> = {
+  laboral: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  civil: "bg-purple-500/15 text-purple-300 border-purple-500/30",
+  mercantil: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  procesal: "bg-green-500/15 text-green-300 border-green-500/30",
+  otro: "bg-gray-500/15 text-gray-300 border-gray-500/30",
+  general: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+};
+
+const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"];
+const ACCEPTED_MIME =
+  "application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,text/plain";
+const WARN_MB = 50;
+const DANGER_MB = 150;
+const MAX_MB = 500;
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function fileSizeLevel(file: File): "ok" | "warn" | "danger" | "over" {
+  const mb = file.size / (1024 * 1024);
+  if (mb > MAX_MB) return "over";
+  if (mb > DANGER_MB) return "danger";
+  if (mb > WARN_MB) return "warn";
+  return "ok";
+}
+
+function estimatedTime(file: File): string {
+  const mb = file.size / (1024 * 1024);
+  if (mb < 5) return "< 30 s";
+  if (mb < 20) return "~1 min";
+  if (mb < 60) return "1–2 min";
+  if (mb < 150) return "2–4 min";
+  return "4–8 min";
+}
+
 export default function AdminRagPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [area, setArea] = useState("general");
   const [uploading, setUploading] = useState(false);
+  const [largFileConfirmed, setLargeFileConfirmed] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [documents, setDocuments] = useState<RagDocument[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [docToDelete, setDocToDelete] = useState<RagDocument | null>(null);
   const { toast } = useToast();
+  const dropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  // Reset large-file confirmation whenever file changes
+  useEffect(() => {
+    setLargeFileConfirmed(false);
+  }, [file]);
 
   const fetchDocuments = async () => {
     setLoadingDocs(true);
@@ -47,9 +111,8 @@ export default function AdminRagPage() {
       const res = await fetch("/api/rag/documents?limit=200");
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setDocuments(Array.isArray(data) ? data : data.items || []);
-    } catch (error) {
-      console.error(error);
+      setDocuments(Array.isArray(data) ? data : (data.items ?? []));
+    } catch {
       toast({
         title: "Error al cargar documentos",
         description: "No se pudo conectar con la base de datos.",
@@ -60,44 +123,77 @@ export default function AdminRagPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+  const applyFile = useCallback((f: File) => {
+    const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+      toast({
+        title: "Formato no soportado",
+        description: `Solo se aceptan: ${ACCEPTED_EXTENSIONS.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
     }
+    const mb = f.size / (1024 * 1024);
+    if (mb > MAX_MB) {
+      toast({
+        title: "Archivo demasiado grande",
+        description: `El límite es ${MAX_MB} MB. Este archivo pesa ${formatBytes(f.size)}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setFile(f);
+  }, [toast]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) applyFile(e.target.files[0]);
   };
+
+  // Drag & drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!dropRef.current?.contains(e.relatedTarget as Node)) setDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) applyFile(dropped);
+  };
+
+  const sizeLevel = file ? fileSizeLevel(file) : null;
+  const needsConfirmation = sizeLevel === "danger" && !largFileConfirmed;
+  const canSubmit = !!file && !uploading && sizeLevel !== "over" && !needsConfirmation;
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
+    if (!file || !canSubmit) return;
 
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("displayName", file.name);
+    formData.append("displayName", file.name.replace(/\.[^.]+$/, ""));
+    formData.append("area", area);
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Upload failed");
-      }
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
 
       toast({
         title: "Documento subido",
-        description: "El manual se ha digitalizado correctamente.",
+        description: `"${file.name.replace(/\.[^.]+$/, "")}" ya está disponible en el índice RAG.`,
       });
-
       setFile(null);
       fetchDocuments();
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
       toast({
         title: "Error al subir",
-        description: "Ocurrió un error al procesar el archivo.",
+        description: error instanceof Error ? error.message : "Error desconocido al procesar el archivo.",
         variant: "destructive",
       });
     } finally {
@@ -107,27 +203,17 @@ export default function AdminRagPage() {
 
   const confirmDelete = async () => {
     if (!docToDelete) return;
-
     try {
-      const encodedName = encodeURIComponent(docToDelete.document_name);
-      const res = await fetch(`/api/rag/documents/${encodedName}`, {
+      const res = await fetch(`/api/rag/documents/${encodeURIComponent(docToDelete.document_name)}`, {
         method: "DELETE",
       });
+      const errData = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(errData.error ?? "Delete failed");
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Delete failed");
-      }
-
-      toast({
-        title: "Documento eliminado",
-        description: "Se ha borrado del vector store y base de datos.",
-      });
-
-      setDocToDelete(null); // Close modal first
-      fetchDocuments(); // Then refresh list
+      toast({ title: "Documento eliminado", description: "Borrado del vector store y base de datos." });
+      setDocToDelete(null);
+      fetchDocuments();
     } catch (error: unknown) {
-      console.error(error);
       toast({
         title: "Error al eliminar",
         description: error instanceof Error ? error.message : "No se pudo eliminar el documento.",
@@ -140,6 +226,7 @@ export default function AdminRagPage() {
   return (
     <div className="min-h-screen bg-gem-onyx p-8 font-sans">
       <div className="mx-auto max-w-5xl space-y-8">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-serif text-3xl italic text-law-gold">Gestión RAG</h1>
@@ -149,10 +236,7 @@ export default function AdminRagPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/chat">
-              <Button
-                variant="ghost"
-                className="gap-2 text-gray-400 hover:bg-white/5 hover:text-white"
-              >
+              <Button variant="ghost" className="gap-2 text-gray-400 hover:bg-white/5 hover:text-white">
                 <MessageSquare size={16} /> Ir a Chat
               </Button>
             </Link>
@@ -174,41 +258,130 @@ export default function AdminRagPage() {
           {/* Upload Section */}
           <Card className="border-law-accent/30 bg-gem-slate/50 shadow-2xl backdrop-blur-md">
             <CardHeader>
-              <CardTitle className="font-serif text-white">Digitalizar Nuevos Manuales</CardTitle>
+              <CardTitle className="font-serif text-white">Digitalizar Nuevo Manual</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleUpload} className="flex flex-col gap-6">
-                <div className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-law-accent/50 bg-gem-onyx/50 p-8 transition-colors hover:bg-gem-onyx/80">
-                  <Upload className="mb-4 h-10 w-10 text-law-gold transition-transform group-hover:scale-110" />
-                  <Label htmlFor="document" className="w-full cursor-pointer text-center">
-                    <span className="mb-1 block text-lg font-medium text-white">
-                      Soltar archivos
-                    </span>
-                    <span className="block text-sm uppercase tracking-widest text-gray-500">
-                      PDF • TXT • MD
-                    </span>
-                  </Label>
+              <form onSubmit={handleUpload} className="flex flex-col gap-5">
+                {/* Drop zone */}
+                <div
+                  ref={dropRef}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById("document")?.click()}
+                  className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors ${
+                    dragging
+                      ? "border-law-gold bg-law-gold/10"
+                      : "border-law-accent/50 bg-gem-onyx/50 hover:bg-gem-onyx/80"
+                  }`}
+                >
+                  <Upload className="mb-3 h-9 w-9 text-law-gold" />
+                  <span className="mb-1 text-base font-medium text-white">
+                    Arrastra o haz clic para seleccionar
+                  </span>
                   <Input
                     id="document"
                     type="file"
-                    accept=".pdf,.txt,.md"
+                    accept={ACCEPTED_MIME}
                     className="hidden"
                     onChange={handleFileChange}
                   />
-                  {file && (
-                    <div className="animate-in fade-in slide-in-from-bottom-2 mt-4 rounded-full bg-law-gold/10 px-4 py-2 text-sm font-medium text-law-gold">
-                      {file.name}
+
+                  {file ? (
+                    <div className="mt-3 flex items-center gap-2 rounded-full bg-law-gold/10 px-4 py-2 text-sm font-medium text-law-gold">
+                      <FileText size={14} />
+                      <span className="max-w-[180px] truncate">{file.name}</span>
+                      <span className="shrink-0 text-law-gold/60">· {formatBytes(file.size)}</span>
                     </div>
-                  )}
+                  ) : null}
+                </div>
+
+                {/* File specs */}
+                <div className="rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gem-offwhite/50">
+                  <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-gem-offwhite/70">
+                    <Info size={12} /> Especificaciones
+                  </div>
+                  <ul className="space-y-0.5">
+                    <li>Formatos: <span className="text-gem-offwhite/80">PDF, DOCX, DOC, TXT</span></li>
+                    <li>Tamaño máximo: <span className="text-gem-offwhite/80">500 MB</span></li>
+                    <li>Tiempo estimado: <span className="text-gem-offwhite/80">&lt;5 MB → 30 s · &gt;50 MB → 2–4 min</span></li>
+                    <li>⚠ No cierres el navegador mientras se procesa.</li>
+                  </ul>
+                </div>
+
+                {/* Size warnings */}
+                {sizeLevel === "warn" && file && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+                    <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                    <div>
+                      <span className="font-semibold">Archivo grande ({formatBytes(file.size)})</span>
+                      <p className="mt-0.5 text-xs text-amber-300/80">
+                        El procesamiento tardará ~{estimatedTime(file)}. No cierres el navegador.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {sizeLevel === "danger" && file && (
+                  <div className="flex flex-col gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                      <div>
+                        <span className="font-semibold">Archivo muy grande ({formatBytes(file.size)})</span>
+                        <p className="mt-0.5 text-xs text-red-300/80">
+                          Tiempo estimado: {estimatedTime(file)}. Existe riesgo de timeout si el
+                          servidor tarda más de 2 minutos. Considera dividir el documento en partes
+                          más pequeñas para mayor fiabilidad.
+                        </p>
+                      </div>
+                    </div>
+                    {!largFileConfirmed ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setLargeFileConfirmed(true)}
+                        className="w-full border border-red-500/50 bg-red-900/40 text-red-200 hover:bg-red-900/60"
+                      >
+                        Entendido — subir de todas formas
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-green-400">
+                        <CheckCircle2 size={13} /> Confirmado
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Area selector */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-medium text-gem-offwhite/60">Área jurídica</Label>
+                  <Select value={area} onValueChange={setArea}>
+                    <SelectTrigger className="border-white/10 bg-gem-onyx/60 text-gem-offwhite focus:ring-law-gold/30">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-white/10 bg-gem-slate">
+                      {AREAS.map((a) => (
+                        <SelectItem key={a.value} value={a.value} className="text-gem-offwhite focus:bg-white/10">
+                          {a.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={!file || uploading}
-                  className="w-full bg-law-accent py-6 font-bold tracking-wide text-white hover:bg-law-accent/80"
+                  disabled={!canSubmit}
+                  className="w-full bg-law-accent py-6 font-bold tracking-wide text-white hover:bg-law-accent/80 disabled:opacity-40"
                 >
-                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {uploading ? "PROCESANDO..." : "DIGITALIZAR MANUAL"}
+                  {uploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      PROCESANDO… {file ? `(${estimatedTime(file)} estimado)` : ""}
+                    </>
+                  ) : (
+                    "DIGITALIZAR MANUAL"
+                  )}
                 </Button>
               </form>
             </CardContent>
@@ -225,7 +398,7 @@ export default function AdminRagPage() {
                   variant="ghost"
                   size="sm"
                   onClick={fetchDocuments}
-                  className="h-8 gap-2 text-law-gold hover:bg-law-gold/10 hover:text-law-gold"
+                  className="h-8 gap-2 text-law-gold hover:bg-law-gold/10"
                 >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
@@ -239,45 +412,56 @@ export default function AdminRagPage() {
                   </div>
                 ) : documents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-800 p-8 text-center">
-                    <p className="mb-2 text-gray-500">⚠ NO HAY BIBLIOTECA ACTIVA.</p>
+                    <p className="text-sm text-gray-500">No hay documentos indexados.</p>
+                    <p className="mt-1 text-xs text-gray-600">Sube el primer manual para activar el RAG.</p>
                   </div>
                 ) : (
-                  documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="group flex items-center justify-between rounded-lg border border-law-accent/20 bg-gem-onyx/40 p-4 transition-colors hover:bg-gem-onyx/60"
-                    >
-                      <div className="flex items-center gap-4 overflow-hidden">
-                        <div className="shrink-0 rounded-lg bg-blue-500/10 p-2">
-                          <FileText className="h-5 w-5 text-blue-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-gray-200 transition-colors group-hover:text-white">
-                            {doc.display_name}
-                          </p>
-                          <p className="text-[10px] uppercase tracking-wider text-gray-500">
-                            {new Date(doc.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                        onClick={() => setDocToDelete(doc)}
+                  documents.map((doc) => {
+                    const areaColor = AREA_COLORS[doc.area] ?? AREA_COLORS.general;
+                    return (
+                      <div
+                        key={doc.id}
+                        className="group flex items-center justify-between rounded-lg border border-law-accent/20 bg-gem-onyx/40 p-4 transition-colors hover:bg-gem-onyx/60"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          <div className="shrink-0 rounded-lg bg-blue-500/10 p-2">
+                            <FileText className="h-5 w-5 text-blue-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-200 transition-colors group-hover:text-white">
+                              {doc.display_name}
+                            </p>
+                            <div className="mt-1 flex items-center gap-2">
+                              <span
+                                className={`inline-block rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest ${areaColor}`}
+                              >
+                                {doc.area}
+                              </span>
+                              <span className="text-[10px] text-gray-500">
+                                {new Date(doc.created_at).toLocaleDateString("es-ES")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          onClick={() => setDocToDelete(doc)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Custom Modal to avoid Recursion Error */}
+        {/* Delete confirmation modal */}
         {docToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div
@@ -286,25 +470,22 @@ export default function AdminRagPage() {
             />
             <div className="animate-in fade-in-0 zoom-in-95 relative z-50 grid w-full max-w-lg gap-4 border border-law-accent/50 bg-gem-slate p-6 shadow-lg sm:rounded-lg">
               <div className="flex flex-col space-y-2 text-center sm:text-left">
-                <h2 className="text-lg font-semibold text-white">¿Estás seguro?</h2>
+                <h2 className="text-lg font-semibold text-white">¿Eliminar documento?</h2>
                 <p className="text-sm text-gem-offwhite/60">
-                  Esta acción no se puede deshacer. Se eliminará permanentemente
-                  <span className="px-1 font-bold text-white">{docToDelete.display_name}</span>
-                  del índice de búsqueda y de la base de datos.
+                  Esta acción no se puede deshacer. Se eliminará permanentemente{" "}
+                  <span className="font-bold text-white">{docToDelete.display_name}</span> del índice
+                  RAG y de la base de datos.
                 </p>
               </div>
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
                 <Button
                   variant="outline"
                   onClick={() => setDocToDelete(null)}
-                  className="mt-2 border-law-accent/50 bg-transparent text-white hover:bg-white/10 hover:text-white sm:mt-0"
+                  className="mt-2 border-law-accent/50 bg-transparent text-white hover:bg-white/10 sm:mt-0"
                 >
                   Cancelar
                 </Button>
-                <Button
-                  onClick={confirmDelete}
-                  className="bg-red-900 text-red-100 hover:bg-red-800"
-                >
+                <Button onClick={confirmDelete} className="bg-red-900 text-red-100 hover:bg-red-800">
                   Eliminar
                 </Button>
               </div>
@@ -312,7 +493,7 @@ export default function AdminRagPage() {
           </div>
         )}
 
-        <div className="mt-auto pt-10">
+        <div className="pt-10">
           <Copyright />
         </div>
       </div>
