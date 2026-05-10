@@ -3,7 +3,7 @@
 import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { X, Download, Loader2 } from "lucide-react";
 import { type InfographicContent } from "@/lib/imagen-service";
 
 interface InfographicModalProps {
@@ -41,7 +41,8 @@ export function InfographicModal({ isOpen, onClose, content, topic }: Infographi
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-white/10 bg-gem-onyx p-0 shadow-2xl">
+      {/* [&>button]:hidden suppresses the Radix built-in close button; we render our own in the toolbar */}
+      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-white/10 bg-gem-onyx p-0 shadow-2xl [&>button]:hidden">
         {/* Toolbar */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
           <p className="font-serif text-sm italic text-law-gold/80">Resumen Visual</p>
@@ -60,6 +61,14 @@ export function InfographicModal({ isOpen, onClose, content, topic }: Infographi
               <span className="hidden md:inline">
                 {isDownloading ? "Generando..." : "Descargar PDF"}
               </span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 rounded-full text-gray-400 hover:bg-white/10 hover:text-white"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
