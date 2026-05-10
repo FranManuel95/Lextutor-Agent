@@ -26,7 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 type Reason = "incorrect" | "ambiguous" | "off_topic" | "other";
 
 interface Props {
-  attemptId: string;
+  attemptId?: string;
   sessionId?: string;
   questionId: string;
   questionText?: string;

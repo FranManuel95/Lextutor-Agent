@@ -6,11 +6,6 @@ import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-const STORE = env.GEMINI_FILESEARCH_STORE_ID
-  ? env.GEMINI_FILESEARCH_STORE_ID.startsWith("fileSearchStores/")
-    ? env.GEMINI_FILESEARCH_STORE_ID
-    : `fileSearchStores/${env.GEMINI_FILESEARCH_STORE_ID}`
-  : "";
 
 // Shared Elite Agent Prompt Logic
 export function constructEliteSystemPrompt(params: {
