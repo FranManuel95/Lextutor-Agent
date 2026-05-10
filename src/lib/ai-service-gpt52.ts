@@ -1,6 +1,7 @@
 import "server-only";
 import OpenAI from "openai";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 
@@ -46,15 +47,14 @@ function logGPT52Usage(usage: { input_tokens: number; output_tokens: number }) {
   const totalCost = inputCost + outputCost;
   const totalTokens = usage.input_tokens + usage.output_tokens;
 
-  console.log(`\n💰 [GPT-5.2] Token Usage:`);
-  console.log(
-    `   📥 Input:  ${usage.input_tokens.toLocaleString()} tokens (€${inputCost.toFixed(6)})`
-  );
-  console.log(
-    `   📤 Output: ${usage.output_tokens.toLocaleString()} tokens (€${outputCost.toFixed(6)})`
-  );
-  console.log(`   📊 Total:  ${totalTokens.toLocaleString()} tokens (€${totalCost.toFixed(6)})`);
-  console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+  logger.debug("[GPT-5.2] Token Usage", {
+    inputTokens: usage.input_tokens,
+    inputCostEur: inputCost.toFixed(6),
+    outputTokens: usage.output_tokens,
+    outputCostEur: outputCost.toFixed(6),
+    totalTokens,
+    totalCostEur: totalCost.toFixed(6),
+  });
 }
 
 /**
@@ -105,8 +105,7 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
   const fullPrompt = `${systemPrompt}\n\n${historyText}MENSAJE ACTUAL:\n${message}`;
 
   try {
-    console.log("🟣 Calling GPT-5.2 Responses API...");
-    console.log(`📝 History messages: ${history.length}`);
+    logger.debug("Calling GPT-5.2 Responses API...", { historyMessages: history.length });
 
     const response = await openai.responses.create({
       model: "gpt-5.2",
@@ -126,7 +125,7 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
       include: ["file_search_call.results"], // Include RAG results in response
     } as any);
 
-    console.log("✅ GPT-5.2 Response received");
+    logger.debug("GPT-5.2 Response received");
 
     // Extract text
     const text = (response as any).output_text || "";
@@ -177,10 +176,10 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
     // Get unique sources
     const uniqueSources = Array.from(new Set(sources));
 
-    console.log("📚 [GPT-5.2] Sources found:", uniqueSources.length);
-    if (uniqueSources.length > 0) {
-      console.log("📚 [GPT-5.2] Source filenames:", uniqueSources.join(", "));
-    }
+    logger.debug("[GPT-5.2] Sources found", {
+      count: uniqueSources.length,
+      ...(uniqueSources.length > 0 ? { filenames: uniqueSources.join(", ") } : {}),
+    });
 
     // Format citations
     let citations: string | null = null;
@@ -190,7 +189,7 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
 
     return citations ? `${text}\n\n${citations}` : text;
   } catch (error: unknown) {
-    console.error("❌ GPT-5.2 Error:", error instanceof Error ? error.message : error);
+    logger.error("GPT-5.2 Error", error instanceof Error ? error : new Error(String(error)));
 
     // Provide helpful error messages
     if ((error as { status?: number })?.status === 400) {
