@@ -49,6 +49,19 @@ vi.mock("@/utils/supabase/server", () => ({
   createClient: vi.fn(() => Promise.resolve({})),
 }));
 
+// ─── Mock @/lib/rateLimit ────────────────────────────────────────────────────
+// The upload route checks an UPLOAD rate limit after requireAdmin passes.
+// We allow by default so the test proceeds to the real logic under test.
+const mockCheckRateLimit = vi.fn();
+
+vi.mock("@/lib/rateLimit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/rateLimit")>();
+  return {
+    ...actual,
+    checkRateLimit: mockCheckRateLimit,
+  };
+});
+
 // ─── Mock fs/promises (writeFile / unlink) ───────────────────────────────────
 vi.mock("fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("fs/promises")>();
@@ -110,9 +123,17 @@ describe("POST /api/upload", () => {
   beforeEach(() => {
     vi.resetModules();
     mockRequireAdmin.mockReset();
+    mockCheckRateLimit.mockReset();
     mockUploadToFileSearchStore.mockReset();
     mockOperationsGet.mockReset();
     mockDocumentsList.mockReset();
+    // Default: rate limit allows the request
+    mockCheckRateLimit.mockResolvedValue({
+      allowed: true,
+      current: 0,
+      limit: 10,
+      resetAt: new Date().toISOString(),
+    });
   });
 
   it("returns 403 when user is not an admin", async () => {
@@ -127,14 +148,14 @@ describe("POST /api/upload", () => {
     expect(body.error).toBeDefined();
   });
 
-  it("returns 403 with 'Unauthorized' message when no session exists", async () => {
+  it("returns 401 with 'Unauthorized' message when no session exists", async () => {
     mockRequireAdmin.mockRejectedValue(new Error("Unauthorized"));
 
     const { POST } = await import("@/app/api/upload/route");
     const res = await POST(
       makeRequestWithFile(new File([pdfBytes()], "test.pdf", { type: "application/pdf" }))
     );
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error).toBe("Unauthorized");
   });
