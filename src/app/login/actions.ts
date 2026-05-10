@@ -14,16 +14,19 @@ export async function login(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  let error;
+  try {
+    ({ error } = await supabase.auth.signInWithPassword({ email, password }));
+  } catch {
+    return redirect(
+      `/login?message=${encodeURIComponent("Servicio no disponible. Inténtalo de nuevo en unos minutos.")}`
+    );
+  }
 
   if (error) {
     return redirect(`/login?message=${encodeURIComponent(error.message)}`);
   }
 
-  // revalidatePath('/', 'layout')
   redirect("/chat");
 }
 
