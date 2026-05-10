@@ -144,8 +144,11 @@ export async function sendMessage(
     aiResponse = await generateResponse({
       message: content,
       history,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      settings: settings as any,
+      settings: {
+        area: settings.area,
+        modes: settings.modes,
+        detailLevel: settings.detailLevel,
+      },
       options: { userName },
     });
   } catch (error) {
@@ -181,14 +184,13 @@ export async function sendMessage(
   }
 
   // 4b. Log Student Event (Progress)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from("student_events") as any).insert({
+  await supabase.from("student_events").insert({
     user_id: user.id,
     chat_id: chatId,
     message_id: assistantMsg?.id,
     area: settings.area,
     kind: "answer_submitted",
-    payload: { settings },
+    payload: { settings } as import("@/types/database.types").Json,
   });
 
   // 6. Update chat updated_at

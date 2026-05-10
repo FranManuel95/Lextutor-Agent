@@ -59,10 +59,15 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
     // 1) Borrar de Gemini
     try {
       if (isStoreDoc) {
-        await ai.fileSearchStores.documents.delete({
+        await (
+          ai.fileSearchStores.documents.delete as (params: {
+            name: string;
+            config?: { force?: boolean };
+          }) => Promise<unknown>
+        )({
           name: documentName,
           config: { force: true },
-        } as any);
+        });
       } else if (isFile) {
         await ai.files.delete({ name: documentName });
       }
@@ -86,7 +91,7 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
-    logger.error("DELETE /api/rag/documents/[name] failed", e, {
+    logger.error("DELETE /api/rag/documents/[name] failed", e as Error, {
       route: "/api/rag/documents/[name]",
       status,
     });

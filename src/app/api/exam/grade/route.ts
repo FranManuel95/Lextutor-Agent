@@ -2,6 +2,7 @@ import { createApiHandler } from "@/lib/api-handler";
 import { gradeExam } from "@/lib/ai-service";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
+import type { Json } from "@/types/database.types";
 
 interface GradedQuestion {
   correct: boolean;
@@ -24,6 +25,10 @@ type SessionData = {
   metadata?: { rag_used?: boolean };
   [key: string]: unknown;
 };
+
+interface ExamAttemptRow {
+  id: string;
+}
 
 export const runtime = "nodejs";
 
@@ -58,6 +63,7 @@ export const POST = createApiHandler(
     }
 
     const finalScore = gradingResult.attempt.finalScore;
+    const questionsArr = Array.isArray(questions) ? questions : [];
 
     // 3. Save Attempt
     const { data: attemptEntry, error: attemptError } = await supabase
@@ -66,10 +72,16 @@ export const POST = createApiHandler(
         user_id: user.id,
         attempt_type: "exam_open",
         session_id: sessionId,
-        area: typedSession.area || "general",
+        area: (typedSession.area || "general") as
+          | "laboral"
+          | "civil"
+          | "mercantil"
+          | "procesal"
+          | "otro"
+          | "general",
         score: finalScore,
         status: "finished",
-        questions_count: questions.length,
+        questions_count: questionsArr.length,
         payload: {
           payload_version: 1,
           questions: gradingResult.questions.map((g: GradedQuestion, i: number) => ({
@@ -80,15 +92,17 @@ export const POST = createApiHandler(
           })),
           attempt: gradingResult.attempt,
           rag_used: typedSession.metadata?.rag_used || false,
-        },
-      } as any)
+        } as unknown as Json,
+      })
       .select()
       .single();
 
     if (attemptError) throw attemptError;
 
+    const typedAttempt = attemptEntry as unknown as ExamAttemptRow;
+
     return {
-      attemptId: (attemptEntry as Record<string, unknown>)?.id as string,
+      attemptId: typedAttempt.id,
       ...gradingResult,
     };
   },

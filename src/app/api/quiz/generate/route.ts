@@ -2,6 +2,7 @@ import { createApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { generateQuiz } from "@/lib/ai-service";
 import { z } from "zod";
+import type { Json } from "@/types/database.types";
 
 interface QuizQuestion {
   id: string;
@@ -9,6 +10,10 @@ interface QuizQuestion {
   options: string[];
   correctIndex: number;
   explanation?: string;
+}
+
+interface QuizSessionRow {
+  id: string;
 }
 
 export const runtime = "nodejs";
@@ -31,6 +36,8 @@ export const POST = createApiHandler(
       throw new Error("No se pudieron generar preguntas. Inténtalo de nuevo.");
     }
 
+    const typedQuestions = questions as QuizQuestion[];
+
     // 2. Save Session to DB
     const { data: session, error } = await supabase
       .from("quiz_sessions")
@@ -38,26 +45,28 @@ export const POST = createApiHandler(
         user_id: user.id,
         area,
         difficulty,
-        questions: questions,
+        questions: typedQuestions as unknown as Json,
         metadata: {
           rag_used: ragUsed,
           sources: sources || [],
-        },
-      } as any)
+        } as Json,
+      })
       .select()
       .single();
 
     if (error) throw error;
 
+    const typedSession = session as unknown as QuizSessionRow;
+
     // 3. Return sanitized questions (without correctIndex/explanation) to client
-    const clientQuestions = (questions as QuizQuestion[]).map((q) => ({
+    const clientQuestions = typedQuestions.map((q) => ({
       id: q.id,
       text: q.text,
       options: q.options,
     }));
 
     return {
-      sessionId: (session as Record<string, unknown>).id as string,
+      sessionId: typedSession.id,
       questions: clientQuestions,
       ragUsed,
       sources,
