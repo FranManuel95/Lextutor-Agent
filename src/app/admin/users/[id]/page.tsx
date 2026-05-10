@@ -136,14 +136,14 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           </Avatar>
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="break-words font-serif text-xl italic text-white sm:text-2xl">
+              <h1 className="break-words font-serif text-xl italic text-gem-offwhite sm:text-2xl">
                 {profile.full_name ?? "Sin nombre"}
               </h1>
               <Badge
                 className={
                   role === "admin"
                     ? "bg-law-gold text-gem-onyx hover:bg-law-gold/80"
-                    : "bg-white/10 text-white hover:bg-white/20"
+                    : "bg-gem-slate text-gem-offwhite hover:bg-gem-border/40"
                 }
               >
                 {role}
@@ -172,16 +172,25 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           icon={Activity}
           label="Nota Media"
           value={avgScore !== null ? `${avgScore}/10` : "—"}
-          color={avgScore !== null && avgScore >= 5 ? "text-green-400" : "text-red-400"}
+          color={
+            avgScore !== null && avgScore >= 5
+              ? "text-emerald-700 dark:text-green-400"
+              : "text-red-700 dark:text-red-400"
+          }
         />
-        <Kpi icon={Flame} label="Racha" value={`${stats.streak} días`} color="text-orange-400" />
+        <Kpi
+          icon={Flame}
+          label="Racha"
+          value={`${stats.streak} días`}
+          color="text-orange-600 dark:text-orange-400"
+        />
         <Kpi
           icon={Clock}
           label="Último activo"
           value={
             stats.lastActive ? format(new Date(stats.lastActive), "PP", { locale: es }) : "Nunca"
           }
-          color="text-blue-400"
+          color="text-blue-700 dark:text-blue-400"
         />
       </div>
 
@@ -204,7 +213,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 return (
                   <div
                     key={a.id}
-                    className="flex items-center justify-between rounded-lg border border-law-accent/10 bg-black/20 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-law-accent/10 bg-gem-slate px-3 py-2"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium capitalize text-gem-offwhite">
@@ -221,16 +230,16 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                       <span
                         className={`font-mono text-sm font-bold ${
                           score >= 7
-                            ? "text-green-400"
+                            ? "text-emerald-700 dark:text-green-400"
                             : score >= 5
                               ? "text-law-gold"
-                              : "text-red-400"
+                              : "text-red-700 dark:text-red-400"
                         }`}
                       >
                         {score.toFixed(1)}/10
                       </span>
                     ) : (
-                      <Badge className="bg-gray-700 text-gray-300">en curso</Badge>
+                      <Badge className="bg-gem-border/40 text-gem-offwhite/80">en curso</Badge>
                     )}
                   </div>
                 );

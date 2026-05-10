@@ -335,22 +335,22 @@ export default function ExamPage() {
                       </div>
                       <div>
                         <p className="mb-1 text-xs font-bold uppercase text-law-gold">Feedback</p>
-                        <p className="text-gray-300">{item.feedback}</p>
+                        <p className="text-gem-offwhite/80">{item.feedback}</p>
                       </div>
 
                       {item.improvementTips && item.improvementTips.length > 0 && (
                         <div>
-                          <p className="mb-1 text-xs font-bold uppercase text-blue-400">
+                          <p className="mb-1 text-xs font-bold uppercase text-blue-700 dark:text-blue-400">
                             Tips de Mejora
                           </p>
-                          <ul className="list-inside list-disc text-gray-400">
+                          <ul className="list-inside list-disc text-gem-muted">
                             {item.improvementTips.map((tip: string, i: number) => (
                               <li key={i}>{tip}</li>
                             ))}
                           </ul>
                         </div>
                       )}
-                      <div className="flex justify-end border-t border-white/5 pt-2">
+                      <div className="flex justify-end border-t border-gem-border/40 pt-2">
                         <FlagQuestionButton
                           questionId={String(question.id)}
                           questionText={question.text}
@@ -371,7 +371,7 @@ export default function ExamPage() {
                 setGrading(null);
               }}
               variant="outline"
-              className="w-full border-white/10 text-white hover:bg-white/5"
+              className="w-full border-gem-border/40 text-gem-offwhite hover:bg-gem-slate"
             >
               Nuevo Examen
             </Button>

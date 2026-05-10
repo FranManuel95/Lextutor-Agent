@@ -190,7 +190,7 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
               variant="ghost"
               disabled={bulkLoading}
               onClick={() => bulkUpdateRole("student")}
-              className="gap-1 text-xs text-gem-offwhite/60 hover:bg-white/5 hover:text-gem-offwhite"
+              className="gap-1 text-xs text-gem-offwhite/60 hover:bg-gem-slate hover:text-gem-offwhite"
             >
               {bulkLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -206,7 +206,7 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
       <div className="-mx-4 overflow-x-auto sm:mx-0">
         <Table>
           <TableHeader>
-            <TableRow className="border-law-accent/20 hover:bg-white/5">
+            <TableRow className="border-law-accent/20 hover:bg-gem-slate">
               <TableHead className="w-8"></TableHead>
               <TableHead className="text-law-gold">Usuario</TableHead>
               <TableHead className="text-law-gold">Email</TableHead>
@@ -225,7 +225,7 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
               return (
                 <TableRow
                   key={user.id}
-                  className={`border-law-accent/10 hover:bg-white/5 ${
+                  className={`border-law-accent/10 hover:bg-gem-slate ${
                     isChecked ? "bg-law-gold/5" : ""
                   }`}
                 >
@@ -258,8 +258,8 @@ export function AdminUsersClient({ users, currentUserId }: Props) {
                       variant={role === "admin" ? "default" : "secondary"}
                       className={
                         role === "admin"
-                          ? "bg-law-gold text-gem-onyx hover:bg-law-gold/80"
-                          : "bg-white/10 text-white hover:bg-white/20"
+                          ? "bg-law-gold text-white hover:bg-law-gold/80 dark:text-gem-onyx"
+                          : "bg-gem-slate text-gem-offwhite hover:bg-gem-border/60"
                       }
                     >
                       {role}
