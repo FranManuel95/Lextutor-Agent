@@ -103,7 +103,7 @@ function buildSummaryHtml(s: UserSummary): string {
 </html>`;
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   // 1. Auth — shared secret via Authorization header
   if (!env.CRON_SECRET) {
     return NextResponse.json(

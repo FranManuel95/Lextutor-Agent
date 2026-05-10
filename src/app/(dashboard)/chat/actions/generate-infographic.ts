@@ -43,7 +43,7 @@ export async function generateInfographicAction(
     const briefPrompt = `
             Analyze the following conversation history between a law student and a tutor.
             Create a structured content brief for an educational infographic.
-            
+
             HISTORY:
             ${recentHistory}
 

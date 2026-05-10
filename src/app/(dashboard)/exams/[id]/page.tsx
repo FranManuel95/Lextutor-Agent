@@ -67,6 +67,50 @@ interface ExamAttempt {
   payload: ExamPayload;
 }
 
+interface QuizQuestion {
+  id?: string | number;
+  questionId?: string | number;
+  question: string;
+  isCorrect: boolean;
+  userAnswer: string;
+  correctAnswer: string;
+  explanation?: string;
+}
+
+interface OpenQuestion {
+  id?: string | number;
+  questionId?: string | number;
+  question: string;
+  userAnswer: string;
+  feedback: string;
+  perQuestionScore: number;
+  confidence?: number;
+  missingPoints?: string[];
+  improvementTips?: string[];
+  rubricScores?: Record<string, number>;
+}
+
+interface ExamPayload {
+  questions?: (QuizQuestion | OpenQuestion)[];
+  attempt?: {
+    overallFeedback?: string;
+    strengths?: string[];
+    weaknesses?: string[];
+  };
+  config?: { difficulty?: string; count?: number };
+  difficulty?: string;
+  count?: number;
+}
+
+interface ExamAttempt {
+  id: string;
+  attempt_type: "quiz" | "exam_test" | "exam_open";
+  score: number;
+  area: string;
+  created_at: string;
+  payload: ExamPayload;
+}
+
 export default function ExamReviewPage() {
   const params = useParams();
   const router = useRouter();
