@@ -312,20 +312,21 @@ export default function AdminRagPage() {
                 </div>
 
                 {/* File specs */}
-                <div className="rounded-lg border border-gem-border/40 bg-gem-slate px-4 py-3 text-xs text-gem-offwhite/50">
-                  <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-gem-offwhite/70">
+                <div className="rounded-lg border border-gem-border/40 bg-gem-slate/60 px-4 py-3 text-xs text-gem-offwhite/85">
+                  <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-gem-offwhite">
                     <Info size={12} /> Especificaciones
                   </div>
                   <ul className="space-y-0.5">
                     <li>
-                      Formatos: <span className="text-gem-offwhite/80">PDF, DOCX, DOC, TXT</span>
+                      Formatos:{" "}
+                      <span className="font-medium text-gem-offwhite">PDF, DOCX, DOC, TXT</span>
                     </li>
                     <li>
-                      Tamaño máximo: <span className="text-gem-offwhite/80">500 MB</span>
+                      Tamaño máximo: <span className="font-medium text-gem-offwhite">500 MB</span>
                     </li>
                     <li>
                       Tiempo estimado:{" "}
-                      <span className="text-gem-offwhite/80">
+                      <span className="font-medium text-gem-offwhite">
                         &lt;5 MB → 30 s · &gt;50 MB → 2–4 min
                       </span>
                     </li>
@@ -382,12 +383,12 @@ export default function AdminRagPage() {
 
                 {/* Area selector */}
                 <div className="flex flex-col gap-1.5">
-                  <Label className="text-xs font-medium text-gem-offwhite/60">Área jurídica</Label>
+                  <Label className="text-xs font-medium text-gem-offwhite/80">Área jurídica</Label>
                   <Select value={area} onValueChange={setArea}>
-                    <SelectTrigger className="border-gem-border/40 bg-gem-onyx/80 text-gem-offwhite focus:ring-law-gold/30">
+                    <SelectTrigger className="border-gem-border/60 bg-gem-mist font-medium text-gem-offwhite focus:ring-law-gold/30">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="border-gem-border/40 bg-gem-slate">
+                    <SelectContent className="border-gem-border/60 bg-gem-mist">
                       {AREAS.map((a) => (
                         <SelectItem
                           key={a.value}

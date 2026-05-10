@@ -215,24 +215,24 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
   };
 
   return (
-    <div className="flex h-full w-72 flex-col border-r border-law-accent/100 bg-[#020617] text-gem-offwhite">
+    <div className="flex h-full w-72 flex-col border-r border-law-accent/100 bg-law-dark text-white">
       {/* Delete Alert Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent className="border border-white/10 bg-gem-onyx text-white">
+        <AlertDialogContent className="border border-gem-border/40 bg-gem-mist text-gem-offwhite">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">¿Borrar chat?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-gem-offwhite">¿Borrar chat?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gem-muted">
               Esta acción eliminará este chat y todo su historial de mensajes. No se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/10 bg-transparent text-white hover:bg-white/5 hover:text-white">
+            <AlertDialogCancel className="border-gem-border/40 bg-transparent text-gem-offwhite hover:bg-gem-slate hover:text-gem-offwhite">
               Cancelar
             </AlertDialogCancel>
             <Button
               variant="destructive"
               onClick={handleDeleteChat}
-              className="border-0 bg-red-500 text-white hover:bg-red-600"
+              className="border-0 bg-red-600 text-white hover:bg-red-700"
             >
               Eliminar
             </Button>
@@ -372,7 +372,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden pb-8">
-        <div className="sticky top-0 z-10 space-y-2 bg-[#020617] px-6 py-2">
+        <div className="sticky top-0 z-10 space-y-2 bg-law-dark px-6 py-2">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Historial</p>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-600" />
@@ -395,7 +395,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                     ? "Buscar en mensajes"
                     : "Búsqueda semántica en documentos"
               }
-              className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-16 text-xs text-gem-offwhite placeholder:text-gray-600 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
+              className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-16 text-xs text-white placeholder:text-gray-500 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
             />
             {!searchQuery && (
               <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-white/10 bg-black/30 px-1 py-0.5 font-mono text-[9px] font-bold text-gray-600 md:inline-block">
@@ -405,7 +405,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-600 hover:bg-white/10 hover:text-gem-offwhite"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-500 hover:bg-white/10 hover:text-white"
                 aria-label="Limpiar búsqueda"
               >
                 <X className="h-3 w-3" />
@@ -623,7 +623,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
         </div>
       </div>
 
-      <div className="border-t border-white/5 bg-[#010409]">
+      <div className="border-t border-white/5 bg-law-dark/95">
         <div className="flex items-center justify-between px-3 py-1">
           <Copyright className="py-1 text-[9px]" />
           <ThemeToggle />

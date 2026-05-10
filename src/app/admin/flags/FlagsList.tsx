@@ -162,8 +162,10 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
         return (
           <div
             key={f.id}
-            className={`space-y-3 rounded-lg border p-4 transition ${
-              isChecked ? "border-law-gold/40 bg-law-gold/5" : "border-law-accent/10 bg-gem-slate"
+            className={`space-y-3 rounded-lg border p-4 shadow-sm transition ${
+              isChecked
+                ? "border-law-gold/40 bg-law-gold/10"
+                : "border-gem-border/40 bg-gem-mist hover:border-gem-border/60"
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -187,17 +189,17 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
                   {REASON_LABEL[f.reason] ?? f.reason}
                 </Badge>
                 {f.area && (
-                  <span className="rounded border border-gem-border/40 bg-gem-slate px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/60">
+                  <span className="rounded border border-gem-border/60 bg-gem-slate px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/80">
                     {f.area}
                   </span>
                 )}
                 <Link
                   href={`/admin/users/${f.user_id}`}
-                  className="text-xs text-gem-offwhite/60 hover:text-law-gold"
+                  className="text-xs text-gem-offwhite hover:text-law-gold"
                 >
                   {profilesById[f.user_id] ?? "Sin nombre"}
                 </Link>
-                <span className="text-xs text-gem-offwhite/40">
+                <span className="text-xs text-gem-muted">
                   {format(new Date(f.created_at), "PPp", { locale: es })}
                 </span>
               </div>
@@ -209,8 +211,8 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
             )}
 
             {f.comment && (
-              <p className="rounded border border-gem-border/40 bg-gem-slate px-3 py-2 text-xs text-gem-offwhite/80">
-                <span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/40">
+              <p className="rounded border border-gem-border/40 bg-gem-slate/60 px-3 py-2 text-xs text-gem-offwhite">
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-muted">
                   Comentario del usuario
                 </span>
                 {f.comment}
