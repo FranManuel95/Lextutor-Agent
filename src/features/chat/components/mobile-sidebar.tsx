@@ -27,14 +27,14 @@ export const MobileSidebar = ({ chats }: MobileSidebarProps) => {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/5 bg-law-dark p-4 md:hidden">
-          <div className="flex items-center gap-3 text-white">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-gem-border/40 bg-gem-slate p-4 md:hidden">
+          <div className="flex items-center gap-3 text-gem-offwhite">
             <Menu className="h-6 w-6" />
             <span className="font-serif text-lg italic text-law-gold">LexTutor Agent</span>
           </div>
         </div>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 border-r border-law-accent/20 bg-law-dark p-0">
+      <SheetContent side="left" className="w-72 border-r border-law-accent/20 bg-gem-slate p-0">
         <ChatSidebar chats={chats} onClose={handleClose} />
       </SheetContent>
     </Sheet>

@@ -90,7 +90,7 @@ export function SettingsDialog() {
         <Button
           variant="ghost"
           size="icon"
-          className="text-gray-400 hover:bg-white/10 hover:text-law-gold"
+          className="text-gem-muted hover:bg-gem-offwhite/10 hover:text-law-gold"
         >
           <Settings2 size={20} />
         </Button>
