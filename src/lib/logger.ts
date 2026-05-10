@@ -6,7 +6,7 @@
  * - Redacts common sensitive keys before output (tokens, passwords, keys)
  */
 
-type Level = "info" | "warn" | "error";
+type Level = "debug" | "info" | "warn" | "error";
 
 type Meta = Record<string, unknown>;
 
@@ -73,12 +73,22 @@ function emit(level: Level, msg: string, meta?: Meta) {
 }
 
 function prettyFormat(level: Level, msg: string, meta?: Meta): string {
-  const tag = level === "error" ? "ERROR" : level === "warn" ? "WARN " : "INFO ";
+  const tag =
+    level === "error"
+      ? "ERROR"
+      : level === "warn"
+        ? "WARN "
+        : level === "debug"
+          ? "DEBUG"
+          : "INFO ";
   const metaStr = meta && Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : "";
   return `[${tag}] ${msg}${metaStr}`;
 }
 
 export const logger = {
+  debug: (msg: string, meta?: Meta) => {
+    if (process.env.NODE_ENV !== "production") emit("debug", msg, meta);
+  },
   info: (msg: string, meta?: Meta) => emit("info", msg, meta),
   warn: (msg: string, meta?: Meta) => emit("warn", msg, meta),
   error: (msg: string, err?: unknown, meta?: Meta) =>

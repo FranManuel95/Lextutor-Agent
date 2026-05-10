@@ -9,6 +9,7 @@ import {
   openaiClient,
 } from "./ai-service";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
@@ -34,7 +35,7 @@ export async function generateResponseStream(params: {
   // --- OpenAI Logic ---
   // --- OpenAI Logic ---
   if (isOpenAI) {
-    console.log("🤖 [MODELO] Chat conversacional → OpenAI GPT-4o (Assistants API + RAG)");
+    logger.debug("🤖 [MODELO] Chat conversacional → OpenAI GPT-4o (Assistants API + RAG)");
 
     const system = constructEliteSystemPrompt({
       userName: options?.userName || "",
@@ -121,7 +122,7 @@ export async function generateResponseStream(params: {
                 fileNames.push(cleanName);
               }
             } catch (e) {
-              console.error(`Failed to retrieve file ${fileId}`, e);
+              logger.error(`Failed to retrieve file ${fileId}`, e);
             }
           }
 
@@ -133,7 +134,7 @@ export async function generateResponseStream(params: {
         }
       })();
     } catch (error) {
-      console.error("OpenAI Streaming Error:", error);
+      logger.error("OpenAI Streaming Error:", error);
       throw error || new Error("Unknown OpenAI streaming error");
     }
   }
@@ -152,7 +153,7 @@ export async function generateResponseStream(params: {
     isFirstInteraction,
   });
 
-  console.log("🤖 [MODELO] Chat conversacional → Gemini 1.5 Flash (STREAMING)");
+  logger.debug("🤖 [MODELO] Chat conversacional → Gemini 1.5 Flash (STREAMING)");
 
   const contents = [
     ...history.map((m) => ({
@@ -181,7 +182,7 @@ export async function generateResponseStream(params: {
     );
     return streamResponse;
   } catch (error) {
-    console.warn("⚠️ Gemini Flash overloaded, switching to Gemini 1.5 Pro (Fallback)...");
+    logger.warn("⚠️ Gemini Flash overloaded, switching to Gemini 1.5 Pro (Fallback)...");
 
     // Fallback to Pro model (using 002 as stable version)
     const streamResponse = await retryOperation(() =>
@@ -205,7 +206,7 @@ export async function generateAudioResponseStream(params: {
 }) {
   const { base64Audio, mimeType, prompt } = params;
 
-  console.log("🎙️ [MODELO] Audio Streaming → Gemini 2.0 Flash");
+  logger.debug("🎙️ [MODELO] Audio Streaming → Gemini 2.0 Flash");
 
   try {
     const result = await retryOperation(
@@ -233,9 +234,9 @@ export async function generateAudioResponseStream(params: {
 
     return result;
   } catch (error) {
-    console.error("❌ Error en generateAudioResponseStream:", error);
+    logger.error("❌ Error en generateAudioResponseStream:", error);
     // Fallback robusto a 1.5 Flash si 2.0 falla
-    console.warn("⚠️ Fallback a Gemini 2.5 Flash...");
+    logger.warn("⚠️ Fallback a Gemini 2.5 Flash...");
     const fallback = await geminiClient.models.generateContentStream({
       model: "gemini-2.5-flash",
       contents: [

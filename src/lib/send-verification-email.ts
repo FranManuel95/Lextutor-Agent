@@ -1,35 +1,36 @@
 // Initialize Resend dynamically to avoid crashes if env var is missing
-import { Resend } from 'resend';
+import { Resend } from "resend";
+import { logger } from "@/lib/logger";
 
 export async function sendVerificationEmail(email: string, link: string, name: string) {
-    // 1. Always log the link in Development (The "Tool" to corroborate)
-    if (process.env.NODE_ENV === 'development') {
-        console.log('\n================================================================');
-        console.log('🔗 [DEV MODE] VERIFICATION LINK GENERATED:');
-        console.log(link);
-        console.log('================================================================\n');
+  // 1. Always log the link in Development (The "Tool" to corroborate)
+  if (process.env.NODE_ENV === "development") {
+    logger.debug("\n================================================================");
+    logger.debug("🔗 [DEV MODE] VERIFICATION LINK GENERATED:");
+    logger.debug(link);
+    logger.debug("================================================================\n");
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+
+  // 2. If no API Key, return success in Dev (Simulated mode)
+  if (!apiKey) {
+    if (process.env.NODE_ENV === "development") {
+      logger.warn("⚠️ RESEND_API_KEY missing. Email simulated.");
+      return { success: true, data: { id: "simulated_dev" } };
     }
+    logger.error("RESEND_API_KEY is missing");
+    return { success: false, error: "Configuration error: RESEND_API_KEY missing" };
+  }
 
-    const apiKey = process.env.RESEND_API_KEY;
+  const resend = new Resend(apiKey);
 
-    // 2. If no API Key, return success in Dev (Simulated mode)
-    if (!apiKey) {
-        if (process.env.NODE_ENV === 'development') {
-            console.warn('⚠️ RESEND_API_KEY missing. Email simulated.');
-            return { success: true, data: { id: 'simulated_dev' } };
-        }
-        console.error('RESEND_API_KEY is missing');
-        return { success: false, error: 'Configuration error: RESEND_API_KEY missing' };
-    }
-
-    const resend = new Resend(apiKey);
-
-    try {
-        const { data, error } = await resend.emails.send({
-            from: 'LexTutor Agent <onboarding@resend.dev>',
-            to: email,
-            subject: 'Confirma tu acceso a Estudiante Elite',
-            html: `
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "LexTutor Agent <onboarding@resend.dev>",
+      to: email,
+      subject: "Confirma tu acceso a Estudiante Elite",
+      html: `
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -38,7 +39,7 @@ export async function sendVerificationEmail(email: string, link: string, name: s
                 </head>
                 <body style="font-family: 'Inter', sans-serif; background-color: #020617; margin: 0; padding: 40px 0;">
                     <div style="max-width: 600px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);">
-                        
+
                         <!-- Header -->
                         <div style="padding: 40px 0; text-align: center; background: linear-gradient(to bottom, #1e293b, #0f172a); border-bottom: 1px solid #1e293b;">
                             <h1 style="color: #FDBF11; font-family: 'Times New Roman', serif; font-style: italic; font-size: 32px; margin: 0; letter-spacing: -0.5px;">
@@ -55,7 +56,7 @@ export async function sendVerificationEmail(email: string, link: string, name: s
                             <p style="color: #cbd5e1; font-size: 16px; line-height: 1.6; margin-bottom: 32px;">
                                 Bienvenido a la plataforma de asistencia legal más avanzada. Para activar tu cuenta segura y comenzar tus sesiones de tutoría, por favor verifica tu identidad haciendo clic en el siguiente enlace.
                             </p>
-                            
+
                             <!-- Button -->
                             <div style="text-align: center; margin-bottom: 32px;">
                                 <a href="${link}" style="display: inline-block; background-color: #FDBF11; color: #020617; padding: 14px 32px; font-weight: 600; font-size: 16px; text-decoration: none; border-radius: 6px; transition: all 0.2s;">
@@ -77,17 +78,17 @@ export async function sendVerificationEmail(email: string, link: string, name: s
                     </div>
                 </body>
                 </html>
-            `
-        });
+            `,
+    });
 
-        if (error) {
-            console.error('Error sending email via Resend:', error);
-            return { success: false, error: error.message };
-        }
-
-        return { success: true, data };
-    } catch (error) {
-        console.error('Exception sending email:', error);
-        return { success: false, error: 'Failed to send email' };
+    if (error) {
+      logger.error("Error sending email via Resend:", error);
+      return { success: false, error: error.message };
     }
+
+    return { success: true, data };
+  } catch (error) {
+    logger.error("Exception sending email:", error);
+    return { success: false, error: "Failed to send email" };
+  }
 }
