@@ -5,29 +5,37 @@ const mockSearchRagDocs = vi.fn();
 const mockEnv = { GEMINI_FILESEARCH_STORE_ID: "fileSearchStores/test-store" };
 
 vi.mock("@/lib/api-handler", () => ({
-  createApiHandler: (handler: any, options: any) => async (request: NextRequest) => {
-    const { NextResponse } = await import("next/server");
-    const { z } = await import("zod");
-    try {
-      const json = await request.json();
-      const body = options?.schema ? options.schema.parse(json) : json;
-      const result = await handler({
-        user: { id: "user-test" },
-        supabase: {},
-        body,
-      });
-      if (result instanceof NextResponse) return result;
-      return NextResponse.json(result);
-    } catch (e: unknown) {
-      if (e instanceof z.ZodError) {
-        return NextResponse.json({ error: "Validation Error", details: e.errors }, { status: 400 });
+  createApiHandler:
+    (
+      handler: (ctx: { user: { id: string }; supabase: object; body: unknown }) => Promise<unknown>,
+      options: { schema?: { parse: (v: unknown) => unknown } }
+    ) =>
+    async (request: NextRequest) => {
+      const { NextResponse } = await import("next/server");
+      const { z } = await import("zod");
+      try {
+        const json = await request.json();
+        const body = options?.schema ? options.schema.parse(json) : json;
+        const result = await handler({
+          user: { id: "user-test" },
+          supabase: {},
+          body,
+        });
+        if (result instanceof NextResponse) return result;
+        return NextResponse.json(result);
+      } catch (e: unknown) {
+        if (e instanceof z.ZodError) {
+          return NextResponse.json(
+            { error: "Validation Error", details: e.errors },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json(
+          { error: e instanceof Error ? e.message : "Internal Server Error" },
+          { status: 500 }
+        );
       }
-      return NextResponse.json(
-        { error: e instanceof Error ? e.message : "Internal Server Error" },
-        { status: 500 }
-      );
-    }
-  },
+    },
 }));
 
 vi.mock("@/lib/rateLimit", () => ({
