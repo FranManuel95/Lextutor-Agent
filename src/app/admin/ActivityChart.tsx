@@ -14,7 +14,10 @@ interface Props {
 }
 
 function shortDay(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
+  // Slice to YYYY-MM-DD before appending time — the RPC may return a
+  // full timestamp string ("2026-05-10 00:00:00") which would make the
+  // concatenation invalid and produce "Invalid Date".
+  const d = new Date(dateStr.slice(0, 10) + "T00:00:00");
   return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric" });
 }
 
