@@ -3,6 +3,7 @@ import { Inter, Crimson_Pro } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { SwRegister } from "@/components/sw-register";
+import { ThemeProvider } from "next-themes";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,7 +48,7 @@ export default function RootLayout({
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
         {supabaseUrl && (
           <>
@@ -57,9 +58,11 @@ export default function RootLayout({
         )}
       </head>
       <body className={`${inter.variable} ${crimsonPro.variable} font-sans`}>
-        {children}
-        <Toaster />
-        <SwRegister />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          {children}
+          <Toaster />
+          <SwRegister />
+        </ThemeProvider>
       </body>
     </html>
   );
