@@ -47,12 +47,12 @@ const AREAS = [
 ] as const;
 
 const AREA_COLORS: Record<string, string> = {
-  laboral: "bg-blue-500/15 text-blue-300 border-blue-500/30",
-  civil: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-  mercantil: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  procesal: "bg-green-500/15 text-green-300 border-green-500/30",
-  otro: "bg-gray-500/15 text-gray-300 border-gray-500/30",
-  general: "bg-slate-500/15 text-slate-300 border-slate-500/30",
+  laboral: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30",
+  civil: "bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30",
+  mercantil: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
+  procesal: "bg-emerald-500/15 text-emerald-700 dark:text-green-300 border-emerald-500/30",
+  otro: "bg-stone-500/15 text-stone-700 dark:text-stone-300 border-stone-500/30",
+  general: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
 };
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"];
