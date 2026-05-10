@@ -39,15 +39,37 @@ export default function QuizPage() {
     count: Number.isFinite(urlCount) ? Math.min(20, Math.max(5, urlCount)) : 15,
   });
 
+  interface QuizQuestion {
+    id: string;
+    text: string;
+    options: string[];
+  }
+
+  interface GradingItem {
+    id: string;
+    question: string;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+    explanation: string;
+  }
+
+  interface QuizResult {
+    percentage: number;
+    score: number;
+    total: number;
+    grading: GradingItem[];
+  }
+
   // Quiz Data
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({}); // questionId -> selectedIndex
   const [usesRag, setUsesRag] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
 
   // Results
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<QuizResult | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -75,7 +97,11 @@ export default function QuizPage() {
 
       setStep("taking");
     } catch (error: unknown) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -99,7 +125,11 @@ export default function QuizPage() {
       setResult(data);
       setStep("results");
     } catch (error: unknown) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -283,7 +313,7 @@ export default function QuizPage() {
             </Card>
 
             <div className="space-y-4">
-              {result.grading.map((item: any) => {
+              {result.grading.map((item) => {
                 // API returns { id, question, userAnswer, correctAnswer, isCorrect, explanation }
                 // We don't need to look up in 'questions' array because API returns the text.
                 return (

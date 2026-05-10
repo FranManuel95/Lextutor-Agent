@@ -84,7 +84,7 @@ export default async function ProgressPage() {
   }>;
 
   const distribution: Record<string, number> = {};
-  events.forEach((e: any) => {
+  events.forEach((e) => {
     const area = e.area || "General";
     distribution[area] = (distribution[area] || 0) + 1;
   });
