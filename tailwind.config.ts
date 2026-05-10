@@ -1,31 +1,34 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-    content: [
-        "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-        "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-        "./src/features/**/*.{js,ts,jsx,tsx,mdx}",
-        "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    ],
-    theme: {
-        extend: {
-            colors: {
-                "law-dark": "#020617", // updated to match gem-onyx/deep navy
-                "law-gold": "#FDBF11", // brighter gold from screenshot
-                "law-amber": "#b45309",
-                "law-accent": "#1e293b", // slate for glassy backgrounds
-                "gem-onyx": "#020617",
-                "gem-slate": "#0f172a",
-                "gem-mist": "#1e293b",
-                "gem-offwhite": "#f8fafc",
-                "gem-blue": "#3b82f6",
-            },
-            fontFamily: {
-                serif: ['"Crimson Pro"', "serif"],
-                sans: ["Inter", "sans-serif"],
-            },
-        },
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/features/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        // All brand tokens reference CSS variables so they adapt to light/dark theme.
+        // Format: space-separated RGB for Tailwind opacity modifier support (bg-gem-onyx/50).
+        "gem-onyx": "rgb(var(--gem-onyx) / <alpha-value>)",
+        "gem-slate": "rgb(var(--gem-slate) / <alpha-value>)",
+        "gem-mist": "rgb(var(--gem-mist) / <alpha-value>)",
+        "gem-offwhite": "rgb(var(--gem-offwhite) / <alpha-value>)",
+        "gem-blue": "rgb(var(--gem-blue) / <alpha-value>)",
+        "law-gold": "rgb(var(--law-gold) / <alpha-value>)",
+        "law-dark": "rgb(var(--law-dark) / <alpha-value>)",
+        "law-accent": "rgb(var(--law-accent) / <alpha-value>)",
+        "law-amber": "#b45309",
+      },
+      fontFamily: {
+        serif: ['"Crimson Pro"', "serif"],
+        sans: ["Inter", "sans-serif"],
+      },
     },
-    plugins: [],
+  },
+  plugins: [],
 };
 export default config;

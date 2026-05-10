@@ -2,57 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Light theme (Premium Legal Parchment) ─────────────────────────────── */
 :root {
-  --background: 222.2 84% 4.9%;
-  /* Dark navy */
-  --foreground: 210 40% 98%;
-  /* Off-white */
-
   /* Font variables from next/font */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-crimson), ui-serif, Georgia, serif;
+
+  /* Space-separated RGB values — used by Tailwind for opacity modifier support */
+  --gem-onyx: 250 248 245; /* #FAF8F5 — warm parchment (main bg)         */
+  --gem-slate: 240 234 226; /* #F0EAE2 — light beige (secondary areas)     */
+  --gem-mist: 255 255 255; /* #FFFFFF — white (cards / inputs)             */
+  --gem-offwhite: 28 25 23; /* #1C1917 — deep warm charcoal (text)          */
+  --gem-blue: 30 64 175; /* #1E40AF — deep navy blue                     */
+  --law-gold: 160 114 18; /* #A07212 — deep amber gold                    */
+  --law-dark: 28 25 23; /* #1C1917                                      */
+  --law-accent: 212 201 188; /* #D4C9BC — warm light border                  */
 }
 
+/* ─── Dark theme (Current — deep navy) ──────────────────────────────────── */
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
+  --gem-onyx: 2 6 23; /* #020617 — near-black navy (main bg)          */
+  --gem-slate: 15 23 42; /* #0F172A — dark slate (secondary areas)       */
+  --gem-mist: 30 41 59; /* #1E293B — slightly lighter slate (cards)     */
+  --gem-offwhite: 248 250 252; /* #F8FAFC — off-white (text)                   */
+  --gem-blue: 59 130 246; /* #3B82F6 — blue-500                           */
+  --law-gold: 253 191 17; /* #FDBF11 — bright gold                        */
+  --law-dark: 2 6 23; /* #020617                                      */
+  --law-accent: 30 41 59; /* #1E293B                                      */
 }
 
+/* ─── Base body styles ───────────────────────────────────────────────────── */
 body {
-  background-color: #020617;
-  /* gem-onyx / law-dark */
-  color: #f8fafc;
-  /* gem-offwhite */
+  background-color: rgb(var(--gem-onyx));
+  color: rgb(var(--gem-offwhite));
   font-family: var(--font-sans);
 }
 
-/* Custom Scrollbar - Minimalist */
-.custom-scrollbar::-webkit-scrollbar {
+/* ─── Scrollbar — dark mode ──────────────────────────────────────────────── */
+.dark .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
-  /* Thinner */
 }
 
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
 
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
 
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
 
+.dark .custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
 
+/* ─── Scrollbar — light mode ─────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-  /* Slightly visible on hover */
+  background: rgba(0, 0, 0, 0.25);
 }
 
-/* Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }

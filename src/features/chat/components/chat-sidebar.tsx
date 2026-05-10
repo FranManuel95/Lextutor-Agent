@@ -24,6 +24,7 @@ import { ProfileDialog } from "@/components/profile-dialog";
 import { useState, useEffect, useRef } from "react";
 import { createChat, renameChat } from "@/app/(dashboard)/chat/actions";
 import { Copyright } from "@/components/copyright";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 import {
   AlertDialog,
@@ -623,7 +624,10 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
       </div>
 
       <div className="border-t border-white/5 bg-[#010409]">
-        <Copyright className="py-2 text-[9px]" />
+        <div className="flex items-center justify-between px-3 py-1">
+          <Copyright className="py-1 text-[9px]" />
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );
