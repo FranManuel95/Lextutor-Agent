@@ -5,33 +5,31 @@ import { logger } from "@/lib/logger";
 
 const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
-/**
- * Generates a highly detailed vertical educational infographic in a 'Flat Design Editorial' style.
- * Uses Google Imagen 4 via Gemini API.
- *
- * @param topic The central legal topic for the infographic.
- * @returns The Base64 encoded image string or null if failed.
- */
-
 export interface InfographicContent {
   topic: string;
   sections: { title: string; content: string }[];
   footer_context: string;
 }
 
+export interface InfographicResult {
+  data: string | null;
+  error?: string;
+}
+
+const IMAGE_MODEL = "gemini-2.0-flash-preview-image-generation";
+
 export async function generateLegalInfographic(
   content: InfographicContent
-): Promise<string | null> {
+): Promise<InfographicResult> {
   const MAX_RETRIES = 3;
   const INITIAL_RETRY_DELAY_MS = 2000;
 
   const { topic, sections, footer_context } = content;
   logger.info("[imagen-service] Generando Infografía Legal Detallada", {
     topic,
-    model: "gemini-3-pro-image-preview",
+    model: IMAGE_MODEL,
   });
 
-  // Dynamically build content blocks
   let dynamicContentBlocks = "";
   sections.forEach((section, index) => {
     const isFirst = index === 0;
@@ -75,6 +73,8 @@ ${sections.length + 3}. **FOOTER NOTE**:
 - **NO CUT-OFF TEXT**: Resize text to fit containers.
 - **Iconography**: Flat, professional vector icons. No photorealism.`;
 
+  let lastError = "Error desconocido al generar la imagen.";
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 1) {
@@ -85,61 +85,94 @@ ${sections.length + 3}. **FOOTER NOTE**:
       }
 
       const response = await geminiClient.models.generateContent({
-        model: "gemini-2.0-flash-preview-image-generation",
+        model: IMAGE_MODEL,
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: { responseModalities: ["IMAGE"] },
       });
 
       logger.info("[imagen-service] API call complete. Processing response...");
 
-      // Parse response structure for gemini-2.5-flash-image (inlineData)
-      if (
-        response &&
-        response.candidates &&
-        response.candidates[0] &&
-        response.candidates[0].content &&
-        response.candidates[0].content.parts
-      ) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            logger.info("[imagen-service] Professional Image received.");
-            return `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
+      const candidate = response?.candidates?.[0];
+
+      if (candidate?.finishReason && candidate.finishReason !== "STOP") {
+        const reason = candidate.finishReason;
+        logger.warn("[imagen-service] Candidate finished with non-STOP reason", { reason });
+        if (reason === "SAFETY") {
+          return {
+            data: null,
+            error:
+              "El contenido fue bloqueado por los filtros de seguridad de la API. Intenta con un tema diferente.",
+          };
+        }
+        return {
+          data: null,
+          error: `La API rechazó la solicitud (${reason}). Inténtalo de nuevo.`,
+        };
+      }
+
+      if (candidate?.content?.parts) {
+        for (const part of candidate.content.parts) {
+          if (part.inlineData?.data) {
+            logger.info("[imagen-service] Imagen recibida correctamente.");
+            return {
+              data: `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`,
+            };
           }
         }
       }
 
-      logger.warn("[imagen-service] No inline image data found in response.", {
-        candidates: JSON.stringify(response.candidates, null, 2),
+      logger.warn("[imagen-service] La API respondió pero no devolvió datos de imagen.", {
+        candidateKeys: candidate ? Object.keys(candidate) : "sin candidato",
+        parts: JSON.stringify(candidate?.content?.parts?.map((p) => Object.keys(p))),
       });
-      return null; // Don't retry if we got a valid response but no image (likely content filter or format issue)
+      return {
+        data: null,
+        error:
+          "La API de Gemini respondió pero no generó ninguna imagen. Es posible que el modelo esté temporalmente no disponible.",
+      };
     } catch (error: unknown) {
-      const err = error as { message?: string; code?: number; response?: unknown };
+      const err = error as { message?: string; code?: number; status?: number };
+      const rawMsg = err.message ?? "Error desconocido";
+
       logger.error("[imagen-service] Error generando infografía legal", error, {
         attempt,
         maxRetries: MAX_RETRIES,
+        rawMsg,
       });
 
-      // Check for 503 Overloaded or 429 Too Many Requests
       const isOverloaded =
-        err.code === 503 || err.message?.includes("503") || err.message?.includes("overloaded");
-      const isRateLimit = err.code === 429 || err.message?.includes("429");
+        err.code === 503 ||
+        err.status === 503 ||
+        rawMsg.includes("503") ||
+        rawMsg.toLowerCase().includes("overloaded");
+      const isRateLimit = err.code === 429 || err.status === 429 || rawMsg.includes("429");
+      const isNotFound =
+        err.code === 404 || err.status === 404 || rawMsg.toLowerCase().includes("not found");
+
+      if (isNotFound) {
+        logger.error("[imagen-service] Modelo no encontrado.", { model: IMAGE_MODEL, rawMsg });
+        return {
+          data: null,
+          error: `El modelo de generación de imágenes (${IMAGE_MODEL}) no está disponible. Detalle: ${rawMsg}`,
+        };
+      }
 
       if ((isOverloaded || isRateLimit) && attempt < MAX_RETRIES) {
-        const delayMs = INITIAL_RETRY_DELAY_MS * 2 ** (attempt - 1); // Exponential backoff: 2s, 4s
-        logger.info("[imagen-service] Esperando antes de reintentar...", { delayMs });
+        const delayMs = INITIAL_RETRY_DELAY_MS * 2 ** (attempt - 1);
+        lastError = isRateLimit
+          ? `Límite de peticiones alcanzado. Reintentando... (${rawMsg})`
+          : `Servicio sobrecargado. Reintentando... (${rawMsg})`;
+        logger.info("[imagen-service] Esperando antes de reintentar...", { delayMs, lastError });
         await new Promise((resolve) => setTimeout(resolve, delayMs));
         continue;
       }
 
-      if (err.response) {
-        logger.error("[imagen-service] Error Response", undefined, {
-          response: JSON.stringify(err.response, null, 2),
-        });
-      }
-      // If it's the last attempt or a non-retriable error, return null
-      if (attempt === MAX_RETRIES) return null;
+      lastError = rawMsg;
     }
   }
 
-  return null;
+  return {
+    data: null,
+    error: `No se pudo generar la imagen tras ${MAX_RETRIES} intentos. ${lastError}`,
+  };
 }

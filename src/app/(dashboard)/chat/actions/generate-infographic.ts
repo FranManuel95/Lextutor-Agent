@@ -43,7 +43,7 @@ export async function generateInfographicAction(
     const briefPrompt = `
             Analyze the following conversation history between a law student and a tutor.
             Create a structured content brief for an educational infographic.
-            
+
             HISTORY:
             ${recentHistory}
 
@@ -102,14 +102,19 @@ export async function generateInfographicAction(
     });
 
     // 3. Generate Infographic
-    const imageUrl = await generateLegalInfographic(contentData);
+    const result = await generateLegalInfographic(contentData);
 
-    if (imageUrl) {
-      logger.info("[generate-infographic] Success, returning image URL.");
-      return { success: true, imageUrl, topic: contentData.topic };
+    if (result.data) {
+      logger.info("[generate-infographic] Imagen generada correctamente.");
+      return { success: true, imageUrl: result.data, topic: contentData.topic };
     } else {
-      logger.error("[generate-infographic] Image URL is null.");
-      return { success: false, error: "Failed to generate image" };
+      logger.error("[generate-infographic] La generación de imagen falló.", undefined, {
+        reason: result.error,
+      });
+      return {
+        success: false,
+        error: result.error ?? "No se pudo generar la infografía.",
+      };
     }
   } catch (error) {
     logger.error("Error in generateInfographicAction", error);
