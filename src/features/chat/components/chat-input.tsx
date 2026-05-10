@@ -295,7 +295,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
           />
         </div>
         <div className="mt-2 text-center">
-          <p className="text-[10px] text-gray-600">Audio notes powered by Gemini 2.5</p>
+          <p className="text-[10px] text-gem-muted/70">Audio notes powered by Gemini 2.5</p>
         </div>
       </div>
     );
@@ -313,7 +313,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
             ref={inputRef}
             name="content"
             onKeyDown={handleKeyDown}
-            className="flex min-h-[60px] w-full resize-none rounded-2xl border border-law-accent/30 bg-gem-mist/20 px-6 py-4 pr-16 text-sm text-white shadow-inner placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-law-gold/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-[60px] w-full resize-none rounded-2xl border border-gem-border/40 bg-gem-mist px-6 py-4 pr-16 text-sm text-gem-offwhite shadow-inner placeholder:text-gem-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-law-gold/50 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder={getPlaceholder()}
             required
             disabled={isSending}
@@ -325,7 +325,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
                 size="icon"
                 variant="ghost"
                 onClick={() => setIsRecording(true)}
-                className="h-10 w-10 rounded-xl text-gray-400 hover:bg-white/10 hover:text-white"
+                className="h-10 w-10 rounded-xl text-gem-muted hover:bg-gem-slate hover:text-gem-offwhite"
                 disabled={isSending}
               >
                 <span className="sr-only">Voz</span>
@@ -345,7 +345,7 @@ export function ChatInput({ chatId }: ChatInputProps) {
         </div>
       </form>
       <div className="mt-2 text-center">
-        <p className="text-[10px] text-gray-600">
+        <p className="text-[10px] text-gem-muted/70">
           LexTutor Agent está se basa en manuales proporcionados por el autor del proyecto.
         </p>
       </div>

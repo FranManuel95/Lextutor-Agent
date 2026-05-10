@@ -123,12 +123,16 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-400 hover:text-white">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-gem-muted hover:text-gem-offwhite"
+          >
             <Settings size={14} />
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="border-law-accent/20 bg-gem-onyx text-white sm:max-w-[425px]">
+      <DialogContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-serif text-law-gold">Editar Perfil</DialogTitle>
         </DialogHeader>
@@ -141,7 +145,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
           <div className="grid gap-6 py-4">
             {/* Avatar Section */}
             <div className="flex flex-col items-center gap-4">
-              <div className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-law-gold/50 bg-black/20">
+              <div className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-law-gold/50 bg-gem-slate">
                 {form.avatar_url ? (
                   <Image src={form.avatar_url} alt="Avatar" fill className="object-cover" />
                 ) : (
@@ -153,7 +157,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
                   className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload size={20} className="text-white" />
+                  <Upload size={20} className="text-gem-offwhite" />
                 </div>
               </div>
               <input
@@ -163,7 +167,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
                 accept="image/*"
                 onChange={handleFileChange}
               />
-              <p className="text-xs text-gray-500">Click en la imagen para cambiar</p>
+              <p className="text-xs text-gem-muted">Click en la imagen para cambiar</p>
             </div>
 
             <div className="grid gap-2">
@@ -172,7 +176,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
                 id="name"
                 value={form.full_name}
                 onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                className="border-white/10 bg-black/20 text-white"
+                className="border-gem-border/40 bg-gem-slate text-gem-offwhite"
               />
             </div>
 
@@ -183,20 +187,20 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
                 type="date"
                 value={form.birth_date}
                 onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
-                className="border-white/10 bg-black/20 text-white"
+                className="border-gem-border/40 bg-gem-slate text-gem-offwhite"
               />
             </div>
 
             {/* Notifications */}
-            <div className="flex items-center justify-between rounded-lg border border-white/5 bg-black/20 p-3">
+            <div className="flex items-center justify-between rounded-lg border border-gem-border/40 bg-gem-slate p-3">
               <label
                 htmlFor="email_weekly_summary"
                 className="flex cursor-pointer items-start gap-3"
               >
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-law-gold" />
                 <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-white">Resumen semanal por email</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm font-medium text-gem-offwhite">Resumen semanal por email</p>
+                  <p className="text-xs text-gem-muted">
                     Recibe un resumen con tu nota media y racha cada lunes.
                   </p>
                 </div>
@@ -220,7 +224,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
               Guardar Cambios
             </Button>
 
-            <div className="flex items-center justify-between gap-4 border-t border-white/5 pt-4">
+            <div className="flex items-center justify-between gap-4 border-t border-gem-border/40 pt-4">
               {role === "admin" ? (
                 <Button
                   variant="ghost"
@@ -243,7 +247,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
                   await supabase.auth.signOut();
                   router.push("/");
                 }}
-                className="gap-2 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                className="gap-2 text-red-700 hover:bg-red-500/10 hover:text-red-300 dark:text-red-400"
               >
                 <LogOut size={16} /> Cerrar Sesión
               </Button>

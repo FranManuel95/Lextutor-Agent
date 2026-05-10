@@ -90,29 +90,29 @@ export function FlagQuestionButton({
         <Button
           variant="ghost"
           size="sm"
-          className="gap-1.5 text-xs text-slate-500 hover:text-red-400"
+          className="gap-1.5 text-xs text-gem-muted hover:text-red-700 dark:hover:text-red-400"
           disabled={submitted}
         >
           <Flag className="h-3.5 w-3.5" />
           {submitted ? "Reportada" : "Reportar"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="border-white/10 bg-gem-onyx text-white sm:max-w-md">
+      <DialogContent className="border-gem-border/40 bg-gem-onyx text-gem-offwhite sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-law-gold">Reportar pregunta</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogDescription className="text-gem-muted">
             ¿Qué ocurre con esta pregunta? Usaremos tu reporte para mejorar el generador.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label className="text-xs text-gray-400">Motivo</Label>
+            <Label className="text-xs text-gem-muted">Motivo</Label>
             <Select value={reason} onValueChange={(v) => setReason(v as Reason)}>
-              <SelectTrigger className="border-white/10 bg-gem-slate text-white">
+              <SelectTrigger className="border-gem-border/40 bg-gem-slate text-gem-offwhite">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-white/10 bg-gem-onyx text-white">
+              <SelectContent className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                 <SelectItem value="incorrect">La respuesta correcta es incorrecta</SelectItem>
                 <SelectItem value="ambiguous">Pregunta ambigua o confusa</SelectItem>
                 <SelectItem value="off_topic">Fuera del área seleccionada</SelectItem>
@@ -122,15 +122,15 @@ export function FlagQuestionButton({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-gray-400">Comentario (opcional)</Label>
+            <Label className="text-xs text-gem-muted">Comentario (opcional)</Label>
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Explica brevemente qué está mal…"
               maxLength={500}
-              className="min-h-[80px] border-white/10 bg-gem-slate text-white placeholder:text-gray-600"
+              className="min-h-[80px] border-gem-border/40 bg-gem-slate text-gem-offwhite placeholder:text-gem-muted/70"
             />
-            <p className="text-right text-[10px] text-gray-600">{comment.length}/500</p>
+            <p className="text-right text-[10px] text-gem-muted/70">{comment.length}/500</p>
           </div>
         </div>
 
@@ -138,7 +138,7 @@ export function FlagQuestionButton({
           <Button
             variant="ghost"
             onClick={() => setOpen(false)}
-            className="text-gray-400 hover:bg-white/5 hover:text-white"
+            className="text-gem-muted hover:bg-gem-slate hover:text-gem-offwhite"
             disabled={submitting}
           >
             Cancelar

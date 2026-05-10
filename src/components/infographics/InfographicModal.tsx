@@ -42,16 +42,16 @@ export function InfographicModal({ isOpen, onClose, content, topic }: Infographi
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* [&>button]:hidden suppresses the Radix built-in close button; we render our own in the toolbar */}
-      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-white/10 bg-gem-onyx p-0 shadow-2xl [&>button]:hidden">
+      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-gem-border/40 bg-gem-mist p-0 shadow-2xl [&>button]:hidden">
         {/* Toolbar */}
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-gem-border/40 px-4 py-3">
           <p className="font-serif text-sm italic text-law-gold/80">Resumen Visual</p>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
               onClick={handleDownloadPDF}
               disabled={isDownloading}
-              className="gap-1.5 bg-law-gold text-gem-onyx hover:bg-law-gold/80"
+              className="gap-1.5 bg-law-gold text-white hover:bg-law-gold/90 dark:text-gem-onyx"
             >
               {isDownloading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -66,7 +66,7 @@ export function InfographicModal({ isOpen, onClose, content, topic }: Infographi
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="h-8 w-8 rounded-full text-gray-400 hover:bg-white/10 hover:text-white"
+              className="h-8 w-8 rounded-full text-gem-muted hover:bg-gem-slate hover:text-gem-offwhite"
             >
               <X className="h-4 w-4" />
             </Button>
