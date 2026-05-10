@@ -1,6 +1,7 @@
 // src/utils/gemini.ts (SERVER-ONLY)
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
+import type { GroundingChunk } from "@google/genai";
 import { env } from "@/lib/env";
 
 const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
@@ -220,12 +221,12 @@ export async function generateResponseWithContext(
   return text;
 }
 
-export function formatCitationsFromChunks(chunks: any[] | undefined): string | null {
+export function formatCitationsFromChunks(chunks: GroundingChunk[] | undefined): string | null {
   if (!chunks || chunks.length === 0) return null;
 
   const uniqueSources = new Set<string>();
 
-  chunks.forEach((chunk: any) => {
+  chunks.forEach((chunk) => {
     // Handle Vertex AI Search / File Search chunks
     if (chunk.retrievedContext) {
       const title = chunk.retrievedContext.title;

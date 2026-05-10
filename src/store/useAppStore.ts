@@ -1,60 +1,90 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
 export interface TutorSettings {
-    area: 'laboral' | 'civil' | 'mercantil' | 'procesal' | 'otro' | 'general'
-    modes: ('concise' | 'feynman' | 'quiz' | 'socratic' | 'steps' | 'citations' | 'caseMode' | 'memoryAware')[]
-    detailLevel: 'brief' | 'normal' | 'extended'
-    preset?: 'rapido' | 'aprender' | 'examen' | 'socratico'
+  area: "laboral" | "civil" | "mercantil" | "procesal" | "otro" | "general";
+  modes: (
+    | "concise"
+    | "feynman"
+    | "quiz"
+    | "socratic"
+    | "steps"
+    | "citations"
+    | "caseMode"
+    | "memoryAware"
+  )[];
+  detailLevel: "brief" | "normal" | "extended";
+  preset?: "rapido" | "aprender" | "examen" | "socratico";
+}
+
+export interface OptimisticMessage {
+  id: string | number;
+  chat_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+  audio_url?: string;
+}
+
+export interface UserProfile {
+  id?: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  email?: string | null;
+  [key: string]: unknown;
 }
 
 interface AppState {
-    isSending: boolean
-    area: TutorSettings['area'] // Deprecated top-level area in favor of settings, but kept for compat if needed, synced
-    studyMode: 'tutor' | 'examen' | 'socratic' // Legacy? We might map this to new modes
-    tutorSettings: TutorSettings
-    setIsSending: (isSending: boolean) => void
-    setArea: (area: AppState['area']) => void
-    setStudyMode: (mode: AppState['studyMode']) => void
-    setTutorSettings: (settings: Partial<TutorSettings>) => void
+  isSending: boolean;
+  area: TutorSettings["area"]; // Deprecated top-level area in favor of settings, but kept for compat if needed, synced
+  studyMode: "tutor" | "examen" | "socratic"; // Legacy? We might map this to new modes
+  tutorSettings: TutorSettings;
+  setIsSending: (isSending: boolean) => void;
+  setArea: (area: AppState["area"]) => void;
+  setStudyMode: (mode: AppState["studyMode"]) => void;
+  setTutorSettings: (settings: Partial<TutorSettings>) => void;
 
-    // Optimistic UI
-    optimisticMessages: any[]
-    addOptimisticMessage: (msg: any) => void
-    removeOptimisticMessage: (id: string | number) => void
+  // Optimistic UI
+  optimisticMessages: OptimisticMessage[];
+  addOptimisticMessage: (msg: OptimisticMessage) => void;
+  removeOptimisticMessage: (id: string | number) => void;
 
-    // User Profile Cache
-    userProfile: any | null
-    setUserProfile: (profile: any) => void
+  // User Profile Cache
+  userProfile: UserProfile | null;
+  setUserProfile: (profile: UserProfile) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
-    isSending: false,
-    area: 'otro',
-    studyMode: 'tutor',
-    tutorSettings: {
-        area: 'otro',
-        modes: [],
-        detailLevel: 'normal'
-    },
-    userProfile: null,
-    setIsSending: (isSending) => set({ isSending }),
-    setArea: (area) => set((state) => ({
-        area,
-        tutorSettings: { ...state.tutorSettings, area }
+  isSending: false,
+  area: "otro",
+  studyMode: "tutor",
+  tutorSettings: {
+    area: "otro",
+    modes: [],
+    detailLevel: "normal",
+  },
+  userProfile: null,
+  setIsSending: (isSending) => set({ isSending }),
+  setArea: (area) =>
+    set((state) => ({
+      area,
+      tutorSettings: { ...state.tutorSettings, area },
     })),
-    setStudyMode: (studyMode) => set({ studyMode }),
-    setTutorSettings: (settings) => set((state) => ({
-        tutorSettings: { ...state.tutorSettings, ...settings },
-        ...(settings.area ? { area: settings.area } : {})
+  setStudyMode: (studyMode) => set({ studyMode }),
+  setTutorSettings: (settings) =>
+    set((state) => ({
+      tutorSettings: { ...state.tutorSettings, ...settings },
+      ...(settings.area ? { area: settings.area } : {}),
     })),
-    setUserProfile: (profile) => set({ userProfile: profile }),
+  setUserProfile: (profile) => set({ userProfile: profile }),
 
-    // Optimistic UI
-    optimisticMessages: [],
-    addOptimisticMessage: (msg) => set((state) => ({
-        optimisticMessages: [...state.optimisticMessages, msg]
+  // Optimistic UI
+  optimisticMessages: [],
+  addOptimisticMessage: (msg) =>
+    set((state) => ({
+      optimisticMessages: [...state.optimisticMessages, msg],
     })),
-    removeOptimisticMessage: (id) => set((state) => ({
-        optimisticMessages: state.optimisticMessages.filter((m) => m.id !== id)
+  removeOptimisticMessage: (id) =>
+    set((state) => ({
+      optimisticMessages: state.optimisticMessages.filter((m) => m.id !== id),
     })),
-}))
+}));

@@ -1,7 +1,14 @@
 // src/utils/openai.ts (SERVER-ONLY)
 import "server-only";
 import OpenAI from "openai";
+import type { Annotation } from "openai/resources/beta/threads/messages";
 import { env } from "@/lib/env";
+
+export interface ExamQuestion {
+  id: number | string;
+  text: string;
+  topic?: string;
+}
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 const ASSISTANT_ID = env.OPENAI_ASSISTANT_ID!;
@@ -228,12 +235,12 @@ export async function generateResponseWithContext(
   return text;
 }
 
-export function formatCitationsFromAnnotations(annotations: any[]): string | null {
+export function formatCitationsFromAnnotations(annotations: Annotation[]): string | null {
   if (!annotations || annotations.length === 0) return null;
 
   const uniqueSources = new Set<string>();
 
-  annotations.forEach((ann: any) => {
+  annotations.forEach((ann) => {
     if (ann.type === "file_citation") {
       const fileId = ann.file_citation.file_id;
       uniqueSources.add(`Documento ${fileId.slice(-8)}`);
@@ -420,16 +427,16 @@ export async function generateExam(params: { area: string; difficulty: string; c
 }
 
 export async function gradeExam(params: {
-  questions: any[];
+  questions: ExamQuestion[];
   answers: Record<string, string>;
-  rubric: any;
+  rubric: Record<string, string>;
 }) {
   const { questions, answers, rubric } = params;
 
-  const inputList = questions.map((q: any) => ({
+  const inputList = questions.map((q) => ({
     id: q.id,
     question: q.text,
-    rubric: (rubric as any)[String(q.id)],
+    rubric: rubric[String(q.id)],
     student_answer: answers[String(q.id)] || "(NO CONTESTÓ)",
   }));
 
