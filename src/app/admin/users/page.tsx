@@ -48,9 +48,23 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   }
 
   if (authResult.error) {
+    const isApiKeyError =
+      authResult.error.message.toLowerCase().includes("invalid") ||
+      authResult.error.message.toLowerCase().includes("api key") ||
+      authResult.error.message.toLowerCase().includes("unauthorized");
     return (
-      <div className="p-8 text-red-400">
-        Error cargando datos de autenticación: {authResult.error.message}
+      <div className="space-y-3 p-8">
+        <p className="font-semibold text-red-400">
+          Error cargando datos de autenticación: {authResult.error.message}
+        </p>
+        {isApiKeyError && (
+          <p className="max-w-lg text-sm text-amber-400/80">
+            Verifica que <code className="rounded bg-white/10 px-1">SUPABASE_SERVICE_ROLE_KEY</code>{" "}
+            esté correctamente configurada en Vercel → Settings → Environment Variables. Debe ser la
+            clave <strong>service_role</strong> (no la anon key) desde Supabase → Project Settings →
+            API.
+          </p>
+        )}
       </div>
     );
   }

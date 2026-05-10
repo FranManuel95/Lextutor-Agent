@@ -84,18 +84,13 @@ ${sections.length + 3}. **FOOTER NOTE**:
         });
       }
 
-      // Using gemini-3-pro-image-preview (Nano Banana Pro) for professional quality and text rendering
-      const response: any = await geminiClient.models.generateContent({
-        model: "gemini-3-pro-image-preview",
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
+      const response = await geminiClient.models.generateContent({
+        model: "gemini-2.0-flash-preview-image-generation",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: { responseModalities: ["IMAGE"] },
       });
 
-      logger.info("[imagen-service] Nano Banana Pro API call complete. Processing response...");
+      logger.info("[imagen-service] API call complete. Processing response...");
 
       // Parse response structure for gemini-2.5-flash-image (inlineData)
       if (
@@ -113,7 +108,7 @@ ${sections.length + 3}. **FOOTER NOTE**:
         }
       }
 
-      logger.warn("[imagen-service] No inline image data found in Nano Banana Pro response.", {
+      logger.warn("[imagen-service] No inline image data found in response.", {
         candidates: JSON.stringify(response.candidates, null, 2),
       });
       return null; // Don't retry if we got a valid response but no image (likely content filter or format issue)
