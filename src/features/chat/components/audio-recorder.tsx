@@ -185,9 +185,9 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
     }
 
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-2 flex w-full items-center gap-3 rounded-2xl border border-red-500/50 bg-red-950/90 p-2">
-        <div className="flex items-center gap-2 px-3 text-red-200">
-          <AlertCircle className="h-5 w-5 text-red-400" />
+      <div className="animate-in fade-in slide-in-from-bottom-2 flex w-full items-center gap-3 rounded-2xl border border-red-500/40 bg-red-50 p-2 dark:border-red-500/50 dark:bg-red-950/90">
+        <div className="flex items-center gap-2 px-3 text-red-800 dark:text-red-200">
+          <AlertCircle className="h-5 w-5 text-red-700 dark:text-red-400" />
           <span className="text-sm font-medium">{errorMsg}</span>
         </div>
 
@@ -199,7 +199,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
             size="sm"
             variant="secondary"
             onClick={() => startRecording()}
-            className="border border-red-800 bg-red-900/50 text-red-100 hover:bg-red-900"
+            className="border border-red-300 bg-red-100 text-red-900 hover:bg-red-200 dark:border-red-800 dark:bg-red-900/50 dark:text-red-100 dark:hover:bg-red-900"
           >
             {actionMsg}
           </Button>
@@ -208,7 +208,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
             size="icon"
             variant="ghost"
             onClick={onCancel}
-            className="h-9 w-9 rounded-full text-red-200 hover:bg-red-900/50 hover:text-white"
+            className="h-9 w-9 rounded-full text-red-700 hover:bg-red-100 hover:text-red-900 dark:text-red-200 dark:hover:bg-red-900/50 dark:hover:text-white"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -218,7 +218,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 flex w-full items-center gap-3 rounded-2xl border border-law-accent/50 bg-gem-onyx/90 p-2">
+    <div className="animate-in fade-in slide-in-from-bottom-2 flex w-full items-center gap-3 rounded-2xl border border-law-accent/50 bg-gem-mist p-2">
       {isProcessing ? (
         <div className="flex w-full items-center justify-center gap-2 px-4 text-law-gold">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -228,11 +228,11 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
         <>
           <div className="flex items-center gap-2 px-3">
             <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-            <span className="w-12 font-mono text-sm text-white">{formatTime(duration)}</span>
+            <span className="w-12 font-mono text-sm text-gem-offwhite">{formatTime(duration)}</span>
           </div>
 
           <div className="flex flex-1 justify-center">
-            <span className="text-xs text-gray-400">Grabando... (máx 90s)</span>
+            <span className="text-xs text-gem-muted">Grabando... (máx 90s)</span>
           </div>
 
           <div className="flex gap-2">
@@ -241,7 +241,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
               size="icon"
               variant="ghost"
               onClick={handleCancel}
-              className="h-10 w-10 rounded-full text-gray-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+              className="h-10 w-10 rounded-full text-gem-muted transition-colors hover:bg-red-500/15 hover:text-red-700 dark:hover:text-red-400"
               title="Cancelar"
             >
               <Trash2 className="h-5 w-5" />
@@ -256,7 +256,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
                 "h-10 w-10 rounded-full transition-all",
                 isPaused
                   ? "bg-law-accent/20 text-law-accent"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  : "bg-gem-slate text-gem-offwhite hover:bg-gem-border/60"
               )}
               title={isPaused ? "Reanudar" : "Pausar"}
             >
@@ -267,7 +267,7 @@ export function AudioRecorder({ onRecordingComplete, onCancel, isProcessing }: A
               type="button"
               size="icon"
               onClick={handleStop}
-              className="h-10 w-10 transform rounded-full bg-law-gold text-gem-onyx shadow-lg shadow-law-gold/20 transition-all hover:scale-105 hover:bg-law-gold/90"
+              className="h-10 w-10 transform rounded-full bg-law-gold text-white shadow-lg shadow-law-gold/20 transition-all hover:scale-105 hover:bg-law-gold/90 dark:text-gem-onyx"
               title="Enviar audio"
             >
               <SendHorizontal className="h-5 w-5 fill-current" />

@@ -37,7 +37,7 @@ export function ExamsPagination({ currentPage, totalPages, area, type, status }:
           variant="outline"
           size="sm"
           disabled={!hasPrev}
-          className="border-law-accent/20 bg-gem-slate text-gem-offwhite hover:bg-white/5 disabled:opacity-30"
+          className="border-law-accent/20 bg-gem-slate text-gem-offwhite hover:bg-gem-slate disabled:opacity-30"
         >
           <Link href={hasPrev ? buildHref(currentPage - 1, area, type, status) : "#"}>
             <ChevronLeft className="h-4 w-4" />
@@ -49,7 +49,7 @@ export function ExamsPagination({ currentPage, totalPages, area, type, status }:
           variant="outline"
           size="sm"
           disabled={!hasNext}
-          className="border-law-accent/20 bg-gem-slate text-gem-offwhite hover:bg-white/5 disabled:opacity-30"
+          className="border-law-accent/20 bg-gem-slate text-gem-offwhite hover:bg-gem-slate disabled:opacity-30"
         >
           <Link href={hasNext ? buildHref(currentPage + 1, area, type, status) : "#"}>
             Siguiente

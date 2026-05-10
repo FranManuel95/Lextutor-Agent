@@ -8,27 +8,75 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-crimson), ui-serif, Georgia, serif;
 
-  /* Space-separated RGB values — used by Tailwind for opacity modifier support */
+  /* Brand tokens — space-separated RGB for Tailwind opacity modifiers */
   --gem-onyx: 250 248 245; /* #FAF8F5 — warm parchment (main bg)         */
   --gem-slate: 240 234 226; /* #F0EAE2 — light beige (secondary areas)     */
   --gem-mist: 255 255 255; /* #FFFFFF — white (cards / inputs)             */
   --gem-offwhite: 28 25 23; /* #1C1917 — deep warm charcoal (text)          */
+  --gem-muted: 87 83 78; /* #57534E — warm gray (secondary text)         */
+  --gem-border: 212 201 188; /* #D4C9BC — warm light border                  */
+  --gem-hover: 28 25 23; /* tint base for hover bg (use w/ low opacity)  */
   --gem-blue: 30 64 175; /* #1E40AF — deep navy blue                     */
   --law-gold: 160 114 18; /* #A07212 — deep amber gold                    */
   --law-dark: 28 25 23; /* #1C1917                                      */
   --law-accent: 212 201 188; /* #D4C9BC — warm light border                  */
+
+  /* Shadcn semantic aliases — mapped to brand tokens above */
+  --background: 250 248 245;
+  --foreground: 28 25 23;
+  --card: 255 255 255;
+  --card-foreground: 28 25 23;
+  --popover: 255 255 255;
+  --popover-foreground: 28 25 23;
+  --primary: 160 114 18;
+  --primary-foreground: 255 255 255;
+  --secondary: 240 234 226;
+  --secondary-foreground: 28 25 23;
+  --muted: 240 234 226;
+  --muted-foreground: 87 83 78;
+  --accent: 240 234 226;
+  --accent-foreground: 28 25 23;
+  --destructive: 185 28 28; /* red-700 */
+  --destructive-foreground: 255 255 255;
+  --border: 212 201 188;
+  --input: 212 201 188;
+  --ring: 160 114 18;
 }
 
-/* ─── Dark theme (Current — deep navy) ──────────────────────────────────── */
+/* ─── Dark theme (Midnight Counsel) ──────────────────────────────────────── */
 .dark {
   --gem-onyx: 2 6 23; /* #020617 — near-black navy (main bg)          */
   --gem-slate: 15 23 42; /* #0F172A — dark slate (secondary areas)       */
   --gem-mist: 30 41 59; /* #1E293B — slightly lighter slate (cards)     */
   --gem-offwhite: 248 250 252; /* #F8FAFC — off-white (text)                   */
+  --gem-muted: 148 163 184; /* #94A3B8 — slate-400 (secondary text)         */
+  --gem-border: 30 41 59; /* #1E293B — subtle border                      */
+  --gem-hover: 248 250 252; /* tint base for hover bg                       */
   --gem-blue: 59 130 246; /* #3B82F6 — blue-500                           */
   --law-gold: 253 191 17; /* #FDBF11 — bright gold                        */
   --law-dark: 2 6 23; /* #020617                                      */
   --law-accent: 30 41 59; /* #1E293B                                      */
+
+  /* Shadcn semantic aliases */
+  --background: 2 6 23;
+  --foreground: 248 250 252;
+  --card: 30 41 59;
+  --card-foreground: 248 250 252;
+  --popover: 30 41 59;
+  --popover-foreground: 248 250 252;
+  --primary: 253 191 17;
+  --primary-foreground: 2 6 23;
+  --secondary: 15 23 42;
+  --secondary-foreground: 248 250 252;
+  --muted: 15 23 42;
+  --muted-foreground: 148 163 184;
+  --accent: 15 23 42;
+  --accent-foreground: 248 250 252;
+  --destructive: 220 38 38;
+  --destructive-foreground: 248 250 252;
+  --border: 30 41 59;
+  --input: 30 41 59;
+  --ring: 253 191 17;
 }
 
 /* ─── Base body styles ───────────────────────────────────────────────────── */

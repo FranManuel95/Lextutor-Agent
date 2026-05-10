@@ -60,7 +60,7 @@ export function FlagRowActions({ flagId, currentStatus }: Props) {
           size="sm"
           variant="ghost"
           onClick={() => update("dismissed")}
-          className="gap-1 text-xs text-gem-offwhite/60 hover:bg-white/5 hover:text-gem-offwhite"
+          className="gap-1 text-xs text-gem-offwhite/60 hover:bg-gem-slate hover:text-gem-offwhite"
         >
           <XCircle className="h-3.5 w-3.5" />
           Descartar

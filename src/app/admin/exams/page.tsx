@@ -163,7 +163,7 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
           <div className="-mx-4 overflow-x-auto sm:mx-0">
             <Table>
               <TableHeader>
-                <TableRow className="border-law-accent/20 hover:bg-white/5">
+                <TableRow className="border-law-accent/20 hover:bg-gem-slate">
                   <TableHead className="text-law-gold">Usuario</TableHead>
                   <TableHead className="text-law-gold">Tipo</TableHead>
                   <TableHead className="text-law-gold">Área</TableHead>
@@ -177,14 +177,14 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
                   const userName = profilesById[a.user_id] ?? "Sin nombre";
                   const score = Number(a.score ?? 0);
                   return (
-                    <TableRow key={a.id} className="border-law-accent/10 hover:bg-white/5">
+                    <TableRow key={a.id} className="border-law-accent/10 hover:bg-gem-slate">
                       <TableCell className="font-medium text-gem-offwhite">
                         <Link href={`/admin/users/${a.user_id}`} className="hover:text-law-gold">
                           {userName}
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="bg-white/5 text-gem-offwhite/80">
+                        <Badge variant="secondary" className="bg-gem-slate text-gem-offwhite/80">
                           {typeLabel(a.attempt_type)}
                         </Badge>
                       </TableCell>

@@ -248,7 +248,7 @@ export default function AdminRagPage() {
             <Link href="/chat">
               <Button
                 variant="ghost"
-                className="gap-2 text-gray-400 hover:bg-white/5 hover:text-white"
+                className="gap-2 text-gem-muted hover:bg-gem-slate hover:text-gem-offwhite"
               >
                 <MessageSquare size={16} /> Ir a Chat
               </Button>
@@ -260,7 +260,7 @@ export default function AdminRagPage() {
                 await supabase.auth.signOut();
                 window.location.href = "/";
               }}
-              className="gap-2 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="gap-2 text-red-700 hover:bg-red-500/10 hover:text-red-300 dark:text-red-400"
             >
               <LogOut size={16} /> Cerrar Sesión
             </Button>
@@ -271,7 +271,9 @@ export default function AdminRagPage() {
           {/* Upload Section */}
           <Card className="border-law-accent/30 bg-gem-slate/50 shadow-2xl backdrop-blur-md">
             <CardHeader>
-              <CardTitle className="font-serif text-white">Digitalizar Nuevo Manual</CardTitle>
+              <CardTitle className="font-serif text-gem-offwhite">
+                Digitalizar Nuevo Manual
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleUpload} className="flex flex-col gap-5">
@@ -289,7 +291,7 @@ export default function AdminRagPage() {
                   }`}
                 >
                   <Upload className="mb-3 h-9 w-9 text-law-gold" />
-                  <span className="mb-1 text-base font-medium text-white">
+                  <span className="mb-1 text-base font-medium text-gem-offwhite">
                     Arrastra o haz clic para seleccionar
                   </span>
                   <Input
@@ -310,7 +312,7 @@ export default function AdminRagPage() {
                 </div>
 
                 {/* File specs */}
-                <div className="rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3 text-xs text-gem-offwhite/50">
+                <div className="rounded-lg border border-gem-border/40 bg-gem-slate px-4 py-3 text-xs text-gem-offwhite/50">
                   <div className="mb-1.5 flex items-center gap-1.5 font-semibold text-gem-offwhite/70">
                     <Info size={12} /> Especificaciones
                   </div>
@@ -366,12 +368,12 @@ export default function AdminRagPage() {
                         type="button"
                         size="sm"
                         onClick={() => setLargeFileConfirmed(true)}
-                        className="w-full border border-red-500/50 bg-red-900/40 text-red-200 hover:bg-red-900/60"
+                        className="w-full border border-red-500/50 bg-red-50 text-red-800 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-200 dark:hover:bg-red-900/60"
                       >
                         Entendido — subir de todas formas
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 text-xs text-green-400">
+                      <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-green-400">
                         <CheckCircle2 size={13} /> Confirmado
                       </div>
                     )}
@@ -382,15 +384,15 @@ export default function AdminRagPage() {
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs font-medium text-gem-offwhite/60">Área jurídica</Label>
                   <Select value={area} onValueChange={setArea}>
-                    <SelectTrigger className="border-white/10 bg-gem-onyx/60 text-gem-offwhite focus:ring-law-gold/30">
+                    <SelectTrigger className="border-gem-border/40 bg-gem-onyx/80 text-gem-offwhite focus:ring-law-gold/30">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="border-white/10 bg-gem-slate">
+                    <SelectContent className="border-gem-border/40 bg-gem-slate">
                       {AREAS.map((a) => (
                         <SelectItem
                           key={a.value}
                           value={a.value}
-                          className="text-gem-offwhite focus:bg-white/10"
+                          className="text-gem-offwhite focus:bg-gem-slate"
                         >
                           {a.label}
                         </SelectItem>
@@ -402,7 +404,7 @@ export default function AdminRagPage() {
                 <Button
                   type="submit"
                   disabled={!canSubmit}
-                  className="w-full bg-law-accent py-6 font-bold tracking-wide text-white hover:bg-law-accent/80 disabled:opacity-40"
+                  className="w-full bg-law-accent py-6 font-bold tracking-wide text-gem-offwhite hover:bg-law-accent/80 disabled:opacity-40"
                 >
                   {uploading ? (
                     <>
@@ -421,7 +423,7 @@ export default function AdminRagPage() {
           <Card className="border-law-accent/30 bg-gem-slate/50 shadow-2xl backdrop-blur-md">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="font-serif text-white">
+                <CardTitle className="font-serif text-gem-offwhite">
                   Biblioteca Global ({documents.length})
                 </CardTitle>
                 <Button
@@ -441,9 +443,9 @@ export default function AdminRagPage() {
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 ) : documents.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-800 p-8 text-center">
-                    <p className="text-sm text-gray-500">No hay documentos indexados.</p>
-                    <p className="mt-1 text-xs text-gray-600">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gem-border/40 p-8 text-center">
+                    <p className="text-sm text-gem-muted">No hay documentos indexados.</p>
+                    <p className="mt-1 text-xs text-gem-muted/70">
                       Sube el primer manual para activar el RAG.
                     </p>
                   </div>
@@ -457,10 +459,10 @@ export default function AdminRagPage() {
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-3">
                           <div className="shrink-0 rounded-lg bg-blue-500/10 p-2">
-                            <FileText className="h-5 w-5 text-blue-400" />
+                            <FileText className="h-5 w-5 text-blue-700 dark:text-blue-400" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-gray-200 transition-colors group-hover:text-white">
+                            <p className="truncate text-sm font-medium text-gem-offwhite/80 transition-colors group-hover:text-gem-offwhite">
                               {doc.display_name}
                             </p>
                             <div className="mt-1 flex items-center gap-2">
@@ -469,7 +471,7 @@ export default function AdminRagPage() {
                               >
                                 {doc.area}
                               </span>
-                              <span className="text-[10px] text-gray-500">
+                              <span className="text-[10px] text-gem-muted">
                                 {new Date(doc.created_at).toLocaleDateString("es-ES")}
                               </span>
                             </div>
@@ -479,7 +481,7 @@ export default function AdminRagPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="shrink-0 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                          className="shrink-0 transition-colors hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-400"
                           onClick={() => setDocToDelete(doc)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -502,24 +504,24 @@ export default function AdminRagPage() {
             />
             <div className="animate-in fade-in-0 zoom-in-95 relative z-50 grid w-full max-w-lg gap-4 border border-law-accent/50 bg-gem-slate p-6 shadow-lg sm:rounded-lg">
               <div className="flex flex-col space-y-2 text-center sm:text-left">
-                <h2 className="text-lg font-semibold text-white">¿Eliminar documento?</h2>
+                <h2 className="text-lg font-semibold text-gem-offwhite">¿Eliminar documento?</h2>
                 <p className="text-sm text-gem-offwhite/60">
                   Esta acción no se puede deshacer. Se eliminará permanentemente{" "}
-                  <span className="font-bold text-white">{docToDelete.display_name}</span> del
-                  índice RAG y de la base de datos.
+                  <span className="font-bold text-gem-offwhite">{docToDelete.display_name}</span>{" "}
+                  del índice RAG y de la base de datos.
                 </p>
               </div>
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
                 <Button
                   variant="outline"
                   onClick={() => setDocToDelete(null)}
-                  className="mt-2 border-law-accent/50 bg-transparent text-white hover:bg-white/10 sm:mt-0"
+                  className="mt-2 border-law-accent/50 bg-transparent text-gem-offwhite hover:bg-gem-slate sm:mt-0"
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={confirmDelete}
-                  className="bg-red-900 text-red-100 hover:bg-red-800"
+                  className="bg-red-700 text-red-50 hover:bg-red-800 dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800"
                 >
                   Eliminar
                 </Button>

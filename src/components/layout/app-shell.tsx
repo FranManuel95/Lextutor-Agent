@@ -52,8 +52,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <main className="custom-scrollbar flex flex-1 flex-col overflow-y-auto bg-gem-onyx">
         <Suspense
           fallback={
-            <div className="flex h-14 items-center border-b border-white/5 bg-gem-onyx px-4">
-              <Skeleton className="h-8 w-8 rounded-md bg-white/10" />
+            <div className="flex h-14 items-center border-b border-gem-border/40 bg-gem-onyx px-4">
+              <Skeleton className="h-8 w-8 rounded-md bg-gem-slate" />
             </div>
           }
         >

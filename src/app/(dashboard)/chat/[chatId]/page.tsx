@@ -39,10 +39,10 @@ function ChatSkeleton() {
     <div className="flex-1 space-y-4 overflow-y-auto p-6">
       {[...Array(3)].map((_, i) => (
         <div key={i} className="flex animate-pulse gap-3">
-          <div className="h-10 w-10 rounded-full bg-white/10" />
+          <div className="h-10 w-10 rounded-full bg-gem-slate" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-3/4 rounded bg-white/10" />
-            <div className="h-4 w-1/2 rounded bg-white/10" />
+            <div className="h-4 w-3/4 rounded bg-gem-slate" />
+            <div className="h-4 w-1/2 rounded bg-gem-slate" />
           </div>
         </div>
       ))}

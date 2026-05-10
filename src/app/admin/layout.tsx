@@ -103,7 +103,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/chat">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-gray-400 transition-all duration-300 hover:bg-white/5 hover:text-white"
+              className="w-full justify-start gap-3 text-gem-muted transition-all duration-300 hover:bg-gem-slate hover:text-gem-offwhite"
             >
               <MessageSquare className="h-4 w-4" />
               Volver al Chat

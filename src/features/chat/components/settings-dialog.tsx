@@ -87,13 +87,13 @@ export function SettingsDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-law-gold">
+        <Button variant="ghost" size="icon" className="text-gem-muted hover:text-law-gold">
           <Settings2 size={20} />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg border-law-accent/20 bg-gem-onyx text-gem-offwhite">
         <DialogHeader>
-          <DialogTitle className="font-serif text-xl italic text-white">
+          <DialogTitle className="font-serif text-xl italic text-gem-offwhite">
             Ajustes del Tutor
           </DialogTitle>
         </DialogHeader>
@@ -108,10 +108,10 @@ export function SettingsDialog() {
                 setLocalSettings((s) => ({ ...s, area: v }))
               }
             >
-              <SelectTrigger className="border-white/10 bg-gem-mist/20 text-white">
+              <SelectTrigger className="border-gem-border/40 bg-gem-mist text-gem-offwhite">
                 <SelectValue placeholder="Selecciona área" />
               </SelectTrigger>
-              <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+              <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                 <SelectItem value="general">General</SelectItem>
                 <SelectItem value="laboral">Laboral</SelectItem>
                 <SelectItem value="civil">Civil</SelectItem>
@@ -134,8 +134,8 @@ export function SettingsDialog() {
                     className={cn(
                       "flex cursor-pointer select-none items-center justify-between rounded-md border p-3 text-sm transition-all",
                       isActive
-                        ? "border-law-gold/40 bg-law-gold/10 text-white shadow-[0_0_10px_rgba(234,179,8,0.1)]"
-                        : "border-white/5 bg-black/20 text-gray-500 hover:bg-white/5"
+                        ? "border-law-gold/40 bg-law-gold/10 text-gem-offwhite shadow-[0_0_10px_rgba(234,179,8,0.1)]"
+                        : "border-gem-border/40 bg-gem-slate text-gem-muted hover:bg-gem-slate"
                     )}
                   >
                     <span>{mode.label}</span>
@@ -151,7 +151,7 @@ export function SettingsDialog() {
           <Button
             variant="ghost"
             onClick={() => setLocalSettings({ area: "general", modes: [], detailLevel: "normal" })}
-            className="text-gray-500 hover:text-white"
+            className="text-gem-muted hover:text-gem-offwhite"
           >
             <RotateCcw size={16} className="mr-2" /> Restaurar
           </Button>

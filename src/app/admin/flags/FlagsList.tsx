@@ -92,7 +92,7 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
   return (
     <div className="space-y-3">
       {/* Bulk action bar */}
-      <div className="flex flex-col gap-2 rounded-lg border border-law-accent/10 bg-black/10 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
+      <div className="flex flex-col gap-2 rounded-lg border border-law-accent/10 bg-gem-slate px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
         <label className="flex cursor-pointer items-center gap-2 text-xs text-gem-offwhite/60">
           <Checkbox
             checked={allSelected}
@@ -127,7 +127,7 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
                   variant="ghost"
                   onClick={() => bulkUpdate("dismissed")}
                   disabled={busy}
-                  className="gap-1 text-xs text-gem-offwhite/60 hover:bg-white/5 hover:text-gem-offwhite"
+                  className="gap-1 text-xs text-gem-offwhite/60 hover:bg-gem-slate hover:text-gem-offwhite"
                 >
                   {busy ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -143,7 +143,7 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
                 variant="ghost"
                 onClick={() => bulkUpdate("open")}
                 disabled={busy}
-                className="gap-1 text-xs text-gem-offwhite/60 hover:bg-white/5 hover:text-gem-offwhite"
+                className="gap-1 text-xs text-gem-offwhite/60 hover:bg-gem-slate hover:text-gem-offwhite"
               >
                 {busy ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -163,7 +163,7 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
           <div
             key={f.id}
             className={`space-y-3 rounded-lg border p-4 transition ${
-              isChecked ? "border-law-gold/40 bg-law-gold/5" : "border-law-accent/10 bg-black/20"
+              isChecked ? "border-law-gold/40 bg-law-gold/5" : "border-law-accent/10 bg-gem-slate"
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -176,18 +176,18 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
                 <Badge
                   className={
                     f.reason === "incorrect"
-                      ? "bg-red-500/10 text-red-400"
+                      ? "bg-red-500/10 text-red-700 dark:text-red-400"
                       : f.reason === "ambiguous"
-                        ? "bg-yellow-500/10 text-yellow-400"
+                        ? "bg-yellow-500/15 text-amber-700 dark:text-yellow-400"
                         : f.reason === "off_topic"
-                          ? "bg-purple-500/10 text-purple-400"
-                          : "bg-white/10 text-white"
+                          ? "bg-purple-500/10 text-purple-700 dark:text-purple-400"
+                          : "bg-gem-slate text-gem-offwhite"
                   }
                 >
                   {REASON_LABEL[f.reason] ?? f.reason}
                 </Badge>
                 {f.area && (
-                  <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/60">
+                  <span className="rounded border border-gem-border/40 bg-gem-slate px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/60">
                     {f.area}
                   </span>
                 )}
@@ -209,7 +209,7 @@ export function FlagsList({ flags, profilesById, currentStatus }: Props) {
             )}
 
             {f.comment && (
-              <p className="rounded border border-white/5 bg-black/30 px-3 py-2 text-xs text-gem-offwhite/80">
+              <p className="rounded border border-gem-border/40 bg-gem-slate px-3 py-2 text-xs text-gem-offwhite/80">
                 <span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-gem-offwhite/40">
                   Comentario del usuario
                 </span>

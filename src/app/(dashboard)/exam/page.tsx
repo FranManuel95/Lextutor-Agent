@@ -122,15 +122,15 @@ export default function ExamPage() {
       <div className="custom-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto pr-4">
         {/* Header */}
         <div className="mb-8 flex flex-none items-center justify-between">
-          <h1 className="font-serif text-3xl italic text-white">
+          <h1 className="font-serif text-3xl italic text-gem-offwhite">
             Evaluación <span className="text-law-gold">Desarrollo</span>
           </h1>
         </div>
 
         {step === "config" && (
-          <Card className="border-law-accent/20 bg-gem-mist/10">
+          <Card className="border-law-accent/20 bg-gem-mist">
             <CardHeader>
-              <CardTitle className="text-white">Configurar Examen</CardTitle>
+              <CardTitle className="text-gem-offwhite">Configurar Examen</CardTitle>
               <CardDescription>
                 Genera preguntas de desarrollo para practicar tu argumentación jurídica.
               </CardDescription>
@@ -142,10 +142,10 @@ export default function ExamPage() {
                   value={config.area}
                   onValueChange={(v) => setConfig({ ...config, area: v })}
                 >
-                  <SelectTrigger className="border-white/10 bg-gem-onyx text-white">
+                  <SelectTrigger className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                     <SelectItem value="laboral">Laboral</SelectItem>
                     <SelectItem value="civil">Civil</SelectItem>
                     <SelectItem value="mercantil">Mercantil</SelectItem>
@@ -161,10 +161,10 @@ export default function ExamPage() {
                   value={config.difficulty}
                   onValueChange={(v) => setConfig({ ...config, difficulty: v })}
                 >
-                  <SelectTrigger className="border-white/10 bg-gem-onyx text-white">
+                  <SelectTrigger className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                     <SelectItem value="easy">Fácil</SelectItem>
                     <SelectItem value="medium">Media</SelectItem>
                     <SelectItem value="hard">Difícil</SelectItem>
@@ -178,10 +178,10 @@ export default function ExamPage() {
                   value={String(config.count)}
                   onValueChange={(v) => setConfig({ ...config, count: Number(v) })}
                 >
-                  <SelectTrigger className="border-white/10 bg-gem-onyx text-white">
+                  <SelectTrigger className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                     <SelectItem value="5">5 Preguntas</SelectItem>
                     <SelectItem value="10">10 Preguntas</SelectItem>
                     <SelectItem value="15">15 Preguntas</SelectItem>
@@ -203,7 +203,7 @@ export default function ExamPage() {
 
         {step === "taking" && (
           <div className="space-y-8 pb-10">
-            <div className="flex items-center justify-between rounded-lg border border-white/5 bg-gem-mist/10 p-4">
+            <div className="flex items-center justify-between rounded-lg border border-gem-border/40 bg-gem-mist p-4">
               <h2 className="font-serif text-xl text-law-gold">Responde las preguntas</h2>
               {usesRag && (
                 <div className="flex flex-col items-end gap-2">
@@ -213,7 +213,7 @@ export default function ExamPage() {
                         <Badge
                           key={idx}
                           variant="outline"
-                          className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-green-400"
+                          className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-emerald-700 dark:text-green-400"
                         >
                           <CheckCircle2 size={12} />
                           Documento: {source}
@@ -222,7 +222,7 @@ export default function ExamPage() {
                     ) : (
                       <Badge
                         variant="outline"
-                        className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-green-400"
+                        className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-emerald-700 dark:text-green-400"
                       >
                         <CheckCircle2 size={14} /> Fuente: Documentos
                       </Badge>
@@ -232,19 +232,21 @@ export default function ExamPage() {
               )}
             </div>
             {questions.map((q, index) => (
-              <Card key={q.id} className="border-law-accent/10 bg-gem-mist/10">
+              <Card key={q.id} className="border-law-accent/10 bg-gem-mist">
                 <CardHeader>
                   <CardTitle className="font-serif text-lg text-law-gold">
                     Pregunta {index + 1}
                   </CardTitle>
-                  <CardDescription className="mt-2 text-base text-white">{q.text}</CardDescription>
+                  <CardDescription className="mt-2 text-base text-gem-offwhite">
+                    {q.text}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Textarea
                     value={answers[String(q.id)] || ""}
                     onChange={(e) => setAnswers({ ...answers, [String(q.id)]: e.target.value })}
                     placeholder="Escribe tu respuesta aquí..."
-                    className="min-h-[150px] resize-y border-white/10 bg-gem-onyx/50 text-white"
+                    className="min-h-[150px] resize-y border-gem-border/40 bg-gem-onyx/80 text-gem-offwhite"
                   />
                   <div className="mt-2 flex justify-end">
                     <FlagQuestionButton
@@ -259,7 +261,7 @@ export default function ExamPage() {
             ))}
 
             <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-t-xl border-t border-law-accent/20 bg-gem-onyx/90 p-4 backdrop-blur">
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-gem-muted">
                 {Object.keys(answers).length} / {questions.length} respondidas
               </span>
               <Button
@@ -275,12 +277,12 @@ export default function ExamPage() {
 
         {step === "results" && grading && (
           <div className="space-y-6 pb-10">
-            <Card className="border-law-accent/20 bg-gem-mist/10">
+            <Card className="border-law-accent/20 bg-gem-mist">
               <CardHeader>
                 <CardTitle className="text-center text-3xl text-law-gold">
                   {grading.attempt?.finalScore || 0}/10
                 </CardTitle>
-                <CardDescription className="text-center text-lg text-white">
+                <CardDescription className="text-center text-lg text-gem-offwhite">
                   Nota Final
                 </CardDescription>
               </CardHeader>
@@ -289,7 +291,9 @@ export default function ExamPage() {
                   <h4 className="mb-2 flex items-center gap-2 font-bold text-red-300">
                     <AlertTriangle size={18} /> Feedback General
                   </h4>
-                  <p className="text-sm italic text-gray-300">{grading.attempt?.overallFeedback}</p>
+                  <p className="text-sm italic text-gem-offwhite/80">
+                    {grading.attempt?.overallFeedback}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -301,17 +305,17 @@ export default function ExamPage() {
                 const userAnswer = answers[String(question.id)];
 
                 return (
-                  <Card key={index} className="border-white/5 bg-gem-mist/5">
+                  <Card key={index} className="border-gem-border/40 bg-gem-mist">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-base text-gray-300">
+                        <CardTitle className="text-base text-gem-offwhite/80">
                           Pregunta: {question.text}
                         </CardTitle>
                         <Badge
                           className={
                             item.perQuestionScore >= 5
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-red-500/20 text-red-400"
+                              ? "bg-green-500/20 text-emerald-700 dark:text-green-400"
+                              : "bg-red-500/20 text-red-700 dark:text-red-400"
                           }
                         >
                           {item.perQuestionScore}/10
@@ -320,33 +324,33 @@ export default function ExamPage() {
                     </CardHeader>
                     <CardContent className="space-y-4 text-sm">
                       <div>
-                        <p className="mb-1 text-xs font-bold uppercase text-gray-500">
+                        <p className="mb-1 text-xs font-bold uppercase text-gem-muted">
                           Tu Respuesta
                         </p>
-                        <p className="rounded bg-black/20 p-3 text-white/80">
+                        <p className="rounded bg-gem-slate p-3 text-gem-offwhite/80">
                           {userAnswer || (
-                            <span className="italic text-gray-600">Sin respuesta</span>
+                            <span className="italic text-gem-muted/70">Sin respuesta</span>
                           )}
                         </p>
                       </div>
                       <div>
                         <p className="mb-1 text-xs font-bold uppercase text-law-gold">Feedback</p>
-                        <p className="text-gray-300">{item.feedback}</p>
+                        <p className="text-gem-offwhite/80">{item.feedback}</p>
                       </div>
 
                       {item.improvementTips && item.improvementTips.length > 0 && (
                         <div>
-                          <p className="mb-1 text-xs font-bold uppercase text-blue-400">
+                          <p className="mb-1 text-xs font-bold uppercase text-blue-700 dark:text-blue-400">
                             Tips de Mejora
                           </p>
-                          <ul className="list-inside list-disc text-gray-400">
+                          <ul className="list-inside list-disc text-gem-muted">
                             {item.improvementTips.map((tip: string, i: number) => (
                               <li key={i}>{tip}</li>
                             ))}
                           </ul>
                         </div>
                       )}
-                      <div className="flex justify-end border-t border-white/5 pt-2">
+                      <div className="flex justify-end border-t border-gem-border/40 pt-2">
                         <FlagQuestionButton
                           questionId={String(question.id)}
                           questionText={question.text}
@@ -367,7 +371,7 @@ export default function ExamPage() {
                 setGrading(null);
               }}
               variant="outline"
-              className="w-full border-white/10 text-white hover:bg-white/5"
+              className="w-full border-gem-border/40 text-gem-offwhite hover:bg-gem-slate"
             >
               Nuevo Examen
             </Button>

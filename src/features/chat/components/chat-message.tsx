@@ -151,7 +151,7 @@ export function ChatMessage({ message, userAvatar, isStreaming = false }: ChatMe
           "mt-1 flex h-8 w-8 shrink-0 select-none items-center justify-center overflow-hidden rounded-full border shadow-sm",
           isUser
             ? "border-law-gold bg-law-gold text-gem-onyx"
-            : "border-white/10 bg-gray-800 text-law-gold"
+            : "border-gem-border/40 bg-gem-slate text-law-gold"
         )}
       >
         {isUser && userAvatar ? (
@@ -169,12 +169,14 @@ export function ChatMessage({ message, userAvatar, isStreaming = false }: ChatMe
           "flex max-w-[80%] flex-col rounded-2xl p-4 shadow-sm",
           isUser
             ? "items-end rounded-tr-none border border-law-gold/20 bg-law-gold/10 text-right"
-            : "items-start rounded-tl-none border border-white/5 bg-gray-900/60"
+            : "items-start rounded-tl-none border border-gem-border/40 bg-gem-mist"
         )}
       >
         {/* Header (Name) */}
         <div className="mb-1 flex items-center gap-2 text-xs opacity-70">
-          <span className="font-semibold text-gray-300">{isUser ? "Tú" : "LexTutor Agent"}</span>
+          <span className="font-semibold text-gem-offwhite/80">
+            {isUser ? "Tú" : "LexTutor Agent"}
+          </span>
           {!isUser && (
             <span className="rounded bg-law-gold px-1 py-0 text-[9px] font-bold uppercase tracking-wide text-gem-onyx">
               AI
@@ -189,7 +191,7 @@ export function ChatMessage({ message, userAvatar, isStreaming = false }: ChatMe
                 "flex min-w-[280px] items-center gap-3 rounded-xl p-3",
                 isUser
                   ? "bg-law-gold text-gem-onyx"
-                  : "border border-white/10 bg-gray-800 text-gem-offwhite"
+                  : "border border-gem-border/40 bg-gem-slate text-gem-offwhite"
               )}
             >
               <button
@@ -199,7 +201,7 @@ export function ChatMessage({ message, userAvatar, isStreaming = false }: ChatMe
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all",
                   isUser
                     ? "bg-gem-onyx/10 text-gem-onyx hover:bg-gem-onyx/20"
-                    : "bg-white/10 text-law-gold hover:bg-white/20"
+                    : "bg-gem-slate text-law-gold hover:bg-gem-border/40"
                 )}
               >
                 {isLoadingAudio ? (

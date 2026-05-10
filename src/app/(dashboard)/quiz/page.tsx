@@ -139,15 +139,15 @@ export default function QuizPage() {
     <div className="flex h-full w-full flex-col overflow-hidden bg-gem-onyx p-8 font-sans text-gem-offwhite">
       <div className="custom-scrollbar mx-auto w-full max-w-4xl flex-1 overflow-y-auto pr-4">
         <div className="mb-8 flex flex-none items-center justify-between">
-          <h1 className="font-serif text-3xl italic text-white">
+          <h1 className="font-serif text-3xl italic text-gem-offwhite">
             Evaluación <span className="text-law-gold">Tipo Test</span>
           </h1>
         </div>
 
         {step === "config" && (
-          <Card className="border-law-accent/20 bg-gem-mist/10">
+          <Card className="border-law-accent/20 bg-gem-mist">
             <CardHeader>
-              <CardTitle className="text-white">Configurar Test</CardTitle>
+              <CardTitle className="text-gem-offwhite">Configurar Test</CardTitle>
               <CardDescription>
                 Practica con preguntas tipo test generadas por IA y corregidas al instante.
               </CardDescription>
@@ -159,10 +159,10 @@ export default function QuizPage() {
                   value={config.area}
                   onValueChange={(v) => setConfig({ ...config, area: v })}
                 >
-                  <SelectTrigger className="border-white/10 bg-gem-onyx text-white">
+                  <SelectTrigger className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                     <SelectItem value="laboral">Laboral</SelectItem>
                     <SelectItem value="civil">Civil</SelectItem>
                     <SelectItem value="mercantil">Mercantil</SelectItem>
@@ -178,10 +178,10 @@ export default function QuizPage() {
                   value={config.difficulty}
                   onValueChange={(v) => setConfig({ ...config, difficulty: v })}
                 >
-                  <SelectTrigger className="border-white/10 bg-gem-onyx text-white">
+                  <SelectTrigger className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                     <SelectItem value="easy">Fácil</SelectItem>
                     <SelectItem value="medium">Media</SelectItem>
                     <SelectItem value="hard">Difícil</SelectItem>
@@ -195,10 +195,10 @@ export default function QuizPage() {
                   value={String(config.count)}
                   onValueChange={(v) => setConfig({ ...config, count: Number(v) })}
                 >
-                  <SelectTrigger className="border-white/10 bg-gem-onyx text-white">
+                  <SelectTrigger className="border-gem-border/40 bg-gem-onyx text-gem-offwhite">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-white">
+                  <SelectContent className="border-law-accent/20 bg-gem-onyx text-gem-offwhite">
                     <SelectItem value="10">10 Preguntas</SelectItem>
                     <SelectItem value="15">15 Preguntas</SelectItem>
                     <SelectItem value="20">20 Preguntas</SelectItem>
@@ -220,7 +220,7 @@ export default function QuizPage() {
 
         {step === "taking" && (
           <div className="space-y-8 pb-10">
-            <div className="flex items-center justify-between rounded-lg border border-white/5 bg-gem-mist/10 p-4">
+            <div className="flex items-center justify-between rounded-lg border border-gem-border/40 bg-gem-mist p-4">
               <h2 className="font-serif text-xl text-law-gold">Responde las preguntas</h2>
               {usesRag && (
                 <div className="flex flex-col items-end gap-2">
@@ -230,7 +230,7 @@ export default function QuizPage() {
                         <Badge
                           key={idx}
                           variant="outline"
-                          className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-green-400"
+                          className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-emerald-700 dark:text-green-400"
                         >
                           <CheckCircle2 size={12} />
                           Documento: {source}
@@ -239,7 +239,7 @@ export default function QuizPage() {
                     ) : (
                       <Badge
                         variant="outline"
-                        className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-green-400"
+                        className="w-fit gap-2 border-green-500/50 bg-green-500/10 text-emerald-700 dark:text-green-400"
                       >
                         <CheckCircle2 size={14} /> Fuente: Documentos
                       </Badge>
@@ -249,12 +249,14 @@ export default function QuizPage() {
               )}
             </div>
             {questions.map((q, index) => (
-              <Card key={q.id} className="border-law-accent/10 bg-gem-mist/10">
+              <Card key={q.id} className="border-law-accent/10 bg-gem-mist">
                 <CardHeader>
                   <CardTitle className="font-serif text-lg text-law-gold">
                     Pregunta {index + 1}
                   </CardTitle>
-                  <CardDescription className="mt-2 text-base text-white">{q.text}</CardDescription>
+                  <CardDescription className="mt-2 text-base text-gem-offwhite">
+                    {q.text}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <RadioGroup
@@ -265,7 +267,7 @@ export default function QuizPage() {
                     {q.options.map((opt: string, i: number) => (
                       <div
                         key={i}
-                        className="flex cursor-pointer items-center space-x-2 rounded-lg border border-transparent p-3 transition-all hover:border-white/10 hover:bg-white/5"
+                        className="flex cursor-pointer items-center space-x-2 rounded-lg border border-transparent p-3 transition-all hover:border-gem-border/40 hover:bg-gem-slate"
                       >
                         <RadioGroupItem
                           value={String(i)}
@@ -283,7 +285,7 @@ export default function QuizPage() {
             ))}
 
             <div className="sticky bottom-4 z-20 flex items-center justify-between rounded-t-xl border-t border-law-accent/20 bg-gem-onyx/90 p-4 backdrop-blur">
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-gem-muted">
                 {Object.keys(answers).length} / {questions.length} respondidas
               </span>
               <Button
@@ -299,11 +301,13 @@ export default function QuizPage() {
 
         {step === "results" && result && (
           <div className="space-y-6 pb-10">
-            <Card className="border-law-accent/20 bg-gem-mist/10">
+            <Card className="border-law-accent/20 bg-gem-mist">
               <div className="flex justify-center py-6">
                 <div className="relative flex h-32 w-32 items-center justify-center rounded-full border-4 border-law-gold bg-law-gold/10">
                   <div className="text-center">
-                    <span className="text-3xl font-bold text-white">{result.percentage}%</span>
+                    <span className="text-3xl font-bold text-gem-offwhite">
+                      {result.percentage}%
+                    </span>
                     <p className="text-xs font-bold uppercase text-law-gold">
                       {result.score}/{result.total}
                     </p>
@@ -329,19 +333,21 @@ export default function QuizPage() {
                     <CardHeader>
                       <div className="flex gap-3">
                         {item.isCorrect ? (
-                          <CheckCircle2 className="mt-1 text-green-500" />
+                          <CheckCircle2 className="mt-1 text-emerald-700 dark:text-green-500" />
                         ) : (
-                          <XCircle className="mt-1 text-red-500" />
+                          <XCircle className="mt-1 text-red-700 dark:text-red-500" />
                         )}
                         <div>
-                          <CardTitle className="text-base text-gray-200">{item.question}</CardTitle>
+                          <CardTitle className="text-base text-gem-offwhite/80">
+                            {item.question}
+                          </CardTitle>
                           <div className="mt-2 space-y-1">
                             <p className="text-sm">
                               <span
                                 className={
                                   item.isCorrect
-                                    ? "font-bold text-green-400"
-                                    : "font-bold text-red-400"
+                                    ? "font-bold text-emerald-700 dark:text-green-400"
+                                    : "font-bold text-red-700 dark:text-red-400"
                                 }
                               >
                                 Tu respuesta:
@@ -349,7 +355,7 @@ export default function QuizPage() {
                               {item.userAnswer || "Sin respuesta"}
                             </p>
                             {!item.isCorrect && (
-                              <p className="text-sm text-green-400">
+                              <p className="text-sm text-emerald-700 dark:text-green-400">
                                 <span className="font-bold">Correcta:</span> {item.correctAnswer}
                               </p>
                             )}
@@ -358,8 +364,8 @@ export default function QuizPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-0">
-                      <div className="mt-2 rounded bg-black/20 p-3 text-sm text-gray-400">
-                        <span className="text-xs font-bold uppercase text-gray-500">
+                      <div className="mt-2 rounded bg-gem-slate p-3 text-sm text-gem-muted">
+                        <span className="text-xs font-bold uppercase text-gem-muted">
                           Explicación:
                         </span>{" "}
                         {item.explanation}
@@ -377,7 +383,7 @@ export default function QuizPage() {
                 setResult(null);
               }}
               variant="outline"
-              className="w-full border-white/10 text-white hover:bg-white/5"
+              className="w-full border-gem-border/40 text-gem-offwhite hover:bg-gem-slate"
             >
               Nuevo Test
             </Button>

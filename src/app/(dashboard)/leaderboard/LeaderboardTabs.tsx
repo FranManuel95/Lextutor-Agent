@@ -13,7 +13,7 @@ export function LeaderboardTabs({ current }: Props) {
     <div
       role="tablist"
       aria-label="Métrica del ranking"
-      className="flex rounded-lg border border-white/10 bg-black/30 p-1"
+      className="flex rounded-lg border border-gem-border/40 bg-gem-slate p-1"
     >
       <Link
         href="/leaderboard?metric=score"

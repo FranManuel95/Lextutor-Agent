@@ -144,9 +144,9 @@ export default async function ProgressPage() {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gem-onyx font-sans text-gem-offwhite">
       {/* Header */}
-      <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-4 backdrop-blur-sm sm:px-6 md:px-10">
+      <div className="z-10 flex-none border-b border-gem-border/40 bg-gem-onyx/80 px-4 backdrop-blur-sm sm:px-6 md:px-10">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center sm:py-6 md:pb-4 md:pt-8">
-          <h1 className="text-shadow-sm font-serif text-2xl italic text-white sm:text-3xl">
+          <h1 className="text-shadow-sm font-serif text-2xl italic text-gem-offwhite sm:text-3xl">
             Mi Progreso
           </h1>
           <ProgressExportButton
@@ -191,7 +191,7 @@ export default async function ProgressPage() {
                 </Link>
                 <Link
                   href="/quiz"
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gem-offwhite/70 transition hover:bg-white/10"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gem-border/40 bg-gem-slate px-4 py-2 text-sm font-medium text-gem-offwhite/70 transition hover:bg-gem-slate"
                 >
                   Hacer un quiz
                 </Link>
@@ -283,8 +283,8 @@ export default async function ProgressPage() {
 
           {/* Scores by area */}
           {areaScores.length > 0 && (
-            <div className="rounded-2xl border border-white/5 bg-gray-900/40 p-6 shadow-inner">
-              <h3 className="mb-6 flex items-center gap-2 font-serif text-xl text-white">
+            <div className="rounded-2xl border border-gem-border/40 bg-gem-mist p-6 shadow-inner">
+              <h3 className="mb-6 flex items-center gap-2 font-serif text-xl text-gem-offwhite">
                 <Star size={20} className="text-law-gold" />
                 Nota Media por Materia
               </h3>
@@ -294,16 +294,16 @@ export default async function ProgressPage() {
                   .map(([area, score]) => (
                     <div key={area} className="group">
                       <div className="mb-2 flex justify-between text-sm">
-                        <span className="font-medium capitalize text-gray-200 transition-colors group-hover:text-law-gold">
+                        <span className="font-medium capitalize text-gem-offwhite transition-colors group-hover:text-law-gold">
                           {area}
                         </span>
                         <span
-                          className={`font-mono font-bold ${score >= 5 ? "text-green-400" : "text-red-400"}`}
+                          className={`font-mono font-bold ${score >= 5 ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400"}`}
                         >
                           {score}/10
                         </span>
                       </div>
-                      <div className="h-3 w-full overflow-hidden rounded-full border border-white/5 bg-black/40">
+                      <div className="h-3 w-full overflow-hidden rounded-full border border-gem-border/40 bg-gem-slate">
                         <div
                           className={`h-full rounded-full transition-all duration-500 ${
                             score >= 7
@@ -324,26 +324,26 @@ export default async function ProgressPage() {
           {/* Distribution & Milestones */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Distribution */}
-            <div className="rounded-2xl border border-white/5 bg-gray-900/40 p-6 shadow-inner">
-              <h3 className="mb-6 flex items-center gap-2 font-serif text-xl text-white">
+            <div className="rounded-2xl border border-gem-border/40 bg-gem-mist p-6 shadow-inner">
+              <h3 className="mb-6 flex items-center gap-2 font-serif text-xl text-gem-offwhite">
                 <Target size={20} className="text-law-gold" />
                 Distribución por Materia
               </h3>
               <div className="space-y-4">
                 {Object.entries(distribution).length === 0 ? (
-                  <p className="text-sm italic text-gray-500">Aún no hay datos registrados.</p>
+                  <p className="text-sm italic text-gem-muted">Aún no hay datos registrados.</p>
                 ) : (
                   Object.entries(distribution)
                     .sort((a, b) => b[1] - a[1])
                     .map(([area, count]) => (
                       <div key={area} className="group">
                         <div className="mb-2 flex justify-between text-sm">
-                          <span className="font-medium capitalize text-gray-200 transition-colors group-hover:text-law-gold">
+                          <span className="font-medium capitalize text-gem-offwhite transition-colors group-hover:text-law-gold">
                             {area}
                           </span>
-                          <span className="font-mono font-bold text-white">{count}</span>
+                          <span className="font-mono font-bold text-gem-offwhite">{count}</span>
                         </div>
-                        <div className="h-4 w-full overflow-hidden rounded-full border border-white/5 bg-black/40">
+                        <div className="h-4 w-full overflow-hidden rounded-full border border-gem-border/40 bg-gem-slate">
                           <div
                             className="h-full rounded-full bg-gradient-to-r from-law-gold to-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all duration-500"
                             style={{ width: `${(count / (totalAnswers || 1)) * 100}%` }}
@@ -356,8 +356,8 @@ export default async function ProgressPage() {
             </div>
 
             {/* Milestones */}
-            <div className="rounded-2xl border border-white/5 bg-gray-900/40 p-6 shadow-inner">
-              <h3 className="mb-6 flex items-center gap-2 font-serif text-xl text-white">
+            <div className="rounded-2xl border border-gem-border/40 bg-gem-mist p-6 shadow-inner">
+              <h3 className="mb-6 flex items-center gap-2 font-serif text-xl text-gem-offwhite">
                 <Trophy size={20} className="text-law-gold" />
                 Hitos Desbloqueados
               </h3>
@@ -370,21 +370,21 @@ export default async function ProgressPage() {
                       className={`flex items-center gap-4 rounded-xl border p-4 transition-all duration-300 ${
                         m.unlocked
                           ? "border-law-gold/30 bg-law-gold/5 hover:bg-law-gold/10"
-                          : "border-white/5 bg-black/20 opacity-50 grayscale"
+                          : "border-gem-border/40 bg-gem-slate opacity-50 grayscale"
                       }`}
                     >
                       <div
-                        className={`flex-shrink-0 rounded-full p-3 ${m.unlocked ? "bg-law-gold text-gem-onyx shadow-[0_0_15px_rgba(234,179,8,0.3)]" : "bg-gray-800 text-gray-500"}`}
+                        className={`flex-shrink-0 rounded-full p-3 ${m.unlocked ? "bg-law-gold text-gem-onyx shadow-[0_0_15px_rgba(234,179,8,0.3)]" : "bg-gem-slate text-gem-muted"}`}
                       >
                         <Icon size={20} />
                       </div>
                       <div className="min-w-0">
                         <h4
-                          className={`text-sm font-bold ${m.unlocked ? "text-white" : "text-gray-400"}`}
+                          className={`text-sm font-bold ${m.unlocked ? "text-gem-offwhite" : "text-gem-muted"}`}
                         >
                           {m.title}
                         </h4>
-                        <p className="truncate text-xs text-gray-500">{m.desc}</p>
+                        <p className="truncate text-xs text-gem-muted">{m.desc}</p>
                       </div>
                       {m.unlocked && (
                         <div className="ml-auto rounded border border-law-gold/50 bg-law-gold/5 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-law-gold">
@@ -400,9 +400,9 @@ export default async function ProgressPage() {
 
           {/* Recent exams */}
           {recentExams.length > 0 && (
-            <div className="rounded-2xl border border-white/5 bg-gray-900/40 p-6 shadow-inner">
+            <div className="rounded-2xl border border-gem-border/40 bg-gem-mist p-6 shadow-inner">
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="flex items-center gap-2 font-serif text-xl text-white">
+                <h3 className="flex items-center gap-2 font-serif text-xl text-gem-offwhite">
                   <Trophy size={20} className="text-law-gold" />
                   Últimos Exámenes
                 </h3>
@@ -429,18 +429,18 @@ export default async function ProgressPage() {
                     <Link
                       key={ex.id}
                       href={`/exams/${ex.id}`}
-                      className="group flex items-center justify-between rounded-xl border border-white/5 bg-black/20 px-4 py-3 transition hover:border-law-gold/30 hover:bg-law-gold/5"
+                      className="group flex items-center justify-between rounded-xl border border-gem-border/40 bg-gem-slate px-4 py-3 transition hover:border-law-gold/30 hover:bg-law-gold/5"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 text-sm">
-                          <span className="rounded border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          <span className="rounded border border-gem-border/40 bg-gem-slate px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gem-muted">
                             {typeLabel}
                           </span>
-                          <span className="truncate font-medium capitalize text-gray-200">
+                          <span className="truncate font-medium capitalize text-gem-offwhite">
                             {ex.area || "General"}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-xs text-gem-muted">
                           {new Date(ex.created_at).toLocaleString("es-ES", {
                             day: "2-digit",
                             month: "short",
@@ -453,18 +453,18 @@ export default async function ProgressPage() {
                       <div
                         className={`font-mono text-lg font-bold ${
                           score >= 7
-                            ? "text-green-400"
+                            ? "text-emerald-700 dark:text-emerald-400"
                             : score >= 5
                               ? "text-law-gold"
-                              : "text-red-400"
+                              : "text-red-700 dark:text-red-400"
                         }`}
                       >
                         {score.toFixed(1)}
-                        <span className="ml-0.5 text-xs font-medium text-gray-500">/10</span>
+                        <span className="ml-0.5 text-xs font-medium text-gem-muted">/10</span>
                       </div>
                       <ChevronRight
                         size={16}
-                        className="ml-3 text-gray-600 transition group-hover:text-law-gold"
+                        className="ml-3 text-gem-muted/70 transition group-hover:text-law-gold"
                       />
                     </Link>
                   );
@@ -499,18 +499,18 @@ function KpiCard({
   sub?: string;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/5 bg-gem-mist/20 p-6 shadow-lg shadow-black/20 transition-all hover:border-law-gold/30">
+    <div className="group relative overflow-hidden rounded-2xl border border-gem-border/40 bg-gem-mist p-6 shadow-lg shadow-black/20 transition-all hover:border-law-gold/30">
       <div className="absolute right-0 top-0 p-4 opacity-10 transition-opacity group-hover:opacity-20">
         <Icon size={80} />
       </div>
-      <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-gray-400">{label}</h3>
+      <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-gem-muted">{label}</h3>
       <p
-        className={`font-mono text-5xl font-bold tracking-tight ${highlight ? "text-law-gold" : "text-white"} ${italic ? "font-serif italic" : ""}`}
+        className={`font-mono text-5xl font-bold tracking-tight ${highlight ? "text-law-gold" : "text-gem-offwhite"} ${italic ? "font-serif italic" : ""}`}
       >
         {typeof value === "number" ? value.toLocaleString("es-ES") : value}
-        {unit && <span className="ml-1 font-sans text-lg font-medium text-gray-500">{unit}</span>}
+        {unit && <span className="ml-1 font-sans text-lg font-medium text-gem-muted">{unit}</span>}
       </p>
-      {sub && <p className="mt-2 text-xs font-medium text-gray-500">{sub}</p>}
+      {sub && <p className="mt-2 text-xs font-medium text-gem-muted">{sub}</p>}
     </div>
   );
 }

@@ -84,19 +84,19 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
       <Dialog open={isErrorOpen} onOpenChange={setIsErrorOpen}>
         <DialogContent className="border-red-500/20 bg-gem-onyx sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-400">
+            <DialogTitle className="flex items-center gap-2 text-red-700 dark:text-red-400">
               <AlertTriangle className="h-4 w-4" />
               No se pudo generar el resumen
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-1">
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-gem-offwhite/80">
               Ocurrió un error al intentar generar el resumen visual. Puedes reintentar o esperar
               unos minutos si el servicio está sobrecargado.
             </p>
             {errorMsg && (
-              <div className="rounded-md border border-white/10 bg-gem-slate p-3">
-                <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+              <div className="rounded-md border border-gem-border/40 bg-gem-slate p-3">
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-gem-muted">
                   Detalle del error
                 </p>
                 <p className="font-mono text-xs text-red-300/80">{errorMsg}</p>
@@ -107,7 +107,7 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
             <Button
               variant="ghost"
               onClick={() => setIsErrorOpen(false)}
-              className="text-gray-400 hover:bg-white/5 hover:text-white"
+              className="text-gem-muted hover:bg-gem-slate hover:text-gem-offwhite"
             >
               Cerrar
             </Button>
@@ -145,7 +145,7 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
       {status === "done" && (
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="animate-in fade-in zoom-in h-9 gap-2 rounded-full border border-green-500 bg-green-600 px-3 text-xs font-medium text-white shadow-lg shadow-green-900/20 duration-300 hover:bg-green-700 md:px-4"
+          className="animate-in fade-in zoom-in h-9 gap-2 rounded-full border border-green-500 bg-green-600 px-3 text-xs font-medium text-gem-offwhite shadow-lg shadow-green-900/20 duration-300 hover:bg-green-700 md:px-4"
         >
           <CheckCircle2 className="h-4 w-4" />
           <span className="hidden md:inline">Ver Resumen</span>
@@ -156,7 +156,7 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsErrorOpen(true)}
-            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 text-xs text-red-400 transition-colors hover:border-red-500/50 hover:bg-red-500/20"
+            className="flex h-9 cursor-pointer items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 text-xs text-red-700 transition-colors hover:border-red-500/50 hover:bg-red-500/20 dark:text-red-400"
           >
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden md:inline">Error — ver detalle</span>

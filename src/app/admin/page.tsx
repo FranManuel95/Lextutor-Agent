@@ -59,7 +59,9 @@ export default async function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{stat.value.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-gem-offwhite">
+                {stat.value.toLocaleString()}
+              </div>
             </CardContent>
           </Card>
         ))}

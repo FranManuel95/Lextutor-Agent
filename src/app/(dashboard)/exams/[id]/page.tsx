@@ -135,24 +135,24 @@ export default function ExamReviewPage() {
 
   if (loading)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#020617] p-8 text-white">
+      <div className="flex min-h-screen items-center justify-center bg-gem-onyx p-8 text-gem-offwhite">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-law-gold/30 border-t-law-gold"></div>
-          <h3 className="font-serif text-xl text-slate-300">Cargando revisión...</h3>
+          <h3 className="font-serif text-xl text-gem-offwhite/80">Cargando revisión...</h3>
         </div>
       </div>
     );
   if (!attempt)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#020617] p-8 text-white">
-        <Card className="w-full max-w-md border-red-500/20 bg-[#1E293B]">
+      <div className="flex min-h-screen items-center justify-center bg-gem-onyx p-8 text-gem-offwhite">
+        <Card className="w-full max-w-md border-red-500/20 bg-gem-slate">
           <CardHeader className="pb-2 text-center">
             <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
-              <AlertTriangle className="h-6 w-6 text-red-400" />
+              <AlertTriangle className="h-6 w-6 text-red-700 dark:text-red-400" />
             </div>
-            <CardTitle className="text-xl text-slate-200">Examen no encontrado</CardTitle>
+            <CardTitle className="text-xl text-gem-offwhite">Examen no encontrado</CardTitle>
           </CardHeader>
-          <CardContent className="text-center text-slate-400">
+          <CardContent className="text-center text-gem-muted">
             <p>
               No pudimos recuperar los detalles de esta evaluación. Puede que haya sido eliminada.
             </p>
@@ -160,7 +160,7 @@ export default function ExamReviewPage() {
               <Button
                 variant="outline"
                 onClick={() => router.push("/exams")}
-                className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                className="border-gem-border/40 text-gem-offwhite/80 hover:bg-gem-slate"
               >
                 Volver al historial
               </Button>
@@ -180,27 +180,27 @@ export default function ExamReviewPage() {
     return (
       <div
         key={i}
-        className="overflow-hidden rounded-xl border border-slate-800 bg-[#0F172A] shadow-sm"
+        className="overflow-hidden rounded-xl border border-gem-border/40 bg-gem-mist shadow-sm"
       >
         {/* Header Question */}
-        <div className="border-b border-slate-800 bg-[#1E293B]/50 p-6">
+        <div className="border-b border-gem-border/40 bg-gem-slate p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-3">
               {/* Badge pill */}
-              <div className="inline-flex items-center rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300">
+              <div className="inline-flex items-center rounded-full border border-gem-border/40 px-3 py-1 text-xs font-medium text-gem-offwhite/80">
                 Pregunta {i + 1}
               </div>
-              <h3 className="font-serif text-lg font-medium leading-relaxed text-slate-100 md:text-xl">
+              <h3 className="font-serif text-lg font-medium leading-relaxed text-gem-offwhite md:text-xl">
                 {q.question}
               </h3>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-2 text-right">
               {q.isCorrect ? (
-                <Badge className="border-green-500/50 bg-green-500/20 text-green-400 hover:bg-green-500/30">
+                <Badge className="border-emerald-500/40 bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:border-green-500/50 dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30">
                   Correcta
                 </Badge>
               ) : (
-                <Badge className="border-red-500/50 bg-red-500/20 text-red-400 hover:bg-red-500/30">
+                <Badge className="border-red-500/40 bg-red-500/15 text-red-700 hover:bg-red-500/25 dark:border-red-500/50 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30">
                   Incorrecta
                 </Badge>
               )}
@@ -217,20 +217,20 @@ export default function ExamReviewPage() {
         <div className="space-y-8 p-6">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+              <label className="text-xs font-bold uppercase tracking-widest text-gem-muted">
                 Tu respuesta
               </label>
               <div
-                className={`rounded-md border p-4 font-serif text-base ${q.isCorrect ? "border-green-500/30 bg-green-950/20 text-green-100" : "border-red-500/30 bg-red-950/20 text-red-100"}`}
+                className={`rounded-md border p-4 font-serif text-base ${q.isCorrect ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-green-500/30 dark:bg-green-950/20 dark:text-green-100" : "border-red-300 bg-red-50 text-red-900 dark:border-red-500/30 dark:bg-red-950/20 dark:text-red-100"}`}
               >
-                {q.userAnswer || <span className="italic text-slate-500">(Sin respuesta)</span>}
+                {q.userAnswer || <span className="italic text-gem-muted">(Sin respuesta)</span>}
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-blue-500">
+              <label className="text-xs font-bold uppercase tracking-widest text-blue-700 dark:text-blue-400">
                 Respuesta Correcta
               </label>
-              <div className="rounded-md border border-blue-500/30 bg-blue-950/20 p-4 font-serif text-base text-blue-100">
+              <div className="rounded-md border border-blue-300 bg-blue-50 p-4 font-serif text-base text-blue-900 dark:border-blue-500/30 dark:bg-blue-950/20 dark:text-blue-100">
                 {q.correctAnswer}
               </div>
             </div>
@@ -238,10 +238,10 @@ export default function ExamReviewPage() {
 
           {q.explanation && (
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+              <label className="text-xs font-bold uppercase tracking-widest text-gem-muted">
                 Explicación
               </label>
-              <div className="rounded-md border border-slate-700 bg-[#1E293B] p-5 text-sm leading-7 text-slate-300">
+              <div className="rounded-md border border-gem-border/40 bg-gem-slate p-5 text-sm leading-7 text-gem-offwhite/80">
                 {q.explanation}
               </div>
             </div>
@@ -253,21 +253,24 @@ export default function ExamReviewPage() {
 
   // Helper for Open Exam Display
   const renderOpenQuestion = (q: OpenQuestion, i: number) => {
-    const scoreColor = q.perQuestionScore >= 5 ? "text-green-500" : "text-red-500";
+    const scoreColor =
+      q.perQuestionScore >= 5
+        ? "text-emerald-700 dark:text-green-500"
+        : "text-red-700 dark:text-red-500";
     return (
       <div
         key={i}
-        className="overflow-hidden rounded-xl border border-slate-800 bg-[#0F172A] shadow-sm"
+        className="overflow-hidden rounded-xl border border-gem-border/40 bg-gem-mist shadow-sm"
       >
         {/* Header Question */}
-        <div className="border-b border-slate-800 bg-[#1E293B]/50 p-6">
+        <div className="border-b border-gem-border/40 bg-gem-slate p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-3">
               {/* Badge pill */}
-              <div className="inline-flex items-center rounded-full border border-slate-700 px-3 py-1 text-xs font-medium text-slate-300">
+              <div className="inline-flex items-center rounded-full border border-gem-border/40 px-3 py-1 text-xs font-medium text-gem-offwhite/80">
                 Pregunta {i + 1}
               </div>
-              <h3 className="font-serif text-lg font-medium leading-relaxed text-slate-100 md:text-xl">
+              <h3 className="font-serif text-lg font-medium leading-relaxed text-gem-offwhite md:text-xl">
                 {q.question}
               </h3>
             </div>
@@ -275,9 +278,9 @@ export default function ExamReviewPage() {
               <div>
                 <div className={`font-serif text-3xl font-bold ${scoreColor}`}>
                   {q.perQuestionScore}
-                  <span className="font-sans text-base text-slate-500">/10</span>
+                  <span className="font-sans text-base text-gem-muted">/10</span>
                 </div>
-                <div className="mt-1 text-xs uppercase tracking-wide text-slate-500">
+                <div className="mt-1 text-xs uppercase tracking-wide text-gem-muted">
                   Confianza IA: {Math.round((q.confidence || 0) * 100)}%
                 </div>
               </div>
@@ -294,11 +297,11 @@ export default function ExamReviewPage() {
         <div className="space-y-8 p-6">
           {/* User Answer */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+            <label className="text-xs font-bold uppercase tracking-widest text-gem-muted">
               Tu Respuesta
             </label>
-            <div className="min-h-[80px] w-full rounded-md border border-slate-700/50 bg-slate-900/50 p-4 font-serif font-medium leading-relaxed text-slate-200 shadow-sm">
-              {q.userAnswer || <span className="italic text-slate-500">(No contestaste)</span>}
+            <div className="min-h-[80px] w-full rounded-md border border-gem-border/40 bg-gem-slate p-4 font-serif font-medium leading-relaxed text-gem-offwhite shadow-sm">
+              {q.userAnswer || <span className="italic text-gem-muted">(No contestaste)</span>}
             </div>
           </div>
 
@@ -306,10 +309,10 @@ export default function ExamReviewPage() {
             <div className="space-y-6 lg:col-span-2">
               {/* Analysis */}
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                <label className="text-xs font-bold uppercase tracking-widest text-gem-muted">
                   Análisis del Tutor
                 </label>
-                <div className="rounded-md border border-slate-700 bg-[#1E293B] p-4 text-sm leading-7 text-slate-300">
+                <div className="rounded-md border border-gem-border/40 bg-gem-slate p-4 text-sm leading-7 text-gem-offwhite/80">
                   {q.feedback}
                 </div>
               </div>
@@ -317,13 +320,13 @@ export default function ExamReviewPage() {
               {/* Missing Points */}
               {(q.missingPoints?.length ?? 0) > 0 && (
                 <div className="space-y-3">
-                  <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-red-500">
+                  <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-red-700 dark:text-red-500">
                     <XCircle className="h-4 w-4" /> Puntos Faltantes
                   </h4>
                   <ul className="space-y-2 pl-1">
                     {q.missingPoints?.map((p: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-400">
-                        <span className="mt-1.5 h-[4px] min-w-[4px] rounded-full bg-red-500 text-red-500/50"></span>
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gem-muted">
+                        <span className="mt-1.5 h-[4px] min-w-[4px] rounded-full bg-red-500 text-red-700 dark:text-red-500/50"></span>
                         <span className="leading-relaxed">{p}</span>
                       </li>
                     ))}
@@ -334,13 +337,13 @@ export default function ExamReviewPage() {
               {/* Improvement Tips */}
               {(q.improvementTips?.length ?? 0) > 0 && (
                 <div className="space-y-3 pt-2">
-                  <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-500">
+                  <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
                     <BookOpen className="h-4 w-4" /> Consejos de Mejora
                   </h4>
                   <ul className="space-y-2 pl-1">
                     {q.improvementTips?.map((p: string, idx: number) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-slate-400">
-                        <span className="mt-1.5 h-[4px] min-w-[4px] rounded-full bg-amber-500 text-amber-500/50"></span>
+                      <li key={idx} className="flex items-start gap-2 text-sm text-gem-muted">
+                        <span className="mt-1.5 h-[4px] min-w-[4px] rounded-full bg-amber-500 text-amber-700 dark:text-amber-400/50"></span>
                         <span className="leading-relaxed">{p}</span>
                       </li>
                     ))}
@@ -350,8 +353,8 @@ export default function ExamReviewPage() {
             </div>
 
             {/* Rubric Card */}
-            <div className="h-fit rounded-lg border border-slate-700/50 bg-[#1E293B] p-5 shadow-sm">
-              <h4 className="mb-6 text-center text-xs font-bold uppercase tracking-widest text-slate-400">
+            <div className="h-fit rounded-lg border border-gem-border/40 bg-gem-slate p-5 shadow-sm">
+              <h4 className="mb-6 text-center text-xs font-bold uppercase tracking-widest text-gem-muted">
                 Rúbrica
               </h4>
               <div className="space-y-5">
@@ -368,7 +371,7 @@ export default function ExamReviewPage() {
 
                     return (
                       <div key={key} className="space-y-2">
-                        <div className="flex justify-between text-xs font-medium uppercase tracking-wide text-slate-400">
+                        <div className="flex justify-between text-xs font-medium uppercase tracking-wide text-gem-muted">
                           <span>
                             {key === "accuracy"
                               ? "Precisión"
@@ -378,22 +381,22 @@ export default function ExamReviewPage() {
                                   ? "Claridad"
                                   : key}
                           </span>
-                          <span className="text-slate-200">{val} Pts</span>
+                          <span className="text-gem-offwhite">{val} Pts</span>
                         </div>
                         <Progress
                           value={percentage}
-                          className="h-1.5 bg-slate-800"
+                          className="h-1.5 bg-gem-slate"
                           indicatorClassName={indicatorColor}
                         />
                       </div>
                     );
                   })}
-                <Separator className="my-4 bg-slate-700" />
+                <Separator className="my-4 bg-gem-border" />
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-bold uppercase text-slate-400">Total</span>
-                  <span className="text-xl font-bold text-slate-200">
+                  <span className="text-xs font-bold uppercase text-gem-muted">Total</span>
+                  <span className="text-xl font-bold text-gem-offwhite">
                     {q.perQuestionScore}{" "}
-                    <span className="text-xs font-normal text-slate-500">/ 10</span>
+                    <span className="text-xs font-normal text-gem-muted">/ 10</span>
                   </span>
                 </div>
               </div>
@@ -405,7 +408,7 @@ export default function ExamReviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200">
+    <div className="min-h-screen bg-gem-onyx text-gem-offwhite">
       <div className="container mx-auto max-w-5xl space-y-10 px-6 py-8 pb-24 md:px-16">
         {/* Top Bar with Back Button on RIGHT */}
         <div className="flex flex-wrap justify-end gap-2 pt-4">
@@ -436,31 +439,31 @@ export default function ExamReviewPage() {
           <Button
             variant="ghost"
             onClick={() => router.back()}
-            className="gap-2 text-slate-400 hover:bg-white/5 hover:text-white"
+            className="gap-2 text-gem-muted hover:bg-gem-slate hover:text-gem-offwhite"
           >
             <ArrowLeft className="h-4 w-4" /> Volver al historial
           </Button>
         </div>
 
         {/* Exam Header */}
-        <div className="flex flex-col items-start justify-between gap-6 border-b border-white/10 pb-8 md:flex-row md:items-end">
+        <div className="flex flex-col items-start justify-between gap-6 border-b border-gem-border/40 pb-8 md:flex-row md:items-end">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <Badge
                 variant="outline"
-                className="border-white/20 px-3 py-1 text-xs uppercase tracking-widest text-slate-300"
+                className="border-gem-border/40 px-3 py-1 text-xs uppercase tracking-widest text-gem-offwhite/80"
               >
                 {attempt.attempt_type === "quiz" ? "TEST RÁPIDO" : "EXAMEN DESARROLLO"}
               </Badge>
-              <span className="text-slate-500">|</span>
-              <span className="font-medium capitalize text-slate-300">{area}</span>
-              <span className="text-slate-500">
+              <span className="text-gem-muted">|</span>
+              <span className="font-medium capitalize text-gem-offwhite/80">{area}</span>
+              <span className="text-gem-muted">
                 • {format(new Date(created_at), "d 'de' MMMM, yyyy", { locale: es })}
               </span>
             </div>
-            <h1 className="font-serif text-5xl font-bold tracking-tight text-white md:text-6xl">
+            <h1 className="font-serif text-5xl font-bold tracking-tight text-gem-offwhite md:text-6xl">
               Resultado: {(score || 0).toFixed(1)}
-              <span className="ml-2 font-sans text-2xl font-light text-slate-500">/ 10</span>
+              <span className="ml-2 font-sans text-2xl font-light text-gem-muted">/ 10</span>
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -474,26 +477,32 @@ export default function ExamReviewPage() {
 
         {/* Overall Feedback (Only Open) */}
         {attempt.attempt_type === "exam_open" && feedback.overallFeedback && (
-          <Card className="overflow-hidden border border-indigo-500/20 bg-[#1E293B] shadow-lg">
+          <Card className="overflow-hidden border border-indigo-500/20 bg-gem-slate shadow-lg">
             <div className="p-6 md:p-8">
-              <h3 className="mb-6 flex items-center gap-3 text-xl font-bold text-indigo-300">
-                <CheckCircle2 className="h-6 w-6 text-indigo-400" /> Feedback Global
+              <h3 className="mb-6 flex items-center gap-3 text-xl font-bold text-indigo-700 dark:text-indigo-300">
+                <CheckCircle2 className="h-6 w-6 text-indigo-700 dark:text-indigo-400" /> Feedback
+                Global
               </h3>
 
-              <p className="font-serif text-lg leading-relaxed text-indigo-200/80">
+              <p className="font-serif text-lg leading-relaxed text-indigo-900/80 dark:text-indigo-200/80">
                 {feedback.overallFeedback}
               </p>
 
               <div className="mt-8 grid grid-cols-1 gap-8 border-t border-indigo-500/20 pt-8 md:grid-cols-2">
                 {(feedback.strengths?.length ?? 0) > 0 && (
                   <div className="space-y-4">
-                    <span className="text-xs font-bold uppercase tracking-widest text-green-400">
+                    <span className="text-xs font-bold uppercase tracking-widest text-emerald-700 dark:text-green-400">
                       Fortalezas Identificadas
                     </span>
                     <ul className="space-y-2">
                       {feedback.strengths?.map((s: string, i: number) => (
-                        <li key={i} className="flex gap-3 text-sm leading-relaxed text-slate-300">
-                          <span className="mt-0.5 shrink-0 text-green-400">✓</span>
+                        <li
+                          key={i}
+                          className="flex gap-3 text-sm leading-relaxed text-gem-offwhite/80"
+                        >
+                          <span className="mt-0.5 shrink-0 text-emerald-700 dark:text-green-400">
+                            ✓
+                          </span>
                           <span>{s}</span>
                         </li>
                       ))}
@@ -502,13 +511,16 @@ export default function ExamReviewPage() {
                 )}
                 {(feedback.weaknesses?.length ?? 0) > 0 && (
                   <div className="space-y-4">
-                    <span className="text-xs font-bold uppercase tracking-widest text-red-400">
+                    <span className="text-xs font-bold uppercase tracking-widest text-red-700 dark:text-red-400">
                       Debilidades a Trabajar
                     </span>
                     <ul className="space-y-2">
                       {feedback.weaknesses?.map((s: string, i: number) => (
-                        <li key={i} className="flex gap-3 text-sm leading-relaxed text-slate-300">
-                          <span className="mt-1 shrink-0 text-red-400">•</span>
+                        <li
+                          key={i}
+                          className="flex gap-3 text-sm leading-relaxed text-gem-offwhite/80"
+                        >
+                          <span className="mt-1 shrink-0 text-red-700 dark:text-red-400">•</span>
                           <span>{s}</span>
                         </li>
                       ))}
@@ -522,7 +534,7 @@ export default function ExamReviewPage() {
 
         {/* Questions List */}
         <div className="space-y-8 pt-4">
-          <h3 className="border-l-4 border-law-gold pl-4 font-serif text-2xl font-bold text-slate-200">
+          <h3 className="border-l-4 border-law-gold pl-4 font-serif text-2xl font-bold text-gem-offwhite">
             Detalle de Preguntas
           </h3>
           <div className="space-y-12">
@@ -536,8 +548,8 @@ export default function ExamReviewPage() {
       </div>
 
       {/* Global Footer */}
-      <footer className="mt-12 w-full border-t border-white/5 bg-[#020617] py-8">
-        <Copyright className="text-slate-600" />
+      <footer className="mt-12 w-full border-t border-gem-border/40 bg-gem-onyx py-8">
+        <Copyright className="text-gem-muted/70" />
       </footer>
     </div>
   );

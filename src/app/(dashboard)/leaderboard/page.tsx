@@ -41,16 +41,26 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
 
   const medalForRank = (rank: number) => {
     if (rank === 1) return { icon: Trophy, color: "text-law-gold", bg: "bg-law-gold/20" };
-    if (rank === 2) return { icon: Medal, color: "text-gray-300", bg: "bg-gray-300/20" };
-    if (rank === 3) return { icon: Medal, color: "text-orange-400", bg: "bg-orange-400/20" };
+    if (rank === 2)
+      return {
+        icon: Medal,
+        color: "text-gem-muted",
+        bg: "bg-gem-muted/20",
+      };
+    if (rank === 3)
+      return {
+        icon: Medal,
+        color: "text-orange-600 dark:text-orange-400",
+        bg: "bg-orange-500/15",
+      };
     return null;
   };
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gem-onyx font-sans text-gem-offwhite">
-      <div className="z-10 flex-none border-b border-white/5 bg-[#020617]/50 px-4 backdrop-blur-sm sm:px-6 md:px-10">
+      <div className="z-10 flex-none border-b border-gem-border/40 bg-gem-onyx/80 px-4 backdrop-blur-sm sm:px-6 md:px-10">
         <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center sm:py-6 md:pb-4 md:pt-8">
-          <h1 className="text-shadow-sm font-serif text-2xl italic text-white sm:text-3xl">
+          <h1 className="text-shadow-sm font-serif text-2xl italic text-gem-offwhite sm:text-3xl">
             Ranking
           </h1>
           <LeaderboardTabs current={metric} />
@@ -96,8 +106,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                       isCurrent
                         ? "border-law-gold/50 bg-law-gold/10"
                         : rank <= 3
-                          ? "border-law-gold/20 bg-gray-900/40"
-                          : "border-white/5 bg-gray-900/20"
+                          ? "border-law-gold/20 bg-gem-mist"
+                          : "border-gem-border/40 bg-gem-mist"
                     }`}
                   >
                     <div className="flex h-8 w-10 shrink-0 items-center justify-center font-mono text-sm font-bold text-gem-offwhite/60">
@@ -105,8 +115,8 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                     </div>
 
                     <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 ${
-                        medal ? medal.bg : "bg-gem-mist/20"
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gem-border/40 ${
+                        medal ? medal.bg : "bg-gem-slate"
                       }`}
                     >
                       {r.avatar_url ? (
@@ -143,9 +153,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                         rank === 1
                           ? "text-law-gold"
                           : rank === 2
-                            ? "text-gray-300"
+                            ? "text-gem-muted"
                             : rank === 3
-                              ? "text-orange-400"
+                              ? "text-orange-600 dark:text-orange-400"
                               : "text-gem-offwhite/80"
                       }`}
                     >
