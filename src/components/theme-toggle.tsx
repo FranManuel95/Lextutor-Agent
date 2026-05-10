@@ -19,7 +19,7 @@ export function ThemeToggle() {
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
       title={isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
-      className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-white/10 hover:text-gray-300"
+      className="flex h-8 w-8 items-center justify-center rounded-full text-gem-muted transition-colors hover:bg-gem-offwhite/10 hover:text-gem-offwhite"
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>

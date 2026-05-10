@@ -215,7 +215,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
   };
 
   return (
-    <div className="flex h-full w-72 flex-col border-r border-law-accent/100 bg-law-dark text-white">
+    <div className="flex h-full w-72 flex-col border-r border-gem-border/60 bg-gem-slate text-gem-offwhite">
       {/* Delete Alert Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent className="border border-gem-border/40 bg-gem-mist text-gem-offwhite">
@@ -232,7 +232,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
             <Button
               variant="destructive"
               onClick={handleDeleteChat}
-              className="border-0 bg-red-600 text-white hover:bg-red-700"
+              className="border-0 bg-red-600 text-gem-offwhite hover:bg-red-700"
             >
               Eliminar
             </Button>
@@ -248,7 +248,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
         </div>
 
         {/* Profile Card */}
-        <div className="group relative mb-6 flex items-center gap-3 rounded-lg border border-white/5 bg-gem-mist/30 p-3">
+        <div className="group relative mb-6 flex items-center gap-3 rounded-lg border border-gem-border/40 bg-gem-mist/30 p-3">
           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-law-gold/30 bg-law-gold/20 text-law-gold">
             {userProfile?.avatar_url ? (
               <img
@@ -261,7 +261,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="max-w-[120px] truncate text-sm font-bold text-white">
+            <p className="max-w-[120px] truncate text-sm font-bold text-gem-offwhite">
               {userProfile?.full_name || "Invitado Elite"}
             </p>
           </div>
@@ -285,7 +285,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
 
           {/* ESTADÍSTICA */}
           <div className="space-y-1">
-            <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+            <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-gem-muted/70">
               Estadística
             </p>
             <Link href="/progress" prefetch={true}>
@@ -294,8 +294,8 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 className={cn(
                   "h-8 w-full justify-start gap-3 text-xs font-medium tracking-wide transition-all duration-300",
                   pathname === "/progress"
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-gem-mist text-gem-offwhite"
+                    : "text-gem-muted hover:bg-gem-offwhite/5 hover:text-gem-offwhite"
                 )}
               >
                 <TrendingUp size={16} />
@@ -309,8 +309,8 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 className={cn(
                   "h-8 w-full justify-start gap-3 text-xs font-medium tracking-wide transition-all duration-300",
                   pathname === "/leaderboard"
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-gem-mist text-gem-offwhite"
+                    : "text-gem-muted hover:bg-gem-offwhite/5 hover:text-gem-offwhite"
                 )}
               >
                 <Trophy size={16} />
@@ -324,8 +324,8 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 className={cn(
                   "h-8 w-full justify-start gap-3 text-xs font-medium tracking-wide transition-all duration-300",
                   pathname === "/exams"
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-gem-mist text-gem-offwhite"
+                    : "text-gem-muted hover:bg-gem-offwhite/5 hover:text-gem-offwhite"
                 )}
               >
                 <History size={16} />
@@ -336,7 +336,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
 
           {/* PRÁCTICA */}
           <div className="space-y-1">
-            <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+            <p className="mb-1 px-2 text-[10px] font-bold uppercase tracking-widest text-gem-muted/70">
               Práctica
             </p>
             <Link href="/quiz" prefetch={true}>
@@ -345,8 +345,8 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 className={cn(
                   "h-8 w-full justify-start gap-3 text-xs font-medium tracking-wide transition-all duration-300",
                   pathname === "/quiz"
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-gem-mist text-gem-offwhite"
+                    : "text-gem-muted hover:bg-gem-offwhite/5 hover:text-gem-offwhite"
                 )}
               >
                 <span className="h-1 w-1 rounded-full bg-blue-500"></span>
@@ -359,8 +359,8 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 className={cn(
                   "h-8 w-full justify-start gap-3 text-xs font-medium tracking-wide transition-all duration-300",
                   pathname === "/exam"
-                    ? "bg-white/10 text-white"
-                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    ? "bg-gem-mist text-gem-offwhite"
+                    : "text-gem-muted hover:bg-gem-offwhite/5 hover:text-gem-offwhite"
                 )}
               >
                 <span className="h-1 w-1 rounded-full bg-purple-500"></span>
@@ -372,10 +372,12 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden pb-8">
-        <div className="sticky top-0 z-10 space-y-2 bg-law-dark px-6 py-2">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600">Historial</p>
+        <div className="sticky top-0 z-10 space-y-2 bg-gem-slate px-6 py-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gem-muted/70">
+            Historial
+          </p>
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-600" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gem-muted/70" />
             <input
               ref={searchInputRef}
               type="text"
@@ -395,17 +397,17 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                     ? "Buscar en mensajes"
                     : "Búsqueda semántica en documentos"
               }
-              className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-16 text-xs text-white placeholder:text-gray-500 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
+              className="w-full rounded-md border border-gem-border/40 bg-gem-mist/60 py-1.5 pl-8 pr-16 text-xs text-gem-offwhite placeholder:text-gem-muted focus:border-law-gold/40 focus:bg-gem-mist focus:outline-none"
             />
             {!searchQuery && (
-              <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-white/10 bg-black/30 px-1 py-0.5 font-mono text-[9px] font-bold text-gray-600 md:inline-block">
+              <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-gem-border/40 bg-gem-onyx/60 px-1 py-0.5 font-mono text-[9px] font-bold text-gem-muted/70 md:inline-block">
                 ⌘K
               </kbd>
             )}
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-500 hover:bg-white/10 hover:text-white"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-gem-muted/70 hover:bg-gem-offwhite/10 hover:text-gem-offwhite"
                 aria-label="Limpiar búsqueda"
               >
                 <X className="h-3 w-3" />
@@ -419,7 +421,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 "rounded px-2 py-0.5 transition",
                 searchMode === "title"
                   ? "bg-law-gold/20 text-law-gold"
-                  : "text-gray-600 hover:text-gray-400"
+                  : "text-gem-muted/70 hover:text-gem-muted"
               )}
             >
               Por título
@@ -430,7 +432,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 "rounded px-2 py-0.5 transition",
                 searchMode === "content"
                   ? "bg-law-gold/20 text-law-gold"
-                  : "text-gray-600 hover:text-gray-400"
+                  : "text-gem-muted/70 hover:text-gem-muted"
               )}
             >
               En mensajes
@@ -441,7 +443,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 "flex items-center gap-1 rounded px-2 py-0.5 transition",
                 searchMode === "docs"
                   ? "bg-law-gold/20 text-law-gold"
-                  : "text-gray-600 hover:text-gray-400"
+                  : "text-gem-muted/70 hover:text-gem-muted"
               )}
               title="Búsqueda semántica en documentos legales"
             >
@@ -454,12 +456,12 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
           {searchMode === "docs" && searchQuery.trim().length >= 3 && (
             <div className="py-2">
               {searchingRag && (
-                <p className="px-4 py-3 text-center text-xs italic text-gray-600">
+                <p className="px-4 py-3 text-center text-xs italic text-gem-muted/70">
                   Consultando documentos…
                 </p>
               )}
               {!searchingRag && ragUnavailable && (
-                <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+                <p className="px-4 py-6 text-center text-xs italic text-gem-muted/70">
                   Búsqueda semántica no disponible
                 </p>
               )}
@@ -468,7 +470,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-law-gold/70">
                     Documentos legales
                   </p>
-                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300">
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-gem-offwhite/80">
                     {ragAnswer}
                   </p>
                   {ragSources.length > 0 && (
@@ -476,7 +478,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                       {ragSources.map((s) => (
                         <span
                           key={s}
-                          className="rounded-full border border-law-gold/20 bg-black/20 px-2 py-0.5 text-[9px] text-law-gold/60"
+                          className="rounded-full border border-law-gold/20 bg-gem-onyx/60 px-2 py-0.5 text-[9px] text-law-gold/60"
                         >
                           {s}
                         </span>
@@ -486,7 +488,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                 </div>
               )}
               {!searchingRag && !ragUnavailable && !ragAnswer && (
-                <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+                <p className="px-4 py-6 text-center text-xs italic text-gem-muted/70">
                   Sin resultados en los documentos
                 </p>
               )}
@@ -495,17 +497,17 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
           {searchMode === "docs" &&
             searchQuery.trim().length < 3 &&
             searchQuery.trim().length > 0 && (
-              <p className="px-4 py-3 text-center text-xs italic text-gray-600">
+              <p className="px-4 py-3 text-center text-xs italic text-gem-muted/70">
                 Escribe al menos 3 caracteres…
               </p>
             )}
           {searchMode === "content" && searchQuery.trim().length >= 2 && (
             <div className="py-2">
               {searchingMessages && (
-                <p className="px-4 py-3 text-center text-xs italic text-gray-600">Buscando…</p>
+                <p className="px-4 py-3 text-center text-xs italic text-gem-muted/70">Buscando…</p>
               )}
               {!searchingMessages && messageResults.length === 0 && (
-                <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+                <p className="px-4 py-6 text-center text-xs italic text-gem-muted/70">
                   Sin coincidencias en mensajes
                 </p>
               )}
@@ -515,18 +517,18 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                     key={i}
                     href={`/chat/${r.chatId}`}
                     onClick={() => onClose?.()}
-                    className="mb-1 block rounded-lg border border-white/5 bg-white/5 px-3 py-2 transition hover:border-law-gold/30 hover:bg-law-gold/5"
+                    className="mb-1 block rounded-lg border border-gem-border/40 bg-gem-mist/60 px-3 py-2 transition hover:border-law-gold/30 hover:bg-law-gold/5"
                   >
                     <p className="truncate text-[10px] font-bold uppercase tracking-widest text-law-gold/70">
                       {r.chatTitle}
                     </p>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-gray-400">{r.snippet}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-gem-muted">{r.snippet}</p>
                   </Link>
                 ))}
             </div>
           )}
           {searchMode === "title" && filteredChats.length === 0 && searchQuery && (
-            <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+            <p className="px-4 py-6 text-center text-xs italic text-gem-muted/70">
               Sin resultados para &ldquo;{searchQuery}&rdquo;
             </p>
           )}
@@ -537,7 +539,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                   <div
                     className={cn(
                       "mb-1 flex items-center gap-3 rounded-xl px-4 py-3 pr-2 text-xs transition-all duration-200",
-                      "border border-law-gold/30 bg-white/5"
+                      "border border-law-gold/30 bg-gem-mist/60"
                     )}
                   >
                     <MessageSquare size={16} className="flex-shrink-0 text-law-gold" />
@@ -554,7 +556,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                         }
                       }}
                       onBlur={() => handleRename(chat.id, editTitle)}
-                      className="w-full border-none bg-transparent text-white outline-none placeholder:text-gray-600"
+                      className="w-full border-none bg-transparent text-gem-offwhite outline-none placeholder:text-gem-muted"
                     />
                   </div>
                 ) : (
@@ -566,8 +568,8 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                       className={cn(
                         "mb-1 flex items-center gap-3 rounded-xl px-4 py-3 pr-16 text-xs transition-all duration-200",
                         pathname === `/chat/${chat.id}`
-                          ? "border border-white/5 bg-law-accent/20 text-white shadow-lg shadow-black/20"
-                          : "text-gray-400 hover:bg-white/5 hover:text-white"
+                          ? "border border-gem-border/40 bg-law-accent/20 text-gem-offwhite shadow-lg shadow-black/20"
+                          : "text-gem-muted hover:bg-gem-offwhite/5 hover:text-gem-offwhite"
                       )}
                     >
                       <MessageSquare
@@ -576,7 +578,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                           "flex-shrink-0 transition-colors",
                           pathname === `/chat/${chat.id}`
                             ? "text-law-gold"
-                            : "text-gray-600 group-hover:text-gray-400"
+                            : "text-gem-muted/70 group-hover:text-gem-muted"
                         )}
                       />
                       <span className="truncate font-medium">{chat.title}</span>
@@ -588,7 +590,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                           setEditingId(chat.id);
                           setEditTitle(chat.title || "");
                         }}
-                        className="p-1.5 text-gray-600 transition-colors hover:text-law-gold"
+                        className="p-1.5 text-gem-muted/70 transition-colors hover:text-law-gold"
                       >
                         {/* Edit Icon (Pencil) */}
                         <svg
@@ -611,7 +613,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
                           e.preventDefault();
                           setDeleteId(chat.id);
                         }}
-                        className="p-1.5 text-gray-600 transition-colors hover:text-red-400"
+                        className="p-1.5 text-gem-muted/70 transition-colors hover:text-red-400"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -623,7 +625,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
         </div>
       </div>
 
-      <div className="border-t border-white/5 bg-law-dark/95">
+      <div className="border-t border-gem-border/40 bg-gem-slate/95">
         <div className="flex items-center justify-between px-3 py-1">
           <Copyright className="py-1 text-[9px]" />
           <ThemeToggle />

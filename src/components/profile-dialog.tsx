@@ -126,7 +126,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 text-gray-400 hover:bg-white/10 hover:text-white"
+            className="h-6 w-6 text-gem-muted hover:bg-gem-offwhite/10 hover:text-gem-offwhite"
           >
             <Settings size={14} />
           </Button>
