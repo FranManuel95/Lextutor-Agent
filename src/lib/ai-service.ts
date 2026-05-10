@@ -701,6 +701,10 @@ export async function searchRagDocs(query: string): Promise<RagSearchResult> {
     return { answer: "", sources: [], hasRag: false };
   }
 
+  const ragSearchTools: GeminiTool[] = [
+    { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], topK: 6 } },
+  ];
+
   const res = await geminiClient.models.generateContent({
     model: "gemini-2.0-flash",
     contents: [
@@ -713,8 +717,8 @@ export async function searchRagDocs(query: string): Promise<RagSearchResult> {
         ],
       },
     ],
-    tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 6 } } as any],
-  } as any);
+    config: { tools: ragSearchTools },
+  });
 
   if (res.usageMetadata) {
     logUsage("gemini", {
@@ -730,7 +734,7 @@ export async function searchRagDocs(query: string): Promise<RagSearchResult> {
 
   const seen = new Set<string>();
   const sources: string[] = [];
-  (grounding?.groundingChunks ?? []).forEach((chunk: any) => {
+  (grounding?.groundingChunks ?? []).forEach((chunk: GroundingChunk) => {
     const raw = chunk.retrievedContext?.title ?? chunk.retrievedContext?.uri ?? "";
     if (!raw) return;
     const clean = raw
