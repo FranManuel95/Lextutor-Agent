@@ -13,7 +13,6 @@ export interface ExamQuestion {
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 const ASSISTANT_ID = env.OPENAI_ASSISTANT_ID!;
-const VECTOR_STORE_ID = env.OPENAI_VECTOR_STORE_ID!;
 
 // COPIADO EXACTAMENTE de gemini.ts - Shared Elite Agent Prompt Logic
 export function constructEliteSystemPrompt(params: {
@@ -383,7 +382,7 @@ export async function generateExam(params: { area: string; difficulty: string; c
     content: prompt,
   });
 
-  const run = await client.beta.threads.runs.createAndPoll(thread.id, {
+  await client.beta.threads.runs.createAndPoll(thread.id, {
     assistant_id: ASSISTANT_ID,
     model: process.env.OPENAI_MODEL || "gpt-4o-mini",
   });

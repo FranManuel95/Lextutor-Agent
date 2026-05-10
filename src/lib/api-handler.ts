@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { User } from "@supabase/supabase-js";
 import { RateLimitConfig, checkRateLimit } from "./rateLimit";
 import { verifyOrigin } from "./csrf";
 import { logger } from "./logger";
@@ -27,7 +26,7 @@ type ApiHandlerOptions<TBody extends z.ZodType> = {
  * Automatically handles Auth, Rate Limiting, Zod Validation, and Error Responses.
  */
 export function createApiHandler<TBody extends z.ZodType>(
-  handler: (ctx: ApiHandlerContext<z.infer<TBody>>) => Promise<NextResponse | any>,
+  handler: (ctx: ApiHandlerContext<z.infer<TBody>>) => Promise<NextResponse | unknown>,
   options: ApiHandlerOptions<TBody> = {}
 ) {
   return async (request: NextRequest) => {
@@ -52,13 +51,14 @@ export function createApiHandler<TBody extends z.ZodType>(
 
       // 2. Admin Check (if required)
       if (options.requireAdmin) {
+        type ProfileRow = { role: string | null };
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", user.id)
-          .single();
+          .single<ProfileRow>();
 
-        if (!profile || (profile as any).role !== "admin") {
+        if (!profile || profile.role !== "admin") {
           return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
       }
@@ -103,9 +103,10 @@ export function createApiHandler<TBody extends z.ZodType>(
         );
       }
 
+      const message = error instanceof Error ? error.message : "Internal Server Error";
       return NextResponse.json(
         {
-          error: error instanceof Error ? error.message : "Internal Server Error",
+          error: message,
         },
         { status: 500 }
       );

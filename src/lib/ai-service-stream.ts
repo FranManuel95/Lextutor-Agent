@@ -1,13 +1,7 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
-import {
-  constructEliteSystemPrompt,
-  formatGeminiCitations,
-  retryOperation,
-  AI_PROVIDER,
-  isOpenAI,
-  openaiClient,
-} from "./ai-service";
+import type { Annotation } from "openai/resources/beta/threads/messages";
+import { constructEliteSystemPrompt, retryOperation, isOpenAI, openaiClient } from "./ai-service";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -98,7 +92,7 @@ export async function generateResponseStream(params: {
             const message = event.data;
             if (message.content[0].type === "text") {
               const annotations = message.content[0].text.annotations;
-              annotations?.forEach((ann: any) => {
+              annotations?.forEach((ann: Annotation) => {
                 if (ann.type === "file_citation" && ann.file_citation) {
                   fileIds.add(ann.file_citation.file_id);
                 }
@@ -181,7 +175,7 @@ export async function generateResponseStream(params: {
       800
     );
     return streamResponse;
-  } catch (error) {
+  } catch {
     logger.warn("⚠️ Gemini Flash overloaded, switching to Gemini 1.5 Pro (Fallback)...");
 
     // Fallback to Pro model (using 002 as stable version)

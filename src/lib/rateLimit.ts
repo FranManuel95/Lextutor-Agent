@@ -29,12 +29,19 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("check_rate_limit", {
+  const { data, error } = await (
+    supabase as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>
+      ) => Promise<{ data: RateLimitResult | null; error: { message: string } | null }>;
+    }
+  ).rpc("check_rate_limit", {
     p_user_id: userId,
     p_endpoint: config.endpoint,
     p_limit: config.limit,
-    p_window_minutes: config.windowMinutes || 60,
-  } as any);
+    p_window_minutes: config.windowMinutes ?? 60,
+  });
 
   if (error) {
     logger.error("Rate limit RPC failed — failing closed", error, {

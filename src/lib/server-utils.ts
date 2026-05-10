@@ -11,13 +11,14 @@ export async function requireAdmin() {
     throw new Error("Unauthorized");
   }
 
+  type ProfileRow = { role: string | null };
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .single<ProfileRow>();
 
-  if (!profile || (profile as any).role !== "admin") {
+  if (!profile || profile.role !== "admin") {
     throw new Error("Forbidden: Admin access required");
   }
 
