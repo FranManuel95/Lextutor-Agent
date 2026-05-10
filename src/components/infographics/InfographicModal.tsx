@@ -3,7 +3,7 @@
 import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X, Download, Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { type InfographicContent } from "@/lib/imagen-service";
 
 interface InfographicModalProps {
@@ -60,14 +60,6 @@ export function InfographicModal({ isOpen, onClose, content, topic }: Infographi
               <span className="hidden md:inline">
                 {isDownloading ? "Generando..." : "Descargar PDF"}
               </span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 rounded-full text-gray-400 hover:bg-white/10 hover:text-white"
-            >
-              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
