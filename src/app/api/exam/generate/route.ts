@@ -2,6 +2,20 @@ import { createApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { generateExam } from "@/lib/ai-service";
 import { z } from "zod";
+import type { Json } from "@/types/database.types";
+
+interface ExamSessionInsert {
+  user_id: string;
+  area: string;
+  difficulty: string;
+  questions: Json;
+  rubric: Json;
+  metadata: Json;
+}
+
+interface ExamSessionRow {
+  id: string;
+}
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,27 +34,33 @@ export const POST = createApiHandler(
     const { questions, rubric, ragUsed, sources } = await generateExam({ area, difficulty, count });
 
     // 2. Save Session to DB
-    const { data: session, error } = await supabase
-      .from("exam_sessions")
-      .insert({
-        user_id: user.id,
-        area,
-        difficulty,
-        questions,
-        rubric,
-        metadata: {
-          rag_used: ragUsed,
-          type: "development",
-          sources: sources || [],
-        },
-      } as any)
+    const insertPayload: ExamSessionInsert = {
+      user_id: user.id,
+      area,
+      difficulty,
+      questions: questions as unknown as Json,
+      rubric: rubric as unknown as Json,
+      metadata: {
+        rag_used: ragUsed,
+        type: "development",
+        sources: sources || [],
+      },
+    };
+    const { data: session, error } = await (
+      supabase.from("exam_sessions") as unknown as {
+        insert: (v: ExamSessionInsert) => {
+          select: () => { single: () => Promise<{ data: ExamSessionRow | null; error: unknown }> };
+        };
+      }
+    )
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) throw error;
 
     return {
-      sessionId: (session as any).id,
+      sessionId: session?.id,
       questions,
       ragUsed,
       sources,

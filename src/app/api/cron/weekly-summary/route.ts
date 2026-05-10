@@ -234,9 +234,9 @@ export async function POST(request: NextRequest) {
       } else {
         sent += 1;
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       errors += 1;
-      captureException(e, {
+      captureException(e instanceof Error ? e : new Error(String(e)), {
         user: { id: userId },
         tags: { job: "weekly-summary", step: "send" },
       });

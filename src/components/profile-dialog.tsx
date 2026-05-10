@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -82,8 +83,12 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
       } = supabase.storage.from("avatars").getPublicUrl(filePath);
 
       setForm((prev) => ({ ...prev, avatar_url: publicUrl }));
-    } catch (error: any) {
-      toast({ title: "Error subiendo imagen", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Error subiendo imagen",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -103,8 +108,12 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
       toast({ title: "Perfil actualizado", className: "bg-green-500 text-white" });
       setOpen(false);
       router.refresh();
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -134,7 +143,7 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
             <div className="flex flex-col items-center gap-4">
               <div className="group relative h-24 w-24 overflow-hidden rounded-full border-2 border-law-gold/50 bg-black/20">
                 {form.avatar_url ? (
-                  <img src={form.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+                  <Image src={form.avatar_url} alt="Avatar" fill className="object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-law-gold/50">
                     <User size={40} />

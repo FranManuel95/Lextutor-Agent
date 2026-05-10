@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createApiHandler } from "@/lib/api-handler";
+import { RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -71,5 +72,5 @@ export const POST = createApiHandler(
       })),
     };
   },
-  { schema: searchSchema }
+  { schema: searchSchema, rateLimit: RATE_LIMITS.CHAT_SEARCH }
 );

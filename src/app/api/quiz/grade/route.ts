@@ -2,6 +2,26 @@ import { NextResponse } from "next/server";
 import { createApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
+import type { Json } from "@/types/database.types";
+
+type QuizQuestion = {
+  id: string;
+  text: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+};
+
+type QuizSession = {
+  id: string;
+  user_id: string;
+  questions: QuizQuestion[];
+  area?: string;
+  metadata?: { rag_used?: boolean };
+};
+
+type QuizAttemptResult = { id: string };
 
 export const runtime = "nodejs";
 
@@ -26,7 +46,8 @@ export const POST = createApiHandler(
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    const questions = (session as any).questions as any[];
+    const typedSession = session as QuizSession;
+    const questions = typedSession.questions;
 
     let rawScore = 0;
     const total = questions.length;
@@ -53,6 +74,8 @@ export const POST = createApiHandler(
 
     const score10 = Math.round((rawScore / total) * 100) / 10; // 0.0 to 10.0
 
+    const sessionArea = typedSession.area ?? "general";
+
     // 2. Save Attempt
     const { data: attempt, error: attemptError } = await supabase
       .from("quiz_attempts")
@@ -60,10 +83,10 @@ export const POST = createApiHandler(
         user_id: user.id,
         session_id: sessionId,
         answers: answers,
-        grading: payloadQuestions,
+        grading: payloadQuestions as unknown as Json,
         score: rawScore,
         total: total,
-        area: (session as any).area || "general",
+        area: sessionArea,
         status: "finished",
         attempt_type: "quiz",
         payload: {
@@ -71,35 +94,37 @@ export const POST = createApiHandler(
           summary: `Quiz ${rawScore}/${total}`,
           questions: payloadQuestions,
         },
-      } as any)
+      })
       .select()
       .single();
 
     if (attemptError) throw attemptError;
+
+    const typedAttempt = attempt as QuizAttemptResult;
 
     // 3. Sync to Exam Attempts (Stats)
     const { error: syncError } = await supabase.from("exam_attempts").insert({
       user_id: user.id,
       attempt_type: "quiz",
       session_id: sessionId,
-      area: (session as any).area || "general",
+      area: sessionArea,
       score: score10,
       status: "finished",
       questions_count: total,
       payload: {
         payload_version: 1,
         summary: `Quiz ${rawScore}/${total}`,
-        quiz_attempt_id: (attempt as any).id,
-        rag_used: (session as any).metadata?.rag_used || false,
+        quiz_attempt_id: typedAttempt.id,
+        rag_used: typedSession.metadata?.rag_used ?? false,
       },
-    } as any);
+    });
 
     if (syncError) {
-      console.error("STATS SYNC ERROR:", syncError);
+      logger.error("quiz/grade: stats sync failed", syncError);
     }
 
     return {
-      attemptId: (attempt as any).id,
+      attemptId: typedAttempt.id,
       score: score10,
       total,
       percentage: Math.round((rawScore / total) * 100),

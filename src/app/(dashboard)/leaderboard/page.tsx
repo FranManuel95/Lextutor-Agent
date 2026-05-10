@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 import { Trophy, Flame, Star, Medal } from "lucide-react";
 import { Copyright } from "@/components/copyright";
 import { LeaderboardTabs } from "./LeaderboardTabs";
@@ -109,7 +110,13 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
                       }`}
                     >
                       {r.avatar_url ? (
-                        <img src={r.avatar_url} alt="" className="h-full w-full object-cover" />
+                        <Image
+                          src={r.avatar_url}
+                          alt=""
+                          width={40}
+                          height={40}
+                          className="object-cover"
+                        />
                       ) : MedalIcon ? (
                         <MedalIcon className={`h-5 w-5 ${medal!.color}`} />
                       ) : (

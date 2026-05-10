@@ -1,3 +1,6 @@
+# claude code worktrees (agent isolation)
+.claude/worktrees/
+
 # dependencies
 /node_modules
 /.pnp

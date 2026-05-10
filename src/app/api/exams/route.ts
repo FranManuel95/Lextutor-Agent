@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 const examStatsSchema = z.object({
   streak: z.number(),
@@ -29,6 +30,11 @@ export async function GET(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = await checkRateLimit(user.id, RATE_LIMITS.EXAMS_LIST);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);

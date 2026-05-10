@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { generateResponse } from "@/lib/ai-service";
+import { logger } from "@/lib/logger";
 
 type TutorPrefs = { area: string; modes: string[]; detailLevel: string };
 type ProfileWithPrefs = { tutor_prefs: TutorPrefs | null; full_name: string | null } | null;
@@ -43,7 +44,7 @@ export async function createChat() {
     .single();
 
   if (error) {
-    console.error("Error creating chat:", error);
+    logger.error("Error creating chat", error);
     return { error: "Failed to create chat" };
   }
 
@@ -74,7 +75,7 @@ Estoy aquí para ayudarte a dominar todas las áreas del derecho. Puedes pedirme
       content: welcomeMessage,
     });
   } catch (err) {
-    console.error("Failed to insert welcome message:", err);
+    logger.error("Failed to insert welcome message", err);
   }
 
   revalidateTag(`chats-${user.id}`);
@@ -110,7 +111,7 @@ export async function sendMessage(
   });
 
   if (messageError) {
-    console.error("Error sending message:", messageError);
+    logger.error("Error sending message", messageError);
     return { error: "Failed to send message" };
   }
 
@@ -143,12 +144,15 @@ export async function sendMessage(
     aiResponse = await generateResponse({
       message: content,
       history,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      settings: settings as any,
+      settings: {
+        area: settings.area,
+        modes: settings.modes,
+        detailLevel: settings.detailLevel,
+      },
       options: { userName },
     });
   } catch (error) {
-    console.error("AI Service Error:", error);
+    logger.error("AI Service Error", error);
     aiResponse = "Error al conectar con el tutor inteligente. Intenta de nuevo.";
   }
 
@@ -180,14 +184,13 @@ export async function sendMessage(
   }
 
   // 4b. Log Student Event (Progress)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from("student_events") as any).insert({
+  await supabase.from("student_events").insert({
     user_id: user.id,
     chat_id: chatId,
     message_id: assistantMsg?.id,
     area: settings.area,
     kind: "answer_submitted",
-    payload: { settings },
+    payload: { settings } as import("@/types/database.types").Json,
   });
 
   // 6. Update chat updated_at

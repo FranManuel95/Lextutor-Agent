@@ -4,6 +4,9 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { generateAudioResponseStream } from "@/lib/ai-service-stream";
 import { constructEliteSystemPrompt } from "@/lib/ai-service";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
+import { type GenerateContentResponse } from "@google/genai";
+import { type Json } from "@/types/database.types";
 
 export const runtime = "nodejs"; // Required for stream handling
 export const dynamic = "force-dynamic";
@@ -39,7 +42,7 @@ export async function POST(request: NextRequest) {
       .download(audioPath);
 
     if (downloadError || !fileData) {
-      console.error("Storage Download Error:", downloadError);
+      logger.error("audio-stream: storage download failed", downloadError);
       throw new Error("Failed to retrieve audio file");
     }
 
@@ -54,11 +57,11 @@ export async function POST(request: NextRequest) {
     const mimeType = fileData.type || "audio/webm"; // Default fallback
 
     // 4. Prepare Prompt
-    const { data: profile } = (await supabase
+    const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
       .eq("id", user.id)
-      .single()) as any;
+      .single();
 
     const userName = profile?.full_name || "Estudiante";
 
@@ -88,16 +91,8 @@ export async function POST(request: NextRequest) {
             prompt: systemPrompt + "\n\n" + userInstruction,
           });
 
-          // Using 'any' to bypass TS generator/stream type mismatch if present
-          for await (const chunk of geminiStream as any) {
-            let chunkText = "";
-            // Safe accessor logic
-            try {
-              if (typeof chunk.text === "function") chunkText = chunk.text();
-              else if (chunk.text) chunkText = chunk.text;
-            } catch (e) {
-              /* ignore */
-            }
+          for await (const chunk of geminiStream as AsyncGenerator<GenerateContentResponse>) {
+            const chunkText = chunk.text ?? "";
 
             if (chunkText) {
               fullResponse += chunkText;
@@ -110,16 +105,16 @@ export async function POST(request: NextRequest) {
           // 6. Persistence (Atomic at end)
           if (fullResponse) {
             // Save assistant message
-            const { data: assistantMsg } = (await supabase
+            const { data: assistantMsg } = await supabase
               .from("messages")
               .insert({
                 chat_id: chatId,
                 user_id: user.id,
-                role: "assistant",
+                role: "assistant" as const,
                 content: fullResponse,
-              } as any)
+              })
               .select()
-              .single()) as any;
+              .single();
 
             // Log event
             await supabase.from("student_events").insert({
@@ -128,8 +123,8 @@ export async function POST(request: NextRequest) {
               message_id: assistantMsg?.id,
               area: settings?.area || "general",
               kind: "answer_submitted",
-              payload: { audio: true, settings },
-            } as any);
+              payload: { audio: true, settings } as Json,
+            });
 
             // Update Chat Timestamp
             await supabase
@@ -141,12 +136,12 @@ export async function POST(request: NextRequest) {
           // Done signal
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
           controller.close();
-        } catch (streamError: any) {
-          console.error("Streaming Error:", streamError);
+        } catch (streamError: unknown) {
+          logger.error("audio-stream: streaming error", streamError);
+          const streamErrMsg =
+            streamError instanceof Error ? streamError.message : "Unknown streaming error";
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "error", message: streamError.message })}\n\n`
-            )
+            encoder.encode(`data: ${JSON.stringify({ type: "error", message: streamErrMsg })}\n\n`)
           );
           controller.close();
         }
@@ -160,9 +155,10 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
       },
     });
-  } catch (error: any) {
-    console.error("Audio Route Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    logger.error("audio-stream: route error", error);
+    const errMsg = error instanceof Error ? error.message : "Internal server error";
+    return new Response(JSON.stringify({ error: errMsg }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });

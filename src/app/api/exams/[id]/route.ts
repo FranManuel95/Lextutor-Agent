@@ -1,7 +1,33 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
+import type { Json } from "@/types/database.types";
 
 export const runtime = "nodejs";
+
+interface AttemptPayload {
+  quiz_attempt_id?: string;
+  questions?: Json;
+}
+
+interface QuizAttemptDetail {
+  payload: AttemptPayload;
+  grading: Json;
+}
+
+interface HydratedAttempt {
+  id: string;
+  user_id: string;
+  attempt_type: string;
+  area: string;
+  score: number;
+  status: string;
+  questions_count: number | null;
+  payload: AttemptPayload;
+  created_at: string;
+  updated_at: string;
+  chat_id: string | null;
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -11,6 +37,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = await checkRateLimit(user.id, RATE_LIMITS.EXAM_DETAIL);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
   const { id } = await params;
@@ -28,7 +59,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // HYDRATION LOGIC FOR QUIZZES
   // The unified `exam_attempts` table stores a light payload for quizzes.
   // We need to fetch the full questions/answers from `quiz_attempts`.
-  const attemptData = attempt as any;
+  const attemptData: HydratedAttempt = {
+    ...attempt,
+    payload: (attempt.payload ?? {}) as AttemptPayload,
+  };
 
   if (attemptData.attempt_type === "quiz" && attemptData.payload?.quiz_attempt_id) {
     const { data: quizDetail, error: quizError } = await supabase
@@ -38,13 +72,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .single();
 
     if (!quizError && quizDetail) {
+      const typedQuizDetail = quizDetail as unknown as QuizAttemptDetail;
       // Prefer payload.questions, fallback to grading
-      const questions = (quizDetail as any).payload?.questions || (quizDetail as any).grading;
+      const questions = typedQuizDetail.payload?.questions ?? typedQuizDetail.grading;
 
       if (questions) {
         attemptData.payload = {
           ...attemptData.payload,
-          questions: questions,
+          questions,
         };
       }
     }
@@ -64,6 +99,11 @@ export async function DELETE(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateLimit = await checkRateLimit(user.id, RATE_LIMITS.EXAM_DELETE);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429 });
   }
 
   const { id } = await params;

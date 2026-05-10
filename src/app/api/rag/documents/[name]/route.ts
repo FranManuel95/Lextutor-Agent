@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import OpenAI from "openai";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,12 @@ const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: string }> }) {
   try {
-    const { supabase } = await requireAdmin();
+    const { supabase, user } = await requireAdmin();
+
+    const rateLimit = await checkRateLimit(user.id, RATE_LIMITS.RAG_DOC_DELETE);
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+    }
 
     const { name } = await ctx.params;
     const documentName = decodeURIComponent(name);
@@ -41,9 +47,11 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
       try {
         const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
         await openai.files.del(doc.openai_file_id);
-        console.log(`✅ Document also deleted from OpenAI: ${doc.openai_file_id}`);
-      } catch (e: any) {
-        logger.warn("OpenAI delete failed (continuing)", { message: e?.message });
+        logger.info("rag/documents: OpenAI file deleted", { fileId: doc.openai_file_id });
+      } catch (e: unknown) {
+        logger.warn("OpenAI delete failed (continuing)", {
+          message: e instanceof Error ? e.message : String(e),
+        });
         // Continuar aunque falle
       }
     }
@@ -51,17 +59,22 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
     // 1) Borrar de Gemini
     try {
       if (isStoreDoc) {
-        await ai.fileSearchStores.documents.delete({
+        await (
+          ai.fileSearchStores.documents.delete as (params: {
+            name: string;
+            config?: { force?: boolean };
+          }) => Promise<unknown>
+        )({
           name: documentName,
           config: { force: true },
-        } as any);
+        });
       } else if (isFile) {
         await ai.files.delete({ name: documentName });
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.warn("Gemini delete failed (continuing to DB cleanup)", {
-        status: e?.status,
-        message: e?.message,
+        status: (e as { status?: number })?.status,
+        message: e instanceof Error ? e.message : String(e),
       });
       // Ignorar 404 para permitir limpieza de DB
     }
@@ -75,10 +88,10 @@ export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ name: s
     if (error) throw error;
 
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    const msg = e?.message || "Internal Server Error";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
-    logger.error("DELETE /api/rag/documents/[name] failed", e, {
+    logger.error("DELETE /api/rag/documents/[name] failed", e as Error, {
       route: "/api/rag/documents/[name]",
       status,
     });

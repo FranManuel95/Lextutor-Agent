@@ -1,11 +1,18 @@
 // src/utils/openai.ts (SERVER-ONLY)
 import "server-only";
 import OpenAI from "openai";
+import type { Annotation } from "openai/resources/beta/threads/messages";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
+
+export interface ExamQuestion {
+  id: number | string;
+  text: string;
+  topic?: string;
+}
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 const ASSISTANT_ID = env.OPENAI_ASSISTANT_ID!;
-const VECTOR_STORE_ID = env.OPENAI_VECTOR_STORE_ID!;
 
 // COPIADO EXACTAMENTE de gemini.ts - Shared Elite Agent Prompt Logic
 export function constructEliteSystemPrompt(params: {
@@ -166,9 +173,10 @@ export async function generateResponseWithContext(
     `PREGUNTA DEL ALUMNO: ${message}`,
   ].join("\n");
 
-  console.log(`\n🤖 [OpenAI] Generando respuesta...`);
-  console.log(`   📝 Modelo: ${process.env.OPENAI_MODEL || "gpt-4o-mini"}`);
-  console.log(`   👤 Usuario: ${userName || "Anónimo"}`);
+  logger.info("[OpenAI] Generando respuesta...", {
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    user: userName || "Anónimo",
+  });
 
   // Usar Assistants API con File Search
   const thread = await client.beta.threads.create();
@@ -196,15 +204,12 @@ export async function generateResponseWithContext(
     const outputCost = (completion_tokens / 1_000_000) * OUTPUT_COST_PER_1M * USD_TO_EUR;
     const totalCost = inputCost + outputCost;
 
-    console.log(`\n💰 [OpenAI] Token Usage:`);
-    console.log(
-      `   📥 Input:  ${prompt_tokens.toLocaleString()} tokens (€${inputCost.toFixed(6)})`
-    );
-    console.log(
-      `   📤 Output: ${completion_tokens.toLocaleString()} tokens (€${outputCost.toFixed(6)})`
-    );
-    console.log(`   📊 Total:  ${total_tokens.toLocaleString()} tokens (€${totalCost.toFixed(6)})`);
-    console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+    logger.info("[OpenAI] Token Usage", {
+      inputTokens: prompt_tokens,
+      outputTokens: completion_tokens,
+      totalTokens: total_tokens,
+      costEur: totalCost.toFixed(6),
+    });
   }
 
   const messages = await client.beta.threads.messages.list(thread.id);
@@ -228,12 +233,12 @@ export async function generateResponseWithContext(
   return text;
 }
 
-export function formatCitationsFromAnnotations(annotations: any[]): string | null {
+export function formatCitationsFromAnnotations(annotations: Annotation[]): string | null {
   if (!annotations || annotations.length === 0) return null;
 
   const uniqueSources = new Set<string>();
 
-  annotations.forEach((ann: any) => {
+  annotations.forEach((ann) => {
     if (ann.type === "file_citation") {
       const fileId = ann.file_citation.file_id;
       uniqueSources.add(`Documento ${fileId.slice(-8)}`);
@@ -271,10 +276,11 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
     
     Responde ÚNICAMENTE con el JSON válido.`;
 
-  console.log(`\n🤖 [OpenAI - Quiz] Generando test...`);
-  console.log(`   📝 Área: ${area.toUpperCase()}`);
-  console.log(`   🎯 Dificultad: ${difficulty}`);
-  console.log(`   📋 Preguntas: ${count}`);
+  logger.info("[OpenAI - Quiz] Generando test...", {
+    area: area.toUpperCase(),
+    difficulty,
+    count,
+  });
 
   // Create Thread
   const thread = await client.beta.threads.create();
@@ -303,15 +309,12 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
     const outputCost = (completion_tokens / 1_000_000) * OUTPUT_COST_PER_1M * USD_TO_EUR;
     const totalCost = inputCost + outputCost;
 
-    console.log(`\n💰 [OpenAI - Quiz] Token Usage:`);
-    console.log(
-      `   📥 Input:  ${prompt_tokens.toLocaleString()} tokens (€${inputCost.toFixed(6)})`
-    );
-    console.log(
-      `   📤 Output: ${completion_tokens.toLocaleString()} tokens (€${outputCost.toFixed(6)})`
-    );
-    console.log(`   📊 Total:  ${total_tokens.toLocaleString()} tokens (€${totalCost.toFixed(6)})`);
-    console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+    logger.info("[OpenAI - Quiz] Token Usage", {
+      inputTokens: prompt_tokens,
+      outputTokens: completion_tokens,
+      totalTokens: total_tokens,
+      costEur: totalCost.toFixed(6),
+    });
   }
 
   const messages = await client.beta.threads.messages.list(thread.id);
@@ -340,12 +343,12 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
 
     // Optional: Log citations if curious
     if (annotations?.length > 0) {
-      console.log(`   🔍 Quiz RAG refs: ${annotations.length}`);
+      logger.info("[OpenAI - Quiz] RAG refs", { count: annotations.length });
     }
 
     return generated;
   } catch (e) {
-    console.error("OpenAI Quiz Parse Error:", text);
+    logger.error("OpenAI Quiz Parse Error", e, { rawText: text });
     throw new Error("Failed to parse OpenAI Quiz response");
   }
 }
@@ -370,8 +373,7 @@ export async function generateExam(params: { area: string; difficulty: string; c
     Legislación española vigente.
     Responde ÚNICAMENTE con el JSON válido.`;
 
-  console.log(`\n🤖 [OpenAI - Exam Generate] Generando examen...`);
-  console.log(`   📝 Área: ${area.toUpperCase()}`);
+  logger.info("[OpenAI - Exam Generate] Generando examen...", { area: area.toUpperCase() });
 
   const thread = await client.beta.threads.create();
 
@@ -380,7 +382,7 @@ export async function generateExam(params: { area: string; difficulty: string; c
     content: prompt,
   });
 
-  const run = await client.beta.threads.runs.createAndPoll(thread.id, {
+  await client.beta.threads.runs.createAndPoll(thread.id, {
     assistant_id: ASSISTANT_ID,
     model: process.env.OPENAI_MODEL || "gpt-4o-mini",
   });
@@ -414,22 +416,22 @@ export async function generateExam(params: { area: string; difficulty: string; c
       ragUsed: annotations.length > 0,
     };
   } catch (e) {
-    console.error("OpenAI Exam Parse Error:", text);
+    logger.error("OpenAI Exam Parse Error", e, { rawText: text });
     throw new Error("Failed to parse OpenAI Exam response");
   }
 }
 
 export async function gradeExam(params: {
-  questions: any[];
+  questions: ExamQuestion[];
   answers: Record<string, string>;
-  rubric: any;
+  rubric: Record<string, string>;
 }) {
   const { questions, answers, rubric } = params;
 
-  const inputList = questions.map((q: any) => ({
+  const inputList = questions.map((q) => ({
     id: q.id,
     question: q.text,
-    rubric: (rubric as any)[String(q.id)],
+    rubric: rubric[String(q.id)],
     student_answer: answers[String(q.id)] || "(NO CONTESTÓ)",
   }));
 
@@ -467,8 +469,7 @@ Te daré una lista de preguntas y respuestas del alumno. Devuelve:
           "attempt": { ... }
         }`;
 
-  console.log(`\n🤖[OpenAI - Exam Grade] Evaluando examen...`);
-  console.log(`   📝 Preguntas: ${questions.length} `);
+  logger.info("[OpenAI - Exam Grade] Evaluando examen...", { questionCount: questions.length });
 
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_MODEL || "gpt-4o-mini",
@@ -490,13 +491,12 @@ Te daré una lista de preguntas y respuestas del alumno. Devuelve:
     const outputCost = (completion_tokens / 1_000_000) * OUTPUT_COST_PER_1M * USD_TO_EUR;
     const totalCost = inputCost + outputCost;
 
-    console.log(`\n💰[OpenAI - Exam Grade] Token Usage: `);
-    console.log(`   📥 Input:  ${prompt_tokens.toLocaleString()} tokens(€${inputCost.toFixed(6)})`);
-    console.log(
-      `   📤 Output: ${completion_tokens.toLocaleString()} tokens(€${outputCost.toFixed(6)})`
-    );
-    console.log(`   📊 Total:  ${total_tokens.toLocaleString()} tokens(€${totalCost.toFixed(6)})`);
-    console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+    logger.info("[OpenAI - Exam Grade] Token Usage", {
+      inputTokens: prompt_tokens,
+      outputTokens: completion_tokens,
+      totalTokens: total_tokens,
+      costEur: totalCost.toFixed(6),
+    });
   }
 
   const content = completion.choices[0].message.content || "{}";
@@ -504,7 +504,7 @@ Te daré una lista de preguntas y respuestas del alumno. Devuelve:
   try {
     return JSON.parse(content);
   } catch (e) {
-    console.error("OpenAI Grading Parse Error:", content);
+    logger.error("OpenAI Grading Parse Error", e, { rawContent: content });
     throw new Error("Failed to parse OpenAI grading response");
   }
 }

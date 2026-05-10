@@ -1,9 +1,19 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { type SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { generateResponseStream } from "@/lib/ai-service-stream";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
+import { type Database } from "@/types/database.types";
+import { GenerateContentResponse } from "@google/genai";
+
+type ChatSettings = {
+  area?: string;
+  modes?: string[];
+  detailLevel?: string;
+  summary?: string;
+};
 
 type ChatOwnership = { user_id: string; title: string | null };
 type ProfileName = { full_name: string | null };
@@ -50,7 +60,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Validate body
-  let chatId: string, message: string, settings: any;
+  let chatId: string, message: string, settings: ChatSettings | undefined;
   try {
     const parsed = streamSchema.parse(await request.json());
     chatId = parsed.chatId;
@@ -84,7 +94,7 @@ export async function POST(request: NextRequest) {
     user_id: user.id,
     role: "user",
     content: message,
-  } as any);
+  });
 
   // 3. Load conversation history
   const { data: recentMessages } = await supabase
@@ -133,18 +143,19 @@ export async function POST(request: NextRequest) {
         });
 
         // Stream chunks to client
-        let lastResponse: any = null;
+        // lastResponse is GenerateContentResponse | null — only set when Gemini provider yields
+        let lastResponse: GenerateContentResponse | null = null;
         for await (const chunk of geminiStream) {
-          const text = chunk.text || "";
+          const text = chunk.text ?? "";
           fullResponse += text;
-          lastResponse = chunk;
+          if (chunk instanceof GenerateContentResponse) lastResponse = chunk;
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "chunk", text })}\n\n`)
           );
         }
 
-        // Add citations if available
+        // Add citations if available (Gemini grounding only)
         const lastChunk = lastResponse?.candidates?.[0];
         const grounding = lastChunk?.groundingMetadata;
 
@@ -177,10 +188,10 @@ export async function POST(request: NextRequest) {
           message,
           settings
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error("chat/stream failed", error, { chatId, userId: user.id });
         if (!streamSucceeded) {
-          const errorMessage = error?.message || "Unknown streaming error";
+          const errorMessage = error instanceof Error ? error.message : "Unknown streaming error";
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "error", message: errorMessage })}\n\n`)
           );
@@ -202,13 +213,13 @@ export async function POST(request: NextRequest) {
 
 // Background task to save assistant message
 async function saveAssistantMessage(
-  supabase: any,
+  supabase: SupabaseClient<Database>,
   chatId: string,
   userId: string,
   content: string,
   currentTitle: string | null,
   userMessage: string,
-  settings: any
+  settings: ChatSettings | undefined
 ) {
   try {
     // Save assistant message
@@ -217,9 +228,9 @@ async function saveAssistantMessage(
       .insert({
         chat_id: chatId,
         user_id: userId,
-        role: "assistant",
+        role: "assistant" as const,
         content: content,
-      } as any)
+      })
       .select()
       .single();
 
@@ -228,10 +239,7 @@ async function saveAssistantMessage(
       const firstSentence = userMessage.split(/[.\n?!]/)[0];
       const newTitle = firstSentence.trim().substring(0, 40);
       if (newTitle && newTitle.length > 2) {
-        await supabase
-          .from("chats")
-          .update({ title: newTitle } as any)
-          .eq("id", chatId);
+        await supabase.from("chats").update({ title: newTitle }).eq("id", chatId);
       }
     }
 
@@ -242,14 +250,11 @@ async function saveAssistantMessage(
       message_id: assistantMsg?.id,
       area: settings?.area || "general",
       kind: "answer_submitted",
-      payload: { settings },
-    } as any);
+      payload: { settings } as Database["public"]["Tables"]["student_events"]["Insert"]["payload"],
+    });
 
     // Update chat timestamp
-    await supabase
-      .from("chats")
-      .update({ updated_at: new Date().toISOString() } as any)
-      .eq("id", chatId);
+    await supabase.from("chats").update({ updated_at: new Date().toISOString() }).eq("id", chatId);
   } catch (error) {
     logger.error("Failed to save assistant message", error, { chatId, userId });
   }

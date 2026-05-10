@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await requireAdmin();
-  } catch (e: any) {
-    const msg = e?.message ?? "Forbidden";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Forbidden";
     const status = msg === "Unauthorized" ? 401 : 403;
     return NextResponse.json({ error: msg }, { status });
   }

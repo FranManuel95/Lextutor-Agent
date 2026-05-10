@@ -3,6 +3,24 @@ import { chatSchema } from "@/lib/server-utils";
 import { createApiHandler } from "@/lib/api-handler";
 import { RATE_LIMITS } from "@/lib/rateLimit";
 import { generateResponse } from "@/lib/ai-service";
+import { logger } from "@/lib/logger";
+import type { Json } from "@/types/database.types";
+
+type Profile = {
+  tutor_prefs?: Json | null;
+  full_name?: string | null;
+};
+
+type TutorPrefs = {
+  area?: string;
+  modes?: string[];
+  detailLevel?: string;
+  preset?: string;
+};
+
+type HistoryRow = { role: string; content: string };
+
+type ChatSummaryRow = { summary_text: string } | null;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,9 +36,11 @@ export const POST = createApiHandler(
       .eq("id", user.id)
       .single();
 
-    let effectiveSettings = settings;
+    const typedProfile = profile as Profile | null;
+
+    let effectiveSettings: TutorPrefs | undefined = settings;
     if (!effectiveSettings) {
-      effectiveSettings = (profile as any)?.tutor_prefs || {
+      effectiveSettings = (typedProfile?.tutor_prefs as TutorPrefs | null | undefined) ?? {
         area: "general",
         modes: [],
         detailLevel: "normal",
@@ -28,7 +48,7 @@ export const POST = createApiHandler(
     }
 
     const area = effectiveSettings?.area || "general";
-    const userName = (profile as any)?.full_name?.split(" ")[0] || "Estudiante";
+    const userName = typedProfile?.full_name?.split(" ")[0] || "Estudiante";
 
     // 2. Verify Chat Ownership and Get Title
     const { data: chat } = await supabase
@@ -47,7 +67,7 @@ export const POST = createApiHandler(
       user_id: user.id,
       role: "user",
       content: message,
-    } as any);
+    });
 
     // 4. Auto-title (Deterministically)
     if ((!chat.title || chat.title === "Nuevo Chat") && message.trim().length > 3) {
@@ -56,9 +76,9 @@ export const POST = createApiHandler(
       if (newTitle) {
         const { error: titleError } = await supabase
           .from("chats")
-          .update({ title: newTitle } as any)
+          .update({ title: newTitle })
           .eq("id", chatId);
-        if (titleError) console.error("Title update failed:", titleError.message);
+        if (titleError) logger.warn("chat: title update failed", { message: titleError.message });
       }
     }
 
@@ -73,8 +93,8 @@ export const POST = createApiHandler(
       supabase.from("chat_summaries").select("summary_text").eq("chat_id", chatId).single(),
     ]);
 
-    const history = ((historyRes.data as any[]) || []).reverse();
-    const summary = (summaryRes.data as any)?.summary_text || "";
+    const history = ((historyRes.data as HistoryRow[] | null) ?? []).reverse();
+    const summary = (summaryRes.data as ChatSummaryRow)?.summary_text ?? "";
 
     // 6. Generate AI Response
     const assistantResponse = await generateResponse({
@@ -100,7 +120,7 @@ export const POST = createApiHandler(
         user_id: user.id,
         role: "assistant",
         content: assistantResponse,
-      } as any);
+      });
 
       // Log Student Event
       await supabase.from("student_events").insert({
@@ -109,7 +129,7 @@ export const POST = createApiHandler(
         area,
         kind: "answer_submitted",
         payload: { settings: effectiveSettings },
-      } as any);
+      });
 
       // Ensure summary placeholder exists
       if (!summaryRes.data) {
@@ -117,7 +137,7 @@ export const POST = createApiHandler(
           chat_id: chatId,
           user_id: user.id,
           summary_text: "",
-        } as any);
+        });
       }
     })();
 
