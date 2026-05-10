@@ -75,8 +75,8 @@ vi.mock("fs/promises", async (importOriginal) => {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** PDF bytes (magic bytes %PDF) */
-function pdfBytes(): Uint8Array {
-  return new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
+function pdfBytes(): ArrayBuffer {
+  return new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]).buffer as ArrayBuffer;
 }
 
 /**

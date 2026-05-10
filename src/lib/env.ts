@@ -14,6 +14,7 @@ const envSchema = z.object({
   OPENAI_MODEL: z.string().optional(),
   AI_PROVIDER: z.enum(["gemini", "openai"]).default("gemini"),
   CRON_SECRET: z.string().min(16).optional(),
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 type Env = z.infer<typeof envSchema>;

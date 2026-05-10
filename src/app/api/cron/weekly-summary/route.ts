@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const { data: users, error } = await supabase
       .from("profiles")
       .select("id, email")
-      .eq("role", "student");
+      .eq("role", "student" as "user" | "admin");
 
     if (error) {
       throw error;
