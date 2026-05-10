@@ -16,7 +16,7 @@ export interface InfographicResult {
   error?: string;
 }
 
-const IMAGE_MODEL = "gemini-2.0-flash-preview-image-generation";
+const IMAGE_MODEL = "gemini-2.5-flash-image-preview";
 
 export async function generateLegalInfographic(
   content: InfographicContent
