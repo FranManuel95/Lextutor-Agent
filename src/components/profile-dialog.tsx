@@ -84,7 +84,11 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
 
       setForm((prev) => ({ ...prev, avatar_url: publicUrl }));
     } catch (error: unknown) {
-      toast({ title: "Error subiendo imagen", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+      toast({
+        title: "Error subiendo imagen",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -105,7 +109,11 @@ export function ProfileDialog({ children }: { children?: React.ReactNode }) {
       setOpen(false);
       router.refresh();
     } catch (error: unknown) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }

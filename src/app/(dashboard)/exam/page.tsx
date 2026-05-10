@@ -19,6 +19,7 @@ import { Loader2, ArrowLeft, CheckCircle2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Copyright } from "@/components/copyright";
+import { FlagQuestionButton } from "@/components/flag-question-button";
 
 const VALID_AREAS = ["laboral", "civil", "mercantil", "procesal", "otro"];
 const VALID_DIFFICULTIES = ["easy", "medium", "hard"];
@@ -78,7 +79,11 @@ export default function ExamPage() {
 
       setStep("taking");
     } catch (error: unknown) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -102,7 +107,11 @@ export default function ExamPage() {
       setGrading(data);
       setStep("results");
     } catch (error: unknown) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Error desconocido", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Error desconocido",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -237,6 +246,14 @@ export default function ExamPage() {
                     placeholder="Escribe tu respuesta aquí..."
                     className="min-h-[150px] resize-y border-white/10 bg-gem-onyx/50 text-white"
                   />
+                  <div className="mt-2 flex justify-end">
+                    <FlagQuestionButton
+                      questionId={String(q.id)}
+                      questionText={q.text}
+                      area={config.area}
+                      sessionId={sessionId ?? undefined}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -329,6 +346,14 @@ export default function ExamPage() {
                           </ul>
                         </div>
                       )}
+                      <div className="flex justify-end border-t border-white/5 pt-2">
+                        <FlagQuestionButton
+                          questionId={String(question.id)}
+                          questionText={question.text}
+                          area={config.area}
+                          sessionId={sessionId ?? undefined}
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 );

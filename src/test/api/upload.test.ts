@@ -39,7 +39,7 @@ vi.mock("@google/genai", () => {
       documents: { list: mockDocumentsList },
     };
     operations = { get: mockOperationsGet };
-    constructor(_opts: unknown) {}
+    constructor(_: unknown) {}
   }
   return { GoogleGenAI };
 });

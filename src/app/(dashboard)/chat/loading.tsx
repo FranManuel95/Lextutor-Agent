@@ -23,10 +23,7 @@ export default function Loading() {
         {/* Messages */}
         <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className={`flex gap-3 ${i % 2 === 0 ? "flex-row-reverse" : ""}`}
-            >
+            <div key={i} className={`flex gap-3 ${i % 2 === 0 ? "flex-row-reverse" : ""}`}>
               <Skeleton className="h-8 w-8 shrink-0 rounded-full bg-white/10" />
               <div
                 className={`flex max-w-[80%] flex-1 flex-col space-y-2 ${

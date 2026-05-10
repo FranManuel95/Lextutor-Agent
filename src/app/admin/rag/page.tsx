@@ -123,27 +123,30 @@ export default function AdminRagPage() {
     }
   };
 
-  const applyFile = useCallback((f: File) => {
-    const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
-    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-      toast({
-        title: "Formato no soportado",
-        description: `Solo se aceptan: ${ACCEPTED_EXTENSIONS.join(", ")}`,
-        variant: "destructive",
-      });
-      return;
-    }
-    const mb = f.size / (1024 * 1024);
-    if (mb > MAX_MB) {
-      toast({
-        title: "Archivo demasiado grande",
-        description: `El límite es ${MAX_MB} MB. Este archivo pesa ${formatBytes(f.size)}.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    setFile(f);
-  }, [toast]);
+  const applyFile = useCallback(
+    (f: File) => {
+      const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+      if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+        toast({
+          title: "Formato no soportado",
+          description: `Solo se aceptan: ${ACCEPTED_EXTENSIONS.join(", ")}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      const mb = f.size / (1024 * 1024);
+      if (mb > MAX_MB) {
+        toast({
+          title: "Archivo demasiado grande",
+          description: `El límite es ${MAX_MB} MB. Este archivo pesa ${formatBytes(f.size)}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      setFile(f);
+    },
+    [toast]
+  );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) applyFile(e.target.files[0]);
@@ -193,7 +196,8 @@ export default function AdminRagPage() {
     } catch (error: unknown) {
       toast({
         title: "Error al subir",
-        description: error instanceof Error ? error.message : "Error desconocido al procesar el archivo.",
+        description:
+          error instanceof Error ? error.message : "Error desconocido al procesar el archivo.",
         variant: "destructive",
       });
     } finally {
@@ -204,13 +208,19 @@ export default function AdminRagPage() {
   const confirmDelete = async () => {
     if (!docToDelete) return;
     try {
-      const res = await fetch(`/api/rag/documents/${encodeURIComponent(docToDelete.document_name)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/rag/documents/${encodeURIComponent(docToDelete.document_name)}`,
+        {
+          method: "DELETE",
+        }
+      );
       const errData = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(errData.error ?? "Delete failed");
 
-      toast({ title: "Documento eliminado", description: "Borrado del vector store y base de datos." });
+      toast({
+        title: "Documento eliminado",
+        description: "Borrado del vector store y base de datos.",
+      });
       setDocToDelete(null);
       fetchDocuments();
     } catch (error: unknown) {
@@ -236,7 +246,10 @@ export default function AdminRagPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/chat">
-              <Button variant="ghost" className="gap-2 text-gray-400 hover:bg-white/5 hover:text-white">
+              <Button
+                variant="ghost"
+                className="gap-2 text-gray-400 hover:bg-white/5 hover:text-white"
+              >
                 <MessageSquare size={16} /> Ir a Chat
               </Button>
             </Link>
@@ -302,9 +315,18 @@ export default function AdminRagPage() {
                     <Info size={12} /> Especificaciones
                   </div>
                   <ul className="space-y-0.5">
-                    <li>Formatos: <span className="text-gem-offwhite/80">PDF, DOCX, DOC, TXT</span></li>
-                    <li>Tamaño máximo: <span className="text-gem-offwhite/80">500 MB</span></li>
-                    <li>Tiempo estimado: <span className="text-gem-offwhite/80">&lt;5 MB → 30 s · &gt;50 MB → 2–4 min</span></li>
+                    <li>
+                      Formatos: <span className="text-gem-offwhite/80">PDF, DOCX, DOC, TXT</span>
+                    </li>
+                    <li>
+                      Tamaño máximo: <span className="text-gem-offwhite/80">500 MB</span>
+                    </li>
+                    <li>
+                      Tiempo estimado:{" "}
+                      <span className="text-gem-offwhite/80">
+                        &lt;5 MB → 30 s · &gt;50 MB → 2–4 min
+                      </span>
+                    </li>
                     <li>⚠ No cierres el navegador mientras se procesa.</li>
                   </ul>
                 </div>
@@ -314,7 +336,9 @@ export default function AdminRagPage() {
                   <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                     <div>
-                      <span className="font-semibold">Archivo grande ({formatBytes(file.size)})</span>
+                      <span className="font-semibold">
+                        Archivo grande ({formatBytes(file.size)})
+                      </span>
                       <p className="mt-0.5 text-xs text-amber-300/80">
                         El procesamiento tardará ~{estimatedTime(file)}. No cierres el navegador.
                       </p>
@@ -327,7 +351,9 @@ export default function AdminRagPage() {
                     <div className="flex items-start gap-2">
                       <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                       <div>
-                        <span className="font-semibold">Archivo muy grande ({formatBytes(file.size)})</span>
+                        <span className="font-semibold">
+                          Archivo muy grande ({formatBytes(file.size)})
+                        </span>
                         <p className="mt-0.5 text-xs text-red-300/80">
                           Tiempo estimado: {estimatedTime(file)}. Existe riesgo de timeout si el
                           servidor tarda más de 2 minutos. Considera dividir el documento en partes
@@ -361,7 +387,11 @@ export default function AdminRagPage() {
                     </SelectTrigger>
                     <SelectContent className="border-white/10 bg-gem-slate">
                       {AREAS.map((a) => (
-                        <SelectItem key={a.value} value={a.value} className="text-gem-offwhite focus:bg-white/10">
+                        <SelectItem
+                          key={a.value}
+                          value={a.value}
+                          className="text-gem-offwhite focus:bg-white/10"
+                        >
                           {a.label}
                         </SelectItem>
                       ))}
@@ -413,7 +443,9 @@ export default function AdminRagPage() {
                 ) : documents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-800 p-8 text-center">
                     <p className="text-sm text-gray-500">No hay documentos indexados.</p>
-                    <p className="mt-1 text-xs text-gray-600">Sube el primer manual para activar el RAG.</p>
+                    <p className="mt-1 text-xs text-gray-600">
+                      Sube el primer manual para activar el RAG.
+                    </p>
                   </div>
                 ) : (
                   documents.map((doc) => {
@@ -473,8 +505,8 @@ export default function AdminRagPage() {
                 <h2 className="text-lg font-semibold text-white">¿Eliminar documento?</h2>
                 <p className="text-sm text-gem-offwhite/60">
                   Esta acción no se puede deshacer. Se eliminará permanentemente{" "}
-                  <span className="font-bold text-white">{docToDelete.display_name}</span> del índice
-                  RAG y de la base de datos.
+                  <span className="font-bold text-white">{docToDelete.display_name}</span> del
+                  índice RAG y de la base de datos.
                 </p>
               </div>
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
@@ -485,7 +517,10 @@ export default function AdminRagPage() {
                 >
                   Cancelar
                 </Button>
-                <Button onClick={confirmDelete} className="bg-red-900 text-red-100 hover:bg-red-800">
+                <Button
+                  onClick={confirmDelete}
+                  className="bg-red-900 text-red-100 hover:bg-red-800"
+                >
                   Eliminar
                 </Button>
               </div>
