@@ -12,6 +12,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { FileText, Loader2, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
 import { generateInfographicAction } from "@/app/(dashboard)/chat/actions/generate-infographic";
+import { type InfographicContent } from "@/lib/imagen-service";
 import dynamic from "next/dynamic";
 
 const InfographicModal = dynamic(
@@ -27,7 +28,9 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
   const { toast } = useToast();
   const [status, setStatus] = React.useState<"idle" | "generating" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
-  const [data, setData] = React.useState<{ url: string; topic: string } | null>(null);
+  const [data, setData] = React.useState<{ content: InfographicContent; topic: string } | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isErrorOpen, setIsErrorOpen] = React.useState(false);
 
@@ -38,18 +41,18 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
     setErrorMsg(null);
     toast({
       title: "Generando Resumen Visual...",
-      description: "Analizando conversación y diseñando infografía...",
+      description: "Analizando conversación y estructurando contenido...",
     });
 
     try {
       const res = await generateInfographicAction(chatId);
 
-      if (res.success && res.imageUrl && res.topic) {
-        setData({ url: res.imageUrl, topic: res.topic });
+      if (res.success && res.content && res.topic) {
+        setData({ content: res.content, topic: res.topic });
         setStatus("done");
         toast({
-          title: "¡Infografía lista!",
-          description: "Tu resumen visual está listo para descargar.",
+          title: "¡Resumen listo!",
+          description: "Tu resumen visual está listo para consultar.",
         });
       } else {
         const msg = res.error ?? "No se pudo generar el resumen visual.";
@@ -73,8 +76,8 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
       <InfographicModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        imageUrl={data?.url || null}
-        topic={data?.topic || "Resumen"}
+        content={data?.content ?? null}
+        topic={data?.topic ?? "Resumen"}
       />
 
       {/* Error detail dialog */}
@@ -83,7 +86,7 @@ export function ReportTrigger({ chatId }: ReportTriggerProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-400">
               <AlertTriangle className="h-4 w-4" />
-              No se pudo generar la infografía
+              No se pudo generar el resumen
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-1">
