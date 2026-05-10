@@ -1,6 +1,6 @@
 "use server";
 
-import { generateLegalInfographic } from "@/lib/imagen-service";
+import { InfographicContent } from "@/lib/imagen-service";
 import { createClient } from "@/utils/supabase/server";
 import { GoogleGenAI } from "@google/genai";
 import { env } from "@/lib/env";
@@ -10,7 +10,7 @@ const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 export async function generateInfographicAction(
   chatId: string
-): Promise<{ success: boolean; imageUrl?: string; topic?: string; error?: string }> {
+): Promise<{ success: boolean; content?: InfographicContent; topic?: string; error?: string }> {
   if (!chatId) {
     return { success: false, error: "Chat ID is required" };
   }
@@ -23,19 +23,18 @@ export async function generateInfographicAction(
       .select("content, role")
       .eq("chat_id", chatId)
       .order("created_at", { ascending: false })
-      .limit(30); // Expanded context window (30 messages)
+      .limit(30);
 
     if (!messages || messages.length === 0) {
-      return { success: false, error: "No messages found to summarize." };
+      return { success: false, error: "No hay mensajes suficientes para generar un resumen." };
     }
 
-    // Reverse to chronological order for the AI analysis
     const recentHistory = [...messages]
       .reverse()
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
 
-    // 2. Extract Visual Brief using Gemini (Text Model)
+    // 2. Extract structured content via Gemini text model
     logger.info(
       "[generate-infographic] Analizando historial para extraer Visual Brief estructurado..."
     );
@@ -71,7 +70,7 @@ export async function generateInfographicAction(
       contents: [{ role: "user", parts: [{ text: briefPrompt }] }],
     });
 
-    let contentData = {
+    let contentData: InfographicContent = {
       topic: "Conceptos Jurídicos",
       sections: [{ title: "Resumen", content: "Resumen de la sesión de estudio." }],
       footer_context: "LexTutor AI",
@@ -101,23 +100,9 @@ export async function generateInfographicAction(
       topic: contentData.topic,
     });
 
-    // 3. Generate Infographic
-    const result = await generateLegalInfographic(contentData);
-
-    if (result.data) {
-      logger.info("[generate-infographic] Imagen generada correctamente.");
-      return { success: true, imageUrl: result.data, topic: contentData.topic };
-    } else {
-      logger.error("[generate-infographic] La generación de imagen falló.", undefined, {
-        reason: result.error,
-      });
-      return {
-        success: false,
-        error: result.error ?? "No se pudo generar la infografía.",
-      };
-    }
+    return { success: true, content: contentData, topic: contentData.topic };
   } catch (error) {
     logger.error("Error in generateInfographicAction", error);
-    return { success: false, error: "Internal server error" };
+    return { success: false, error: "Error interno al generar el resumen." };
   }
 }

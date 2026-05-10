@@ -1,153 +1,178 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { X, Download, FileText } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { SimpleErrorBoundary } from '@/components/ui/simple-error-boundary';
-
-// Imports removed as part of migration to jsPDF
-// Imports removed as part of migration to jsPDF
+import React from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X, Download, Loader2 } from "lucide-react";
+import { type InfographicContent } from "@/lib/imagen-service";
 
 interface InfographicModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    imageUrl: string | null;
-    topic: string;
+  isOpen: boolean;
+  onClose: () => void;
+  content: InfographicContent | null;
+  topic: string;
 }
 
-export function InfographicModal({ isOpen, onClose, imageUrl, topic }: InfographicModalProps) {
-    const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+export function InfographicModal({ isOpen, onClose, content, topic }: InfographicModalProps) {
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const cardRef = React.useRef<HTMLDivElement>(null);
 
-    React.useEffect(() => {
-        if (!imageUrl) return;
+  const handleDownloadPDF = async () => {
+    if (!content) return;
+    setIsDownloading(true);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { InfographicPDF } = await import("./InfographicPDF");
+      const blob = await pdf(<InfographicPDF content={content} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Resumen_${topic.replace(/\s+/g, "_")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error generando PDF:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
-        // Convert Base64 to Blob URL for better performance/memory
-        fetch(imageUrl)
-            .then(res => res.blob())
-            .then(blob => {
-                const url = URL.createObjectURL(blob);
-                setBlobUrl(url);
-            })
-            .catch(err => console.error("Error creating blob:", err));
+  if (!content) return null;
 
-        return () => {
-            if (blobUrl) URL.revokeObjectURL(blobUrl);
-        };
-    }, [imageUrl]);
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-white/10 bg-gem-onyx p-0 shadow-2xl">
+        {/* Toolbar */}
+        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+          <p className="font-serif text-sm italic text-law-gold/80">Resumen Visual</p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="gap-1.5 bg-law-gold text-gem-onyx hover:bg-law-gold/80"
+            >
+              {isDownloading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden md:inline">
+                {isDownloading ? "Generando..." : "Descargar PDF"}
+              </span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 rounded-full text-gray-400 hover:bg-white/10 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-    const [isGeneratingPDF, setIsGeneratingPDF] = React.useState(false);
-
-    const handleDownloadPDF = async () => {
-        if (!blobUrl) return;
-        setIsGeneratingPDF(true);
-        try {
-            // Get image dimensions first
-            const img = new Image();
-            img.src = blobUrl;
-            await new Promise((resolve) => { img.onload = resolve; });
-
-            // Import jsPDF dynamically
-            const jsPDF = (await import('jspdf')).default;
-
-            // Create PDF with exact image dimensions
-            const pdf = new jsPDF({
-                orientation: img.width > img.height ? 'l' : 'p',
-                unit: 'px',
-                format: [img.width, img.height + 40] // Add 40px for footer
-            });
-
-            pdf.addImage(blobUrl, 'PNG', 0, 0, img.width, img.height);
-
-            // Add footer
-            pdf.setFontSize(Math.max(10, img.width / 50)); // Scale font relative to width
-            pdf.setTextColor(100);
-            pdf.text(
-                `Generado por LexTutor AI - ${new Date().toLocaleDateString()}`,
-                img.width / 2,
-                img.height + 25,
-                { align: 'center' }
-            );
-
-            pdf.save(`Resumen_${topic.replace(/\s+/g, '_')}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            alert('Error al generar PDF. Por favor intenta descargar la imagen.');
-        } finally {
-            setIsGeneratingPDF(false);
-        }
-    };
-
-    if (!imageUrl) return null;
-
-    return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-[90vw] h-[90vh] bg-slate-900/40 backdrop-blur-md border border-slate-700/50 p-0 overflow-hidden flex flex-col shadow-2xl">
-                <div className="sr-only">
-                    <h2 id="dialog-title">Vista previa de Infografía</h2>
-                    <p id="dialog-desc">Muestra la infografía generada para descargar.</p>
+        {/* Infographic Card */}
+        <div className="custom-scrollbar flex-1 overflow-y-auto p-6">
+          <div
+            ref={cardRef}
+            className="mx-auto max-w-sm overflow-hidden rounded-lg shadow-2xl"
+            style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+          >
+            {/* Kraft paper background */}
+            <div
+              className="min-h-full"
+              style={{
+                background: "linear-gradient(145deg, #f5e6c8 0%, #ede0c4 40%, #e8d5b0 100%)",
+                borderTop: "4px solid #8B6914",
+              }}
+            >
+              {/* Header tag */}
+              <div className="px-5 pt-5">
+                <div className="inline-block rounded-sm bg-amber-900/15 px-2 py-0.5">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-widest text-amber-900"
+                    style={{ fontFamily: "monospace" }}
+                  >
+                    LexTutor Agent
+                  </span>
                 </div>
-                {/* Header Actions */}
-                <div className="absolute top-4 right-4 z-50 flex gap-2">
+              </div>
 
-                    {/* Descargar Imagen Directa */}
-                    {blobUrl && (
-                        <Button
-                            asChild
-                            size="sm"
-                            className="bg-emerald-600 text-white hover:bg-emerald-700 font-bold shadow-lg gap-2"
-                        >
-                            <a href={blobUrl} download={`Infografia_${topic.replace(/\s+/g, '_')}.png`}>
-                                <div className="w-4 h-4 bg-current mask-image" />
-                                <Download className="w-4 h-4" />
-                                <span className="hidden md:inline">Descargar Imagen</span>
-                            </a>
-                        </Button>
-                    )}
+              {/* Main title — sticker style */}
+              <div className="px-5 pb-4 pt-2">
+                <div
+                  className="rounded-md border-2 border-dashed border-amber-800/40 bg-amber-100/70 px-4 py-3 shadow-sm"
+                  style={{ transform: "rotate(-0.5deg)" }}
+                >
+                  <h1
+                    className="text-center text-xl font-bold uppercase leading-tight tracking-wide text-amber-950"
+                    style={{ fontFamily: "Georgia, serif", textShadow: "1px 1px 0 #c8a96e40" }}
+                  >
+                    {content.topic}
+                  </h1>
+                </div>
+              </div>
 
-                    {/* Descargar PDF (jsPDF) */}
-                    <Button
-                        size="sm"
-                        onClick={handleDownloadPDF}
-                        disabled={!blobUrl || isGeneratingPDF}
-                        className="bg-law-gold text-slate-900 hover:bg-law-gold/80 font-bold shadow-lg gap-2"
+              {/* Tape divider */}
+              <div className="flex items-center gap-2 px-5 pb-3">
+                <div className="h-px flex-1 border-t border-dashed border-amber-700/30" />
+                <div className="h-2 w-8 rounded-sm bg-amber-300/60" />
+                <div className="h-px flex-1 border-t border-dashed border-amber-700/30" />
+              </div>
+
+              {/* Sections */}
+              <div className="space-y-3 px-5 pb-4">
+                {content.sections.map((section, i) => (
+                  <div
+                    key={i}
+                    className="rounded-sm border border-amber-800/30 bg-white/60 p-3 shadow-sm"
+                    style={{
+                      transform: `rotate(${i % 2 === 0 ? "0.3deg" : "-0.2deg"})`,
+                      boxShadow: "2px 2px 4px rgba(0,0,0,0.08)",
+                    }}
+                  >
+                    <h2
+                      className="mb-1.5 border-b border-amber-700/20 pb-1 text-[10px] font-bold uppercase tracking-widest text-amber-800"
+                      style={{ fontFamily: "monospace" }}
                     >
-                        <FileText className="w-4 h-4" />
-                        <span className="hidden md:inline">
-                            {isGeneratingPDF ? 'Generando PDF...' : 'Descargar PDF'}
-                        </span>
-                    </Button>
-
-                    <Button
-                        variant="secondary"
-                        size="icon"
-                        onClick={onClose}
-                        className="bg-slate-800/80 hover:bg-slate-700 text-white border border-slate-600 rounded-full"
+                      {section.title}
+                    </h2>
+                    <p
+                      className="text-xs leading-relaxed text-amber-950/90"
+                      style={{ fontFamily: "Georgia, serif" }}
                     >
-                        <X className="w-5 h-5" />
-                    </Button>
-                </div>
+                      {section.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-                {/* Main Content (Image Preview) */}
-                <div className="flex-1 w-full h-full flex items-center justify-center p-4 md:p-8 overflow-hidden relative">
-                    {/* Container constrained by height first to avoid vertical clipping */}
-                    <div className="relative h-full max-h-full w-auto max-w-full aspect-[9/16] bg-white/5 rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex items-center justify-center">
-                        {/* Realistic Mockup Effect */}
-                        <img
-                            src={imageUrl}
-                            alt={`Infografía de ${topic}`}
-                            className="max-w-full max-h-full object-contain shadow-md"
-                        />
-                    </div>
-                </div>
-
-                {/* Footer Brand */}
-                <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none">
-                    <p className="text-white/40 text-xs tracking-widest uppercase font-serif">Estudiante Elite • LexTutor AI</p>
-                </div>
-
-            </DialogContent>
-        </Dialog>
-    );
+              {/* Footer strip */}
+              <div
+                className="mx-5 mb-5 rounded-sm px-3 py-2"
+                style={{
+                  background: "rgba(139, 105, 20, 0.12)",
+                  borderTop: "1px dashed rgba(139, 105, 20, 0.4)",
+                }}
+              >
+                <p
+                  className="text-center text-[10px] italic text-amber-800/80"
+                  style={{ fontFamily: "Georgia, serif" }}
+                >
+                  {content.footer_context}
+                </p>
+                <p
+                  className="mt-1 text-center text-[9px] uppercase tracking-widest text-amber-700/50"
+                  style={{ fontFamily: "monospace" }}
+                >
+                  Estudiante Elite · LexTutor AI
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
