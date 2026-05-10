@@ -34,13 +34,14 @@ export async function GET() {
   const header = ["id", "full_name", "email", "role", "created_at"];
   const rows = [
     header,
-    ...(profilesRes.data ?? []).map((p: any) => [
-      p.id,
-      p.full_name ?? "",
-      emailsById[p.id] ?? "",
-      p.role ?? "",
-      p.created_at ?? "",
-    ]),
+    ...(profilesRes.data ?? []).map(
+      (p: {
+        id: string;
+        full_name: string | null;
+        role: string | null;
+        created_at: string | null;
+      }) => [p.id, p.full_name ?? "", emailsById[p.id] ?? "", p.role ?? "", p.created_at ?? ""]
+    ),
   ];
 
   const filename = `lextutor-users-${format(new Date(), "yyyy-MM-dd")}.csv`;

@@ -181,13 +181,17 @@ export async function POST(request: NextRequest) {
         let pageToken: string | undefined = undefined;
 
         do {
-          const listParams: any = {
+          const listParams: { parent: string; pageSize: number; pageToken?: string } = {
             parent: STORE_ID,
             pageSize: 100,
           };
           if (pageToken) listParams.pageToken = pageToken;
 
-          let docs: any[] = [];
+          interface FileSearchDocument {
+            name?: string;
+            displayName?: string;
+          }
+          let docs: FileSearchDocument[] = [];
           try {
             const response = await ai.fileSearchStores.documents.list(listParams);
 
@@ -211,7 +215,7 @@ export async function POST(request: NextRequest) {
 
           for (const d of docs) {
             if (d?.displayName === displayName) {
-              createdDocName = d.name;
+              createdDocName = d.name ?? null;
               break;
             }
           }

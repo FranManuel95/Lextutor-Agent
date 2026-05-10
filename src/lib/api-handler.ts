@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { RateLimitConfig, checkRateLimit } from "./rateLimit";
 import { verifyOrigin } from "./csrf";
 import { logger } from "./logger";
 
-type ApiHandlerContext<TBody = any> = {
-  user: any;
-  supabase: any;
+type ApiHandlerContext<TBody = unknown> = {
+  user: User;
+  supabase: SupabaseClient;
   body: TBody;
 };
 

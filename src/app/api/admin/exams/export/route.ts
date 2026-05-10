@@ -54,7 +54,10 @@ export async function GET(request: NextRequest) {
       ? await admin.from("profiles").select("id, full_name").in("id", userIds)
       : { data: [] as any[] };
   const namesById = Object.fromEntries(
-    (profilesRes.data ?? []).map((p: any) => [p.id, p.full_name ?? ""])
+    (profilesRes.data ?? []).map((p: { id: string; full_name: string | null }) => [
+      p.id,
+      p.full_name ?? "",
+    ])
   );
 
   const header = [
