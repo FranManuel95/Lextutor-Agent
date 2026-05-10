@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { getExamLevel, getLevelColor } from "@/lib/exams/level";
 import { Copyright } from "@/components/copyright";
-import { FlagQuestionButton } from "./FlagQuestionButton";
+import { FlagQuestionButton } from "@/components/flag-question-button";
 
 interface QuizQuestion {
   id?: string | number;
