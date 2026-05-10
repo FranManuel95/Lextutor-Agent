@@ -16,7 +16,7 @@ export interface InfographicResult {
   error?: string;
 }
 
-const IMAGE_MODEL = "gemini-2.5-flash-image-preview";
+const IMAGE_MODEL = "imagen-4.0-generate-001";
 
 export async function generateLegalInfographic(
   content: InfographicContent
@@ -38,40 +38,28 @@ export async function generateLegalInfographic(
       : "Display inside a distinct cut-out box or bordered card.";
 
     dynamicContentBlocks += `
-${index + 3}. **SECTION ${index + 1} (${section.title.toUpperCase()})**:
-    *   ${containerStyle}
-    *   TEXT: "${section.content}"
-    `;
+SECTION ${index + 1} — ${section.title.toUpperCase()}:
+  Style: ${containerStyle}
+  Text: "${section.content}"
+`;
   });
 
-  const prompt = `Create a **professional vertical legal cheat sheet (9:16 aspect ratio)**.
+  const prompt = `Professional vertical legal study cheat sheet. Modern Legal Scrapbook style.
 
-**STRICT VISUAL STYLE: "MODERN LEGAL SCRAPBOOK"**
-1.  **Background**: Use a textured **Kraft Paper** or "Vintage Paper" background.
-2.  **Layout**: **GRID SYSTEM**. Info MUST be inside distinct **cut-out paper boxes** or **sticky notes**.
-    *   Use **dashed lines** or **tape effects** to separate sections.
-    *   **NO OVERLAPS**. Every text block must have its own clear container.
-    *   **MARGINS**: Keep 10% empty space on all edges. Do not cut off text.
+BACKGROUND: Textured kraft paper / vintage paper texture.
+LAYOUT: Grid system. All info inside distinct cut-out paper boxes or sticky notes. Dashed lines or tape effects between sections. No overlaps. 10% empty margins on all edges — do NOT cut off text.
 
-**CONTENT TO FILL (Use THIS text exactly, translate to visual blocks):**
+CONTENT (render exactly as written):
 
-1.  **BRANDING HEADER**: "LexTutor Agent" (Small tag at top).
-2.  **MAIN TITLE**: "${topic}" (Large, Bold "Sticker Style").
+HEADER TAG (small, top): "LexTutor Agent"
+MAIN TITLE (large bold sticker style): "${topic}"
+
 ${dynamicContentBlocks}
-${sections.length + 3}. **FOOTER NOTE**:
-    *   Display in a small bottom strip or tag.
-    *   TEXT: "${footer_context}"
+FOOTER STRIP (bottom tag): "${footer_context}"
 
-**TYPOGRAPHY RULES:**
-*   **SPANISH ONLY**. Perfect spelling.
-*   **Headings**: Bold, Uppercase, Serif Font (like a legal document).
-*   **Body Text**: Dark Gray (#333333), highly readable Sans Serif. **Size: Small/Medium (10-12pt equivalent)** to fit more text.
-*   **Format**: Use **paragraphs** or **lists** as appropriate for the content.
+TYPOGRAPHY: Spanish only. Headings — bold uppercase serif. Body — dark gray (#333333) readable sans-serif 10-12pt. Use paragraphs or bullet lists as needed.
 
-**CRITICAL QUALITY CONTROL:**
-- **ZERO HALLUCINATIONS**: Do not invent glyphs.
-- **NO CUT-OFF TEXT**: Resize text to fit containers.
-- **Iconography**: Flat, professional vector icons. No photorealism.`;
+QUALITY: No invented symbols. No cut-off text. Flat professional vector icons only, no photorealism.`;
 
   let lastError = "Error desconocido al generar la imagen.";
 
@@ -84,51 +72,42 @@ ${sections.length + 3}. **FOOTER NOTE**:
         });
       }
 
-      const response = await geminiClient.models.generateContent({
+      const response = await geminiClient.models.generateImages({
         model: IMAGE_MODEL,
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        config: { responseModalities: ["IMAGE"] },
+        prompt,
+        config: {
+          numberOfImages: 1,
+          aspectRatio: "9:16",
+          includeRaiReason: true,
+        },
       });
 
       logger.info("[imagen-service] API call complete. Processing response...");
 
-      const candidate = response?.candidates?.[0];
+      const generated = response?.generatedImages?.[0];
 
-      if (candidate?.finishReason && candidate.finishReason !== "STOP") {
-        const reason = candidate.finishReason;
-        logger.warn("[imagen-service] Candidate finished with non-STOP reason", { reason });
-        if (reason === "SAFETY") {
-          return {
-            data: null,
-            error:
-              "El contenido fue bloqueado por los filtros de seguridad de la API. Intenta con un tema diferente.",
-          };
-        }
+      if (!generated) {
+        logger.warn("[imagen-service] La API no devolvió ninguna imagen generada.");
         return {
           data: null,
-          error: `La API rechazó la solicitud (${reason}). Inténtalo de nuevo.`,
+          error:
+            "La API de Imagen respondió pero no generó ninguna imagen. Es posible que el contenido haya sido filtrado.",
         };
       }
 
-      if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-          if (part.inlineData?.data) {
-            logger.info("[imagen-service] Imagen recibida correctamente.");
-            return {
-              data: `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`,
-            };
-          }
-        }
+      if (!generated.image?.imageBytes) {
+        const reason = generated.raiFilteredReason ?? "desconocido";
+        logger.warn("[imagen-service] Imagen filtrada por RAI", { reason });
+        return {
+          data: null,
+          error: `El contenido fue bloqueado por los filtros de seguridad. Motivo: ${reason}`,
+        };
       }
 
-      logger.warn("[imagen-service] La API respondió pero no devolvió datos de imagen.", {
-        candidateKeys: candidate ? Object.keys(candidate) : "sin candidato",
-        parts: JSON.stringify(candidate?.content?.parts?.map((p) => Object.keys(p))),
-      });
+      logger.info("[imagen-service] Imagen recibida correctamente.");
+      const mimeType = generated.image.mimeType ?? "image/png";
       return {
-        data: null,
-        error:
-          "La API de Gemini respondió pero no generó ninguna imagen. Es posible que el modelo esté temporalmente no disponible.",
+        data: `data:${mimeType};base64,${generated.image.imageBytes}`,
       };
     } catch (error: unknown) {
       const err = error as { message?: string; code?: number; status?: number };
