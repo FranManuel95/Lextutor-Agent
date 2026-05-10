@@ -73,14 +73,14 @@ export const POST = createApiHandler(
       .insert({
         chat_id: chatId,
         user_id: user.id,
-        role: "user",
+        role: "user" as const,
         content: "🎤 Procesando audio...", // Placeholder
         audio_path: audioPath,
-      } as any)
+      })
       .select()
       .single();
 
-    const userMsg = userMsgData as Database["public"]["Tables"]["messages"]["Row"] | null;
+    const userMsg = userMsgData;
     if (userMsgError) logger.error("audio/message: db insert failed", userMsgError);
 
     // 5. Build System Prompt & Parsing Instruction
@@ -137,21 +137,16 @@ export const POST = createApiHandler(
 
     // 8. Update User Message with Transcript
     if (userMsg && transcript) {
-      await supabase
-        .from("messages")
-        .update({
-          content: transcript,
-        } as unknown as never)
-        .eq("id", userMsg.id);
+      await supabase.from("messages").update({ content: transcript }).eq("id", userMsg.id);
     }
 
     // 9. Insert Assistant Message
     const { error: assistantError } = await supabase.from("messages").insert({
       chat_id: chatId,
       user_id: user.id,
-      role: "assistant",
+      role: "assistant" as const,
       content: assistantResponse,
-    } as any);
+    });
 
     if (assistantError) throw assistantError;
 
@@ -163,8 +158,11 @@ export const POST = createApiHandler(
         chat_id: chatId,
         area: effectiveSettings.area,
         kind: "answer_submitted",
-        payload: { settings: effectiveSettings, audio: true },
-      } as any);
+        payload: {
+          settings: effectiveSettings,
+          audio: true,
+        } as Database["public"]["Tables"]["student_events"]["Insert"]["payload"],
+      });
     } catch (logErr) {
       logger.warn("audio/message: event log failed", {
         message: logErr instanceof Error ? logErr.message : String(logErr),

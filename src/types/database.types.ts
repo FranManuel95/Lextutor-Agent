@@ -166,6 +166,7 @@ export interface Database {
           document_name: string | null;
           display_name: string | null;
           area: string | null;
+          openai_file_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -174,6 +175,7 @@ export interface Database {
           document_name?: string | null;
           display_name?: string | null;
           area?: string | null;
+          openai_file_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -182,6 +184,7 @@ export interface Database {
           document_name?: string | null;
           display_name?: string | null;
           area?: string | null;
+          openai_file_id?: string | null;
           created_at?: string;
         };
         Relationships: [];
