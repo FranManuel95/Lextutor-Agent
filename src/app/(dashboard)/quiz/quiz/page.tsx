@@ -18,6 +18,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Copyright } from "@/components/copyright";
+import { FlagQuestionButton } from "@/components/flag-question-button";
 
 export default function QuizPage() {
   const [step, setStep] = useState<"config" | "taking" | "results">("config");
@@ -234,6 +235,14 @@ export default function QuizPage() {
                       </div>
                     ))}
                   </RadioGroup>
+                  <div className="mt-3 flex justify-end border-t border-white/5 pt-2">
+                    <FlagQuestionButton
+                      questionId={String(q.id)}
+                      questionText={q.text}
+                      area={config.area}
+                      sessionId={sessionId ?? undefined}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -319,6 +328,14 @@ export default function QuizPage() {
                           Explicación:
                         </span>{" "}
                         {item.explanation}
+                      </div>
+                      <div className="mt-2 flex justify-end">
+                        <FlagQuestionButton
+                          questionId={String(item.id)}
+                          questionText={item.question}
+                          area={config.area}
+                          sessionId={sessionId ?? undefined}
+                        />
                       </div>
                     </CardContent>
                   </Card>
