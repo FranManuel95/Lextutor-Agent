@@ -1,6 +1,7 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
@@ -25,9 +26,10 @@ export async function generateLegalInfographic(
   const INITIAL_RETRY_DELAY_MS = 2000;
 
   const { topic, sections, footer_context } = content;
-  console.log(
-    `🎨 Generando Infografía Legal Detallada sobre: ${topic}... (Gemini 3 Pro Image Preview)`
-  );
+  logger.info("[imagen-service] Generando Infografía Legal Detallada", {
+    topic,
+    model: "gemini-3-pro-image-preview",
+  });
 
   // Dynamically build content blocks
   let dynamicContentBlocks = "";
@@ -76,7 +78,10 @@ ${sections.length + 3}. **FOOTER NOTE**:
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 1) {
-        console.log(`🔄 Reintentando generación de imagen (Intento ${attempt}/${MAX_RETRIES})...`);
+        logger.info("[imagen-service] Reintentando generación de imagen", {
+          attempt,
+          maxRetries: MAX_RETRIES,
+        });
       }
 
       // Using gemini-3-pro-image-preview (Nano Banana Pro) for professional quality and text rendering
@@ -90,7 +95,7 @@ ${sections.length + 3}. **FOOTER NOTE**:
         ],
       });
 
-      console.log("✅ Nano Banana Pro API call complete. Processing response...");
+      logger.info("[imagen-service] Nano Banana Pro API call complete. Processing response...");
 
       // Parse response structure for gemini-2.5-flash-image (inlineData)
       if (
@@ -102,23 +107,22 @@ ${sections.length + 3}. **FOOTER NOTE**:
       ) {
         for (const part of response.candidates[0].content.parts) {
           if (part.inlineData && part.inlineData.data) {
-            console.log("📸 Professional Image received.");
+            logger.info("[imagen-service] Professional Image received.");
             return `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
           }
         }
       }
 
-      console.warn(
-        "⚠️ No inline image data found in Nano Banana Pro response. Raw candidates:",
-        JSON.stringify(response.candidates, null, 2)
-      );
+      logger.warn("[imagen-service] No inline image data found in Nano Banana Pro response.", {
+        candidates: JSON.stringify(response.candidates, null, 2),
+      });
       return null; // Don't retry if we got a valid response but no image (likely content filter or format issue)
     } catch (error: unknown) {
       const err = error as { message?: string; code?: number; response?: unknown };
-      console.error(
-        `❌ Error generando infografía legal (Intento ${attempt}/${MAX_RETRIES}):`,
-        err.message
-      );
+      logger.error("[imagen-service] Error generando infografía legal", error, {
+        attempt,
+        maxRetries: MAX_RETRIES,
+      });
 
       // Check for 503 Overloaded or 429 Too Many Requests
       const isOverloaded =
@@ -127,13 +131,15 @@ ${sections.length + 3}. **FOOTER NOTE**:
 
       if ((isOverloaded || isRateLimit) && attempt < MAX_RETRIES) {
         const delayMs = INITIAL_RETRY_DELAY_MS * 2 ** (attempt - 1); // Exponential backoff: 2s, 4s
-        console.log(`⏳ Esperando ${delayMs}ms antes de reintentar...`);
+        logger.info("[imagen-service] Esperando antes de reintentar...", { delayMs });
         await new Promise((resolve) => setTimeout(resolve, delayMs));
         continue;
       }
 
       if (err.response) {
-        console.error("Error Response:", JSON.stringify(err.response, null, 2));
+        logger.error("[imagen-service] Error Response", undefined, {
+          response: JSON.stringify(err.response, null, 2),
+        });
       }
       // If it's the last attempt or a non-retriable error, return null
       if (attempt === MAX_RETRIES) return null;

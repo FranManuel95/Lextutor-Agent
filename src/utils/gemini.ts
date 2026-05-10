@@ -3,6 +3,7 @@ import "server-only";
 import { GoogleGenAI } from "@google/genai";
 import type { GroundingChunk } from "@google/genai";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 const STORE = env.GEMINI_FILESEARCH_STORE_ID
@@ -172,9 +173,10 @@ export async function generateResponseWithContext(
     `PREGUNTA DEL ALUMNO: ${message}`,
   ].join("\n");
 
-  console.log(`\n🤖 [Gemini] Generando respuesta...`);
-  console.log(`   📝 Modelo: gemini-flash-latest`);
-  console.log(`   👤 Usuario: ${userName || "Anónimo"}`);
+  logger.info("[Gemini] Generando respuesta...", {
+    model: "gemini-flash-latest",
+    user: userName || "Anónimo",
+  });
 
   const res = await ai.models.generateContent({
     model: "gemini-flash-latest",
@@ -200,13 +202,12 @@ export async function generateResponseWithContext(
     const outputCost = (outputTokens / 1_000_000) * OUTPUT_COST_PER_1M * USD_TO_EUR;
     const totalCost = inputCost + outputCost;
 
-    console.log(`\n💰 [Gemini] Token Usage:`);
-    console.log(`   📥 Input:  ${inputTokens.toLocaleString()} tokens (€${inputCost.toFixed(6)})`);
-    console.log(
-      `   📤 Output: ${outputTokens.toLocaleString()} tokens (€${outputCost.toFixed(6)})`
-    );
-    console.log(`   📊 Total:  ${totalTokens.toLocaleString()} tokens (€${totalCost.toFixed(6)})`);
-    console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+    logger.info("[Gemini] Token Usage", {
+      inputTokens,
+      outputTokens,
+      totalTokens,
+      costEur: totalCost.toFixed(6),
+    });
   }
 
   const text = res.text ?? "";
