@@ -1,16 +1,26 @@
 import { createClient } from "@/utils/supabase/server";
 import { ChatSidebar } from "./chat-sidebar";
-import { getCachedChats } from "@/lib/data/get-chats";
+import { Chat } from "@/types/chat";
 
 export async function ChatSidebarLoader() {
   const supabase = await createClient();
+
+  // Use getSession() (cookie-only, no network call) to avoid hanging when
+  // Supabase is slow. The middleware already validated the session.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  if (!user) return <ChatSidebar chats={[]} />;
+  if (!session?.user) return <ChatSidebar chats={[]} />;
 
-  const chats = await getCachedChats(user.id);
+  // Query with the user's own session (RLS filters by user_id automatically).
+  // This avoids relying on SUPABASE_SERVICE_ROLE_KEY for the sidebar.
+  const { data } = await supabase
+    .from("chats")
+    .select("id, title, updated_at")
+    .eq("user_id", session.user.id)
+    .order("updated_at", { ascending: false })
+    .limit(50);
 
-  return <ChatSidebar chats={chats} />;
+  return <ChatSidebar chats={(data as Chat[]) || []} />;
 }
