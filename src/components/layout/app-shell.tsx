@@ -5,20 +5,41 @@ import { SidebarSkeleton } from "@/features/chat/components/sidebar-skeleton";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { logger } from "@/lib/logger";
 
 // Cache sidebar data for 30 seconds
 export const revalidate = 30;
 
-export async function AppShell({ children }: { children: React.ReactNode }) {
+async function getAuthenticatedUser() {
   const supabase = await createClient();
 
-  // Fast Auth Check only
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Race getUser() (validates JWT server-side) against an 8s timeout.
+  // If Supabase is unreachable we fall back to the session cookie so the
+  // user isn't hit with a 504 — the middleware already verified the session.
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000));
+
+  try {
+    const result = await Promise.race([supabase.auth.getUser().then((r) => r.data.user), timeout]);
+
+    if (result !== null) return result;
+
+    // Timeout path — fall back to cookie-based session (no network call)
+    logger.warn("app-shell: getUser timed out, falling back to getSession");
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user ?? null;
+  } catch {
+    logger.warn("app-shell: getUser threw, falling back to getSession");
+    const supabase2 = await createClient();
+    const { data } = await supabase2.auth.getSession();
+    return data.session?.user ?? null;
+  }
+}
+
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const user = await getAuthenticatedUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/login?message=" + encodeURIComponent("Sesión expirada. Por favor inicia sesión."));
   }
 
   return (
