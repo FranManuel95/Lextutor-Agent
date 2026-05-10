@@ -41,7 +41,8 @@ export function InfographicModal({ isOpen, onClose, content, topic }: Infographi
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-white/10 bg-gem-onyx p-0 shadow-2xl">
+      {/* [&>button]:hidden suppresses the Radix built-in close button; we render our own in the toolbar */}
+      <DialogContent className="flex h-[90vh] max-w-2xl flex-col overflow-hidden border border-white/10 bg-gem-onyx p-0 shadow-2xl [&>button]:hidden">
         {/* Toolbar */}
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
           <p className="font-serif text-sm italic text-law-gold/80">Resumen Visual</p>
