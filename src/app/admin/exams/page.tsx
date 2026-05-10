@@ -49,6 +49,13 @@ const AREAS = ["laboral", "civil", "mercantil", "procesal", "otro", "general"] a
 const TYPES = ["quiz", "exam_test", "exam_open"] as const;
 const STATUSES = ["finished", "in_progress"] as const;
 
+function fromArray<T extends readonly string[]>(
+  arr: T,
+  val: string | undefined
+): T[number] | undefined {
+  return arr.includes(val as T[number]) ? (val as T[number]) : undefined;
+}
+
 export default async function AdminExamsPage({ searchParams }: PageProps) {
   await requireAdmin();
   const params = await searchParams;
@@ -56,9 +63,9 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
   const rawPage = parseInt(params.page ?? "1", 10);
   const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
 
-  const area = AREAS.includes(params.area as any) ? params.area! : undefined;
-  const attemptType = TYPES.includes(params.type as any) ? params.type! : undefined;
-  const status = STATUSES.includes(params.status as any) ? params.status! : undefined;
+  const area = fromArray(AREAS, params.area);
+  const attemptType = fromArray(TYPES, params.type);
+  const status = fromArray(STATUSES, params.status);
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -71,9 +78,9 @@ export default async function AdminExamsPage({ searchParams }: PageProps) {
     .order("created_at", { ascending: false })
     .range(from, to);
 
-  if (area) query = query.eq("area", area as any);
-  if (attemptType) query = query.eq("attempt_type", attemptType as any);
-  if (status) query = query.eq("status", status as any);
+  if (area) query = query.eq("area", area);
+  if (attemptType) query = query.eq("attempt_type", attemptType);
+  if (status) query = query.eq("status", status);
 
   const attemptsRes = await query.returns<ExamRow[]>();
 

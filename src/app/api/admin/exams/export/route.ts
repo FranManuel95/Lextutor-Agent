@@ -7,9 +7,23 @@ import { format } from "date-fns";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const AREAS = ["laboral", "civil", "mercantil", "procesal", "otro", "general"];
-const TYPES = ["quiz", "exam_test", "exam_open"];
-const STATUSES = ["finished", "in_progress"];
+const AREAS = ["laboral", "civil", "mercantil", "procesal", "otro", "general"] as const;
+const TYPES = ["quiz", "exam_test", "exam_open"] as const;
+const STATUSES = ["finished", "in_progress"] as const;
+
+type AttemptRow = {
+  id: string;
+  user_id: string;
+  attempt_type: string | null;
+  area: string | null;
+  score: number | null;
+  status: string | null;
+  created_at: string;
+};
+
+function fromArray<T extends readonly string[]>(arr: T, val: string | null): T[number] | undefined {
+  return val !== null && arr.includes(val as T[number]) ? (val as T[number]) : undefined;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,12 +35,9 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const areaRaw = searchParams.get("area");
-  const typeRaw = searchParams.get("type");
-  const statusRaw = searchParams.get("status");
-  const area = areaRaw && AREAS.includes(areaRaw) ? areaRaw : undefined;
-  const type = typeRaw && TYPES.includes(typeRaw) ? typeRaw : undefined;
-  const status = statusRaw && STATUSES.includes(statusRaw) ? statusRaw : undefined;
+  const area = fromArray(AREAS, searchParams.get("area"));
+  const type = fromArray(TYPES, searchParams.get("type"));
+  const status = fromArray(STATUSES, searchParams.get("status"));
 
   const admin = createAdminClient();
 
@@ -36,9 +47,9 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(5000);
 
-  if (area) q = q.eq("area", area as any);
-  if (type) q = q.eq("attempt_type", type as any);
-  if (status) q = q.eq("status", status as any);
+  if (area) q = q.eq("area", area);
+  if (type) q = q.eq("attempt_type", type);
+  if (status) q = q.eq("status", status);
 
   const attemptsRes = await q;
 
@@ -46,13 +57,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: attemptsRes.error.message }, { status: 500 });
   }
 
-  const attempts = (attemptsRes.data ?? []) as any[];
+  const attempts = (attemptsRes.data ?? []) as AttemptRow[];
   const userIds = Array.from(new Set(attempts.map((a) => a.user_id)));
 
   const profilesRes =
     userIds.length > 0
       ? await admin.from("profiles").select("id, full_name").in("id", userIds)
-      : { data: [] as any[] };
+      : { data: [] as { id: string; full_name: string | null }[] };
   const namesById = Object.fromEntries(
     (profilesRes.data ?? []).map((p: { id: string; full_name: string | null }) => [
       p.id,

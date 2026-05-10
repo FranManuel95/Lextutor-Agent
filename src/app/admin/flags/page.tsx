@@ -31,12 +31,14 @@ interface PageProps {
 
 const STATUSES = ["open", "reviewed", "dismissed"] as const;
 
+function isValidStatus(val: string | undefined): val is (typeof STATUSES)[number] {
+  return val !== undefined && (STATUSES as readonly string[]).includes(val);
+}
+
 export default async function AdminFlagsPage({ searchParams }: PageProps) {
   await requireAdmin();
   const params = await searchParams;
-  const status: (typeof STATUSES)[number] = STATUSES.includes(params.status as any)
-    ? (params.status as (typeof STATUSES)[number])
-    : "open";
+  const status: (typeof STATUSES)[number] = isValidStatus(params.status) ? params.status : "open";
 
   const adminSupabase = createAdminClient();
 
