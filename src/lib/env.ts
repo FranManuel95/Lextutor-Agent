@@ -22,6 +22,31 @@ type Env = z.infer<typeof envSchema>;
 function validateEnv(): Env {
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
+    // During Next.js build, server env vars may not be injected yet.
+    // Return safe placeholders so module-level clients can instantiate
+    // without throwing — actual requests will fail at runtime if vars are
+    // truly missing, giving a clearer error than a build failure.
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      // Provide safe placeholder values so module-level client instantiations
+      // (GoogleGenAI, OpenAI, createClient) don't throw during build.
+      // Real values from process.env override placeholders if present.
+      return {
+        NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key",
+        SUPABASE_SERVICE_ROLE_KEY: "placeholder-service-role-key",
+        GEMINI_API_KEY: "placeholder-gemini-key",
+        OPENAI_API_KEY: "placeholder-openai-key",
+        RESEND_API_KEY: "placeholder-resend-key",
+        GEMINI_FILESEARCH_STORE_ID: "fileSearchStores/placeholder",
+        OPENAI_VECTOR_STORE_ID: "placeholder",
+        OPENAI_ASSISTANT_ID: "placeholder",
+        OPENAI_MODEL: "gpt-4o",
+        AI_PROVIDER: "gemini",
+        CRON_SECRET: "placeholder-cron-secret-16",
+        ALLOWED_ORIGINS: "",
+        ...Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== undefined)),
+      } as Env;
+    }
     const missing = result.error.issues.map((i) => i.path.join(".")).join(", ");
     throw new Error(`Missing or invalid environment variables: ${missing}`);
   }
