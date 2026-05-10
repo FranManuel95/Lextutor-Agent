@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { Database } from "@/types/database.types";
+import { Database, Json } from "@/types/database.types";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ...defaults,
-    ...((profileRow?.tutor_prefs as any) || {}),
+    ...((profileRow?.tutor_prefs as Record<string, Json | undefined> | null) ?? {}),
   });
 }
 
@@ -95,7 +95,7 @@ export async function PATCH(request: NextRequest) {
       .select("tutor_prefs")
       .eq("id", user.id)
       .single();
-    const current = (profile as any)?.tutor_prefs || {};
+    const current = (profile?.tutor_prefs as Record<string, Json | undefined> | null) ?? {};
 
     const newPrefs = {
       ...current,
@@ -110,13 +110,16 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json(newPrefs);
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation Error", details: error.errors },
         { status: 400 }
       );
     }
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

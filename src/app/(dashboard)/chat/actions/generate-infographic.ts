@@ -4,6 +4,7 @@ import { generateLegalInfographic } from "@/lib/imagen-service";
 import { createClient } from "@/utils/supabase/server";
 import { GoogleGenAI } from "@google/genai";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const geminiClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
@@ -35,7 +36,9 @@ export async function generateInfographicAction(
       .join("\n");
 
     // 2. Extract Visual Brief using Gemini (Text Model)
-    console.log("🔍 Analizando historial para extraer Visual Brief estructurado...");
+    logger.info(
+      "[generate-infographic] Analizando historial para extraer Visual Brief estructurado..."
+    );
 
     const briefPrompt = `
             Analyze the following conversation history between a law student and a tutor.
@@ -90,26 +93,26 @@ export async function generateInfographicAction(
         footer_context: parsed.footer_context || contentData.footer_context,
       };
     } catch (e) {
-      console.error("⚠️ Error parsing visual brief JSON:", e);
+      logger.error("[generate-infographic] Error parsing visual brief JSON", e);
     }
 
-    console.log(
-      `📌 Visual Brief extraído (${contentData.sections.length} secciones):`,
-      contentData
-    );
+    logger.info("[generate-infographic] Visual Brief extraído", {
+      sectionCount: contentData.sections.length,
+      topic: contentData.topic,
+    });
 
     // 3. Generate Infographic
     const imageUrl = await generateLegalInfographic(contentData);
 
     if (imageUrl) {
-      console.log("✅ Server Action: Success, returning image URL.");
+      logger.info("[generate-infographic] Success, returning image URL.");
       return { success: true, imageUrl, topic: contentData.topic };
     } else {
-      console.error("❌ Server Action: Image URL is null.");
+      logger.error("[generate-infographic] Image URL is null.");
       return { success: false, error: "Failed to generate image" };
     }
   } catch (error) {
-    console.error("Error in generateInfographicAction:", error);
+    logger.error("Error in generateInfographicAction", error);
     return { success: false, error: "Internal server error" };
   }
 }

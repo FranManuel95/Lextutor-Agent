@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import {
+  GoogleGenAI,
+  type UploadToFileSearchStoreOperation,
+  type UploadToFileSearchStoreResponse,
+} from "@google/genai";
 import { createClient } from "@/utils/supabase/server";
 import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
 import OpenAI from "openai";
-import fs from "fs";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -37,6 +40,7 @@ async function sleep(ms: number) {
 }
 
 import { requireAdmin } from "@/server/security/requireAdmin";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rateLimit";
 
 // ... existing imports ...
 
@@ -48,10 +52,18 @@ export async function POST(request: NextRequest) {
     const result = await requireAdmin();
     user = result.user;
     supabase = result.supabase;
-  } catch (e: any) {
-    const msg = e?.message || "Forbidden";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Forbidden";
     const status = msg === "Unauthorized" ? 401 : 403;
     return NextResponse.json({ error: msg }, { status });
+  }
+
+  const uploadRateLimit = await checkRateLimit(user.id, RATE_LIMITS.UPLOAD);
+  if (!uploadRateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Límite de subidas alcanzado (máx 10/día)." },
+      { status: 429 }
+    );
   }
 
   if (!STORE_ID?.startsWith("fileSearchStores/")) {
@@ -64,8 +76,8 @@ export async function POST(request: NextRequest) {
   let formData;
   try {
     formData = await request.formData();
-  } catch (e: any) {
-    console.error("❌ Error parsing FormData (posible exceso de tamaño):", e);
+  } catch (e: unknown) {
+    logger.error("upload: formData parse failed", e);
     return NextResponse.json(
       {
         error:
@@ -80,7 +92,7 @@ export async function POST(request: NextRequest) {
   const area = normalizeArea((formData.get("area") as string) || "general");
 
   if (!file) {
-    console.error("❌ No file found in FormData");
+    logger.warn("upload: no file in formData");
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
   }
 
@@ -135,15 +147,16 @@ export async function POST(request: NextRequest) {
     // Upload & ingest to File Search Store (Gemini)
     logger.info("upload: starting Gemini File Search ingest", { displayName, area });
 
-    let operation = await ai.fileSearchStores.uploadToFileSearchStore({
-      file: tempPath,
-      fileSearchStoreName: STORE_ID,
-      config: {
-        displayName,
-        mimeType: file.type || "application/pdf",
-        customMetadata: [{ key: "area", stringValue: area }],
-      },
-    } as any);
+    let operation: UploadToFileSearchStoreOperation =
+      await ai.fileSearchStores.uploadToFileSearchStore({
+        file: tempPath,
+        fileSearchStoreName: STORE_ID,
+        config: {
+          displayName,
+          mimeType: file.type || "application/pdf",
+          customMetadata: [{ key: "area", stringValue: area }],
+        },
+      });
 
     logger.info("upload: waiting for Gemini processing");
     const uploadStart = Date.now();
@@ -153,7 +166,10 @@ export async function POST(request: NextRequest) {
         throw new Error("Gemini processing timeout after 2 minutes.");
       }
       await sleep(1500);
-      operation = await ai.operations.get({ operation } as any);
+      operation = (await ai.operations.get<
+        UploadToFileSearchStoreResponse,
+        UploadToFileSearchStoreOperation
+      >({ operation })) as UploadToFileSearchStoreOperation;
     }
     logger.info("upload: Gemini processing completed");
 
@@ -161,52 +177,48 @@ export async function POST(request: NextRequest) {
     let createdDocName: string | null = null;
 
     // Try getting name directly from operation response if available
-    if (operation && (operation as any).response && (operation as any).response.documentName) {
-      createdDocName = (operation as any).response.documentName;
+    if (operation?.response?.documentName) {
+      createdDocName = operation.response.documentName;
       logger.info("upload: document name from operation response", { createdDocName });
     }
 
     if (!createdDocName) {
       logger.info("upload: name not in operation, searching by displayName");
       for (let attempt = 1; attempt <= 3; attempt++) {
-        let pageToken: string | undefined = undefined;
-
-        do {
-          const listParams: any = {
+        try {
+          const pager = await ai.fileSearchStores.documents.list({
             parent: STORE_ID,
-            pageSize: 100,
-          };
-          if (pageToken) listParams.pageToken = pageToken;
+            config: { pageSize: 100 },
+          });
 
-          let docs: any[] = [];
-          try {
-            const response = await ai.fileSearchStores.documents.list(listParams);
-
-            // Handle different response structures
-            if (
-              response &&
-              (response as any).documents &&
-              Array.isArray((response as any).documents)
-            ) {
-              docs = (response as any).documents;
-            } else if (Array.isArray(response)) {
-              docs = response;
+          // Log sample on first attempt for debugging
+          if (attempt === 1) {
+            const sample: string[] = [];
+            let count = 0;
+            for await (const doc of pager) {
+              if (count < 3) sample.push(doc.displayName ?? "(sin nombre)");
+              if (doc.displayName === displayName) {
+                createdDocName = doc.name ?? null;
+                break;
+              }
+              count++;
             }
-            pageToken = (response as any)?.nextPageToken;
-          } catch (e: any) {
-            console.warn(`⚠️ Error listando docs (intento ${attempt}):`, e.message);
-            break;
-          }
-
-          for (const d of docs) {
-            if (d?.displayName === displayName) {
-              createdDocName = d.name;
-              break;
+            if (!createdDocName) {
+              logger.info("upload: sample docs found", { sample });
+            }
+          } else {
+            for await (const doc of pager) {
+              if (doc.displayName === displayName) {
+                createdDocName = doc.name ?? null;
+                break;
+              }
             }
           }
-
-          if (createdDocName) break;
-        } while (pageToken);
+        } catch (e: unknown) {
+          logger.warn(`upload: error listing docs (attempt ${attempt})`, {
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
 
         if (createdDocName) break;
 
@@ -268,10 +280,12 @@ export async function POST(request: NextRequest) {
 
         openaiFileId = openaiFile.id;
         logger.info("upload: document uploaded to OpenAI", { fileId: openaiFile.id });
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Log only the safe message; stack traces and raw error objects may include
         // headers or payload bytes with sensitive data.
-        console.error("⚠️ OpenAI upload failed (non-critical):", e?.message || "unknown error");
+        logger.warn("upload: OpenAI upload failed (non-critical)", {
+          message: e instanceof Error ? e.message : "unknown error",
+        });
       }
     }
 
@@ -288,8 +302,8 @@ export async function POST(request: NextRequest) {
         document_name: createdDocName,
         display_name: displayName,
         area,
-        openai_file_id: openaiFileId, // NUEVO: Guardar ID de OpenAI
-      } as any);
+        openai_file_id: openaiFileId,
+      });
 
       if (dbError) throw dbError;
     }
@@ -301,14 +315,19 @@ export async function POST(request: NextRequest) {
       area,
       openai_synced: !!openaiFileId,
     });
-  } catch (error: any) {
-    logger.error("upload failed", error, { status: error?.status });
-    return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
+  } catch (error: unknown) {
+    logger.error("upload failed", error, { status: (error as { status?: number })?.status });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Upload failed" },
+      { status: 500 }
+    );
   } finally {
     try {
       await unlink(tempPath);
-    } catch (e: any) {
-      logger.warn("Failed to delete temp upload file", { message: e?.message });
+    } catch (e: unknown) {
+      logger.warn("Failed to delete temp upload file", {
+        message: e instanceof Error ? e.message : String(e),
+      });
     }
   }
 }

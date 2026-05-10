@@ -11,6 +11,7 @@ import {
   Search,
   X,
   Trophy,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chat } from "@/types/chat";
@@ -50,7 +51,7 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<"title" | "content">("title");
+  const [searchMode, setSearchMode] = useState<"title" | "content" | "docs">("title");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // ⌘K / Ctrl+K focuses the search input
@@ -69,6 +70,11 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
     Array<{ chatId: string; chatTitle: string; snippet: string; role: string }>
   >([]);
   const [searchingMessages, setSearchingMessages] = useState(false);
+
+  const [ragAnswer, setRagAnswer] = useState<string | null>(null);
+  const [ragSources, setRagSources] = useState<string[]>([]);
+  const [searchingRag, setSearchingRag] = useState(false);
+  const [ragUnavailable, setRagUnavailable] = useState(false);
 
   const filteredChats = searchQuery.trim()
     ? chats.filter((c) => (c.title ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase()))
@@ -105,6 +111,52 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
         setSearchingMessages(false);
       }
     }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery, searchMode]);
+
+  // Debounced semantic RAG search (600ms — AI call)
+  useEffect(() => {
+    if (searchMode !== "docs") {
+      setRagAnswer(null);
+      setRagSources([]);
+      setRagUnavailable(false);
+      return;
+    }
+    const q = searchQuery.trim();
+    if (q.length < 3) {
+      setRagAnswer(null);
+      setRagSources([]);
+      return;
+    }
+    setSearchingRag(true);
+    const handler = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/rag/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setRagAnswer(null);
+          setRagSources([]);
+          return;
+        }
+        if (data.unavailable) {
+          setRagUnavailable(true);
+          setRagAnswer(null);
+        } else {
+          setRagUnavailable(false);
+          setRagAnswer(data.answer ?? null);
+          setRagSources(data.sources ?? []);
+        }
+      } catch {
+        setRagAnswer(null);
+        setRagSources([]);
+      } finally {
+        setSearchingRag(false);
+      }
+    }, 600);
     return () => clearTimeout(handler);
   }, [searchQuery, searchMode]);
 
@@ -326,10 +378,22 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder={searchMode === "title" ? "Buscar chats…" : "Buscar en mensajes…"}
+              placeholder={
+                searchMode === "title"
+                  ? "Buscar chats…"
+                  : searchMode === "content"
+                    ? "Buscar en mensajes…"
+                    : "Consultar documentos legales…"
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label={searchMode === "title" ? "Buscar chats por título" : "Buscar en mensajes"}
+              aria-label={
+                searchMode === "title"
+                  ? "Buscar chats por título"
+                  : searchMode === "content"
+                    ? "Buscar en mensajes"
+                    : "Búsqueda semántica en documentos"
+              }
               className="w-full rounded-md border border-white/5 bg-white/5 py-1.5 pl-8 pr-16 text-xs text-gem-offwhite placeholder:text-gray-600 focus:border-law-gold/40 focus:bg-white/10 focus:outline-none"
             />
             {!searchQuery && (
@@ -370,9 +434,70 @@ export function ChatSidebar({ chats, onClose }: ChatSidebarProps) {
             >
               En mensajes
             </button>
+            <button
+              onClick={() => setSearchMode("docs")}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-0.5 transition",
+                searchMode === "docs"
+                  ? "bg-law-gold/20 text-law-gold"
+                  : "text-gray-600 hover:text-gray-400"
+              )}
+              title="Búsqueda semántica en documentos legales"
+            >
+              <BookOpen className="h-2.5 w-2.5" />
+              Docs
+            </button>
           </div>
         </div>
         <div className="custom-scrollbar flex-1 overflow-y-auto px-2">
+          {searchMode === "docs" && searchQuery.trim().length >= 3 && (
+            <div className="py-2">
+              {searchingRag && (
+                <p className="px-4 py-3 text-center text-xs italic text-gray-600">
+                  Consultando documentos…
+                </p>
+              )}
+              {!searchingRag && ragUnavailable && (
+                <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+                  Búsqueda semántica no disponible
+                </p>
+              )}
+              {!searchingRag && !ragUnavailable && ragAnswer && (
+                <div className="rounded-lg border border-law-gold/20 bg-law-gold/5 px-3 py-3">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-law-gold/70">
+                    Documentos legales
+                  </p>
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-gray-300">
+                    {ragAnswer}
+                  </p>
+                  {ragSources.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {ragSources.map((s) => (
+                        <span
+                          key={s}
+                          className="rounded-full border border-law-gold/20 bg-black/20 px-2 py-0.5 text-[9px] text-law-gold/60"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {!searchingRag && !ragUnavailable && !ragAnswer && (
+                <p className="px-4 py-6 text-center text-xs italic text-gray-600">
+                  Sin resultados en los documentos
+                </p>
+              )}
+            </div>
+          )}
+          {searchMode === "docs" &&
+            searchQuery.trim().length < 3 &&
+            searchQuery.trim().length > 0 && (
+              <p className="px-4 py-3 text-center text-xs italic text-gray-600">
+                Escribe al menos 3 caracteres…
+              </p>
+            )}
           {searchMode === "content" && searchQuery.trim().length >= 2 && (
             <div className="py-2">
               {searchingMessages && (

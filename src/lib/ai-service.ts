@@ -1,7 +1,9 @@
 import "server-only";
 import { GoogleGenAI } from "@google/genai";
+import type { Tool as GeminiTool, GroundingChunk, GroundingMetadata } from "@google/genai";
 import OpenAI from "openai";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 // --- Configuration ---
 export const AI_PROVIDER = env.AI_PROVIDER;
@@ -17,8 +19,6 @@ const GEMINI_STORE_ID = env.GEMINI_FILESEARCH_STORE_ID
     : `fileSearchStores/${env.GEMINI_FILESEARCH_STORE_ID}`
   : "";
 
-const OPENAI_ASSISTANT_ID = env.OPENAI_ASSISTANT_ID!;
-
 // --- Shared Logic ---
 
 export async function retryOperation<T>(
@@ -28,21 +28,26 @@ export async function retryOperation<T>(
 ): Promise<T> {
   try {
     return await operation();
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as {
+      status?: number | string;
+      response?: { status?: number | string };
+      message?: string;
+    };
     if (
       retries > 0 &&
-      (String(error.status) === "503" ||
-        String(error.status) === "429" ||
-        String(error.response?.status) === "503" ||
-        String(error.response?.status) === "429" ||
-        error.message?.includes("overloaded") ||
-        error.message?.includes("503") ||
-        error.message?.includes("429") ||
-        error.message?.includes("RESOURCE_EXHAUSTED") ||
-        error.message?.includes("UNAVAILABLE"))
+      (String(err.status) === "503" ||
+        String(err.status) === "429" ||
+        String(err.response?.status) === "503" ||
+        String(err.response?.status) === "429" ||
+        err.message?.includes("overloaded") ||
+        err.message?.includes("503") ||
+        err.message?.includes("429") ||
+        err.message?.includes("RESOURCE_EXHAUSTED") ||
+        err.message?.includes("UNAVAILABLE"))
     ) {
-      console.log(
-        `⚠️ Gemini API Error (${error.status || "Unknown"}). Retrying in ${delay}ms... (${retries} attempts left)`
+      logger.debug(
+        `Gemini API Error (${err.status ?? "Unknown"}). Retrying in ${delay}ms... (${retries} attempts left)`
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
       return retryOperation(operation, retries - 1, delay * 2); // Increased backoff factor for 429s
@@ -206,22 +211,26 @@ export function logUsage(
   const outputCost = (tokens.completion / 1_000_000) * outputCostPer1M * USD_TO_EUR;
   const totalCost = inputCost + outputCost;
 
-  console.log(`\n💰 [${provider.toUpperCase()}] Token Usage:`);
-  console.log(`   📥 Input:  ${tokens.prompt.toLocaleString()} tokens (€${inputCost.toFixed(6)})`);
-  console.log(
-    `   📤 Output: ${tokens.completion.toLocaleString()} tokens (€${outputCost.toFixed(6)})`
-  );
-  console.log(`   📊 Total:  ${tokens.total.toLocaleString()} tokens (€${totalCost.toFixed(6)})`);
-  console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+  logger.debug(`[${provider.toUpperCase()}] Token Usage`, {
+    inputTokens: tokens.prompt,
+    inputCostEur: inputCost.toFixed(6),
+    outputTokens: tokens.completion,
+    outputCostEur: outputCost.toFixed(6),
+    totalTokens: tokens.total,
+    totalCostEur: totalCost.toFixed(6),
+  });
 }
 
 /**
  * Formats citations for Gemini chunks.
+ * Accepts unknown[] so callers with SDK-typed or untyped sources can both use this.
  */
-export function formatGeminiCitations(chunks: any[] | undefined): string | null {
+export function formatGeminiCitations(chunks: unknown[] | undefined): string | null {
   if (!chunks || chunks.length === 0) return null;
   const uniqueSources = new Set<string>();
-  chunks.forEach((chunk: any) => {
+  chunks.forEach((rawChunk: unknown) => {
+    // Type guard: extract only the properties we need
+    const chunk = rawChunk as Partial<GroundingChunk>;
     if (chunk.retrievedContext) {
       const title = chunk.retrievedContext.title;
       const uri = chunk.retrievedContext.uri;
@@ -239,7 +248,7 @@ export function formatGeminiCitations(chunks: any[] | undefined): string | null 
         if (filename) uniqueSources.add(filename);
       }
     }
-    if (chunk.web && chunk.web.title) uniqueSources.add(chunk.web.title);
+    if (chunk.web?.title) uniqueSources.add(chunk.web.title);
   });
 
   if (uniqueSources.size > 0) {
@@ -249,13 +258,27 @@ export function formatGeminiCitations(chunks: any[] | undefined): string | null 
 }
 
 /**
+ * Type guard for OpenAI file citation annotations (Assistants API).
+ */
+function isFileCitationAnnotation(
+  ann: unknown
+): ann is { type: "file_citation"; file_citation: { file_id: string } } {
+  return (
+    typeof ann === "object" &&
+    ann !== null &&
+    (ann as Record<string, unknown>).type === "file_citation" &&
+    typeof (ann as Record<string, unknown>).file_citation === "object"
+  );
+}
+
+/**
  * Formats citations for OpenAI annotations.
  */
-export function formatOpenAICitations(annotations: any[] | undefined): string | null {
+export function formatOpenAICitations(annotations: unknown[] | undefined): string | null {
   if (!annotations || annotations.length === 0) return null;
   const uniqueSources = new Set<string>();
-  annotations.forEach((ann: any) => {
-    if (ann.type === "file_citation") {
+  annotations.forEach((ann: unknown) => {
+    if (isFileCitationAnnotation(ann)) {
       const fileId = ann.file_citation.file_id;
       uniqueSources.add(`Documento ${fileId.slice(-8)}`);
     }
@@ -301,7 +324,7 @@ export async function generateResponse(params: {
   });
 
   if (isGemini) {
-    console.log("🤖 [MODELO] Chat conversacional → Gemini 1.5 Flash (generateContent API)");
+    logger.debug("[MODELO] Chat conversacional → Gemini 1.5 Flash (generateContent API)");
     const contents = [
       ...history.map((m) => ({
         role: m.role === "assistant" ? "model" : "user",
@@ -333,7 +356,7 @@ export async function generateResponse(params: {
     const citations = formatGeminiCitations(grounding?.groundingChunks);
     return citations ? `${text}\n\n${citations}` : text;
   } else {
-    console.log("🤖 [MODELO] Chat conversacional → GPT-5.2 (Responses API)");
+    logger.debug("[MODELO] Chat conversacional → GPT-5.2 (Responses API)");
     // Use GPT-5.2 Responses API for conversational chat
     const { generateResponseGPT52 } = await import("./ai-service-gpt52");
 
@@ -351,7 +374,7 @@ export async function generateResponse(params: {
 
 const HAS_GEMINI_RAG = !!process.env.GEMINI_FILESEARCH_STORE_ID;
 
-export function extractJsonFromText(text: string): any {
+export function extractJsonFromText(text: string): unknown {
   const cleaned = text
     .replace(/```json/g, "")
     .replace(/```/g, "")
@@ -381,14 +404,14 @@ Responde ÚNICAMENTE con este JSON (sin texto adicional, sin markdown):
 Legislación española vigente. El array questions debe tener exactamente ${count} objetos.`;
 }
 
-async function callGeminiContent(prompt: string, tools?: any[]) {
+async function callGeminiContent(prompt: string, tools?: GeminiTool[]) {
   return retryOperation(
     () =>
       geminiClient.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        ...(tools ? { tools } : {}),
-      } as any),
+        config: tools ? { tools } : undefined,
+      }),
     2,
     1000
   );
@@ -401,15 +424,15 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
   const { area, difficulty, count } = params;
   const prompt = buildQuizPrompt(area, difficulty, count);
 
-  let questions: any[] = [];
-  let grounding: any = null;
+  let questions: unknown[] = [];
+  let grounding: GroundingMetadata | null = null;
 
   // Intento 1: con fileSearch (sin JSON mode — compatible con Gemini 2.5 Flash thinking)
   if (HAS_GEMINI_RAG) {
-    console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash + fileSearch (sin JSON mode)");
+    logger.debug("[MODELO] Generación Quiz → Gemini 2.5 Flash + fileSearch (sin JSON mode)");
     try {
-      const ragTools = [
-        { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 10 } } as any,
+      const ragTools: GeminiTool[] = [
+        { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], topK: 10 } },
       ];
       const res = await callGeminiContent(prompt, ragTools);
       grounding = res.candidates?.[0]?.groundingMetadata ?? null;
@@ -421,20 +444,23 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
         });
       }
       const parsed = extractJsonFromText(res.text || "");
-      questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
+      const parsedObj = parsed as Record<string, unknown> | null;
+      questions = Array.isArray(parsedObj?.questions) ? parsedObj.questions : [];
       if (questions.length > 0) {
-        console.log(`✅ fileSearch generó ${questions.length} preguntas`);
+        logger.debug(`fileSearch generó ${questions.length} preguntas`);
       } else {
-        console.warn("⚠️ fileSearch devolvió 0 preguntas, usando conocimiento general");
+        logger.warn("fileSearch devolvió 0 preguntas, usando conocimiento general");
       }
-    } catch (e: any) {
-      console.warn(`⚠️ fileSearch falló (${e.message}), usando conocimiento general`);
+    } catch (e: unknown) {
+      logger.warn(
+        `fileSearch falló (${e instanceof Error ? e.message : String(e)}), usando conocimiento general`
+      );
     }
   }
 
   // Intento 2: conocimiento general (sin herramientas)
   if (questions.length === 0) {
-    console.log("🤖 [MODELO] Generación Quiz → Gemini 2.5 Flash (conocimiento general)");
+    logger.debug("[MODELO] Generación Quiz → Gemini 2.5 Flash (conocimiento general)");
     const res = await callGeminiContent(prompt);
     if (res.usageMetadata) {
       logUsage("gemini", {
@@ -444,9 +470,10 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
       });
     }
     const parsed = extractJsonFromText(res.text || "");
-    questions = Array.isArray(parsed?.questions) ? parsed.questions : [];
-    console.log(
-      `📝 Conocimiento general generó ${questions.length} preguntas. Raw: ${(res.text || "").slice(0, 200)}`
+    const parsedObj = parsed as Record<string, unknown> | null;
+    questions = Array.isArray(parsedObj?.questions) ? parsedObj.questions : [];
+    logger.debug(
+      `Conocimiento general generó ${questions.length} preguntas. Raw: ${(res.text || "").slice(0, 200)}`
     );
   }
 
@@ -458,7 +485,7 @@ export async function generateQuiz(params: { area: string; difficulty: string; c
 
   const sources: string[] = [];
   if (grounding?.groundingChunks) {
-    grounding.groundingChunks.forEach((chunk: any) => {
+    grounding.groundingChunks.forEach((chunk: GroundingChunk) => {
       if (chunk.retrievedContext?.title) sources.push(chunk.retrievedContext.title);
       else if (chunk.web?.title) sources.push(chunk.web.title);
     });
@@ -482,7 +509,11 @@ export async function generateExam(params: { area: string; difficulty: string; c
     Legislación española vigente. Responde ÚNICAMENTE con el JSON válido.`;
 
   // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
-  console.log("🤖 [MODELO] Generación Exam → Intentando Gemini 2.0 Flash...");
+  logger.debug("[MODELO] Generación Exam → Intentando Gemini 2.0 Flash...");
+
+  const examTools: GeminiTool[] = [
+    { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], topK: 25 } },
+  ];
 
   let res;
   try {
@@ -490,24 +521,25 @@ export async function generateExam(params: { area: string; difficulty: string; c
       geminiClient.models.generateContent({
         model: "gemini-2.5-flash",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 25 } } as any],
         config: {
+          tools: examTools,
           responseMimeType: "application/json",
         },
-      } as any)
+      })
     );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
+  } catch (error: unknown) {
+    const err = error as { status?: number | string; message?: string };
+    if (String(err.status) === "429" || err.message?.includes("RESOURCE_EXHAUSTED")) {
+      logger.warn("Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
       res = await retryOperation(() =>
         geminiClient.models.generateContent({
           model: "gemini-2.5-flash",
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], top_k: 25 } } as any],
           config: {
+            tools: examTools,
             responseMimeType: "application/json",
           },
-        } as any)
+        })
       );
     } else {
       throw error;
@@ -532,7 +564,7 @@ export async function generateExam(params: { area: string; difficulty: string; c
   // Extract sources
   const sources: string[] = [];
   if (grounding?.groundingChunks) {
-    grounding.groundingChunks.forEach((chunk: any) => {
+    grounding.groundingChunks.forEach((chunk: GroundingChunk) => {
       if (chunk.retrievedContext?.title) {
         sources.push(chunk.retrievedContext.title);
       } else if (chunk.web?.title) {
@@ -552,15 +584,15 @@ export async function generateExam(params: { area: string; difficulty: string; c
  * Unified Exam Grading
  */
 export async function gradeExam(params: {
-  questions: any[];
+  questions: Array<{ id: number | string; text: string }>;
   answers: Record<string, string>;
-  rubric: any;
+  rubric: Record<string, unknown>;
 }) {
   const { questions, answers, rubric } = params;
-  const inputList = questions.map((q: any) => ({
+  const inputList = questions.map((q) => ({
     id: q.id,
     question: q.text,
-    rubric: (rubric as any)[String(q.id)],
+    rubric: String(rubric[String(q.id)] ?? ""),
     student_answer: answers[String(q.id)] || "(NO CONTESTÓ)",
   }));
 
@@ -572,7 +604,7 @@ export async function gradeExam(params: {
     INPUT: ${JSON.stringify(inputList)}`;
 
   // Enforced Gemini 2.0 Flash with Fallback to 1.5 Flash
-  console.log("🤖 [MODELO] Grading Exam → Intentando Gemini 2.0 Flash...");
+  logger.debug("[MODELO] Grading Exam → Intentando Gemini 2.0 Flash...");
 
   let res;
   try {
@@ -585,9 +617,10 @@ export async function gradeExam(params: {
         },
       })
     );
-  } catch (error: any) {
-    if (String(error.status) === "429" || error.message?.includes("RESOURCE_EXHAUSTED")) {
-      console.warn("⚠️ Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
+  } catch (error: unknown) {
+    const err = error as { status?: number | string; message?: string };
+    if (String(err.status) === "429" || err.message?.includes("RESOURCE_EXHAUSTED")) {
+      logger.warn("Gemini 2.0 Flash Exhausted (429). Falling back to Gemini 1.5 Flash...");
       res = await retryOperation(() =>
         geminiClient.models.generateContent({
           model: "gemini-2.5-flash",
@@ -624,6 +657,8 @@ export async function generateAudioResponse(params: { base64Audio: string; promp
   //    throw new Error("Audio processing is only supported with Gemini provider");
   // }
 
+  const audioTools: GeminiTool[] = [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } }];
+
   const res = await geminiClient.models.generateContent({
     model: "gemini-2.5-flash",
     contents: [
@@ -632,9 +667,8 @@ export async function generateAudioResponse(params: { base64Audio: string; promp
         parts: [{ text: prompt }, { inlineData: { mimeType: "audio/webm", data: base64Audio } }],
       },
     ],
-    tools: [{ fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID] } } as any],
-    config: {},
-  } as any);
+    config: { tools: audioTools },
+  });
 
   if (res.usageMetadata) {
     logUsage("gemini", {
@@ -649,4 +683,71 @@ export async function generateAudioResponse(params: { base64Audio: string; promp
   const citations = formatGeminiCitations(grounding?.groundingChunks);
 
   return citations ? `${text}\n\n${citations}` : text;
+}
+
+export type RagSearchResult = {
+  answer: string;
+  sources: string[];
+  hasRag: boolean;
+};
+
+/**
+ * Semantic search against the Google File Search store.
+ * Uses Gemini with the fileSearch grounding tool to retrieve relevant legal passages.
+ * Returns the synthesised answer and the unique source document names.
+ */
+export async function searchRagDocs(query: string): Promise<RagSearchResult> {
+  if (!GEMINI_STORE_ID) {
+    return { answer: "", sources: [], hasRag: false };
+  }
+
+  const ragSearchTools: GeminiTool[] = [
+    { fileSearch: { fileSearchStoreNames: [GEMINI_STORE_ID], topK: 6 } },
+  ];
+
+  const res = await geminiClient.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            text: `Eres un asistente jurídico de derecho español. Busca en los documentos legales disponibles y responde a la siguiente consulta citando los fragmentos más relevantes. Consulta: "${query}"\n\nSi no hay información relevante en los documentos, indícalo brevemente.`,
+          },
+        ],
+      },
+    ],
+    config: { tools: ragSearchTools },
+  });
+
+  if (res.usageMetadata) {
+    logUsage("gemini", {
+      prompt: res.usageMetadata.promptTokenCount ?? 0,
+      completion: res.usageMetadata.candidatesTokenCount ?? 0,
+      total: res.usageMetadata.totalTokenCount ?? 0,
+    });
+  }
+
+  const answer = res.text ?? "";
+  const grounding = res.candidates?.[0]?.groundingMetadata;
+  const hasRag = (grounding?.groundingChunks?.length ?? 0) > 0;
+
+  const seen = new Set<string>();
+  const sources: string[] = [];
+  (grounding?.groundingChunks ?? []).forEach((chunk: GroundingChunk) => {
+    const raw = chunk.retrievedContext?.title ?? chunk.retrievedContext?.uri ?? "";
+    if (!raw) return;
+    const clean = raw
+      .split("/")
+      .pop()!
+      .replace(/[_-]/g, " ")
+      .replace(/\.(pdf|docx?|txt|php)$/i, "")
+      .trim();
+    if (clean && !seen.has(clean)) {
+      seen.add(clean);
+      sources.push(clean);
+    }
+  });
+
+  return { answer, sources, hasRag };
 }

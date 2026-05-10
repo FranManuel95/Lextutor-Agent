@@ -1,6 +1,13 @@
 import "server-only";
 import OpenAI from "openai";
+import type {
+  Response as OpenAIResponse,
+  ResponseFileSearchToolCall,
+  ResponseOutputMessage,
+  ResponseOutputText,
+} from "openai/resources/responses/responses";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY! });
 
@@ -46,30 +53,33 @@ function logGPT52Usage(usage: { input_tokens: number; output_tokens: number }) {
   const totalCost = inputCost + outputCost;
   const totalTokens = usage.input_tokens + usage.output_tokens;
 
-  console.log(`\n💰 [GPT-5.2] Token Usage:`);
-  console.log(
-    `   📥 Input:  ${usage.input_tokens.toLocaleString()} tokens (€${inputCost.toFixed(6)})`
-  );
-  console.log(
-    `   📤 Output: ${usage.output_tokens.toLocaleString()} tokens (€${outputCost.toFixed(6)})`
-  );
-  console.log(`   📊 Total:  ${totalTokens.toLocaleString()} tokens (€${totalCost.toFixed(6)})`);
-  console.log(`   💵 Costo estimado: €${totalCost.toFixed(6)} EUR\n`);
+  logger.debug("[GPT-5.2] Token Usage", {
+    inputTokens: usage.input_tokens,
+    inputCostEur: inputCost.toFixed(6),
+    outputTokens: usage.output_tokens,
+    outputCostEur: outputCost.toFixed(6),
+    totalTokens,
+    totalCostEur: totalCost.toFixed(6),
+  });
 }
 
 /**
  * Extracts and formats citations from file_search results.
  */
-function formatGPT52Citations(fileSearchResults?: any[]): string | null {
+function formatGPT52Citations(
+  fileSearchResults?: ResponseFileSearchToolCall.Result[] | null
+): string | null {
   if (!fileSearchResults || fileSearchResults.length === 0) return null;
 
   const uniqueSources = new Set<string>();
 
-  fileSearchResults.forEach((result: any) => {
-    if (result.file_name) {
+  fileSearchResults.forEach((result) => {
+    if (result.filename) {
       // Clean filename (remove extension, sanitize)
-      let clean = result.file_name.replace(/\.(pdf|docx?|txt)$/i, "");
-      clean = clean.replace(/[_-]/g, " ").trim();
+      const clean = result.filename
+        .replace(/\.(pdf|docx?|txt)$/i, "")
+        .replace(/[_-]/g, " ")
+        .trim();
       uniqueSources.add(clean);
     }
   });
@@ -105,10 +115,10 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
   const fullPrompt = `${systemPrompt}\n\n${historyText}MENSAJE ACTUAL:\n${message}`;
 
   try {
-    console.log("🟣 Calling GPT-5.2 Responses API...");
-    console.log(`📝 History messages: ${history.length}`);
+    logger.debug("Calling GPT-5.2 Responses API...", { historyMessages: history.length });
 
-    const response = await openai.responses.create({
+    // NOTE: `gpt-5.2` is accepted by ResponsesModel as it matches `string & {}`
+    const response: OpenAIResponse = await openai.responses.create({
       model: "gpt-5.2",
       reasoning: {
         effort: "medium", // Options: "low", "medium", "high"
@@ -124,81 +134,75 @@ export async function generateResponseGPT52(params: GPT52Params): Promise<string
         },
       ],
       include: ["file_search_call.results"], // Include RAG results in response
-    } as any);
+    });
 
-    console.log("✅ GPT-5.2 Response received");
+    logger.debug("GPT-5.2 Response received");
 
-    // Extract text
-    const text = (response as any).output_text || "";
+    // Extract text — `output_text` is a first-class property on the Response type
+    const text = response.output_text || "";
 
     // Log usage if available
-    if ((response as any).usage) {
+    if (response.usage) {
       logGPT52Usage({
-        input_tokens: (response as any).usage.input_tokens || 0,
-        output_tokens: (response as any).usage.output_tokens || 0,
+        input_tokens: response.usage.input_tokens || 0,
+        output_tokens: response.usage.output_tokens || 0,
       });
     }
 
     // Extract sources from file_search results
-    const sources: string[] = [];
-
     // CORRECT LOCATION: GPT-5.2 returns file_search results in output[] array
-    if ((response as any).output && Array.isArray((response as any).output)) {
-      (response as any).output.forEach((item: any) => {
-        // Method 1: Extract from file_search_call results
-        if (item.type === "file_search_call" && item.results) {
-          item.results.forEach((result: any) => {
-            if (result.filename) {
-              // Clean filename (remove extension)
-              let clean = result.filename.replace(/\.(pdf|docx?|txt)$/i, "");
-              clean = clean.replace(/[_-]/g, " ").trim();
-              sources.push(clean);
-            }
-          });
+
+    // Method 1: Collect file_search_call results (includes filenames when `include` is set)
+    let fileSearchResults: ResponseFileSearchToolCall.Result[] = [];
+    const annotationSources: string[] = [];
+
+    response.output.forEach((item) => {
+      if (item.type === "file_search_call") {
+        const fileSearchItem = item as ResponseFileSearchToolCall;
+        if (fileSearchItem.results) {
+          fileSearchResults = fileSearchResults.concat(fileSearchItem.results);
         }
+      }
 
-        // Method 2: Also extract from message annotations
-        if (item.type === "message" && item.content) {
-          item.content.forEach((content: any) => {
-            if (content.annotations) {
-              content.annotations.forEach((ann: any) => {
-                if (ann.type === "file_citation" && ann.filename) {
-                  let clean = ann.filename.replace(/\.(pdf|docx?|txt)$/i, "");
-                  clean = clean.replace(/[_-]/g, " ").trim();
-                  sources.push(clean);
-                }
-              });
-            }
-          });
-        }
-      });
-    }
+      // Method 2: Also extract from message annotations
+      if (item.type === "message") {
+        const msgItem = item as ResponseOutputMessage;
+        msgItem.content.forEach((contentPart) => {
+          if (contentPart.type === "output_text") {
+            const textPart = contentPart as ResponseOutputText;
+            textPart.annotations.forEach((ann) => {
+              if (ann.type === "file_citation") {
+                // ResponseOutputText.FileCitation has file_id, not filename
+                // Use file_id suffix as source identifier
+                annotationSources.push(`Documento ${ann.file_id.slice(-8)}`);
+              }
+            });
+          }
+        });
+      }
+    });
 
-    // Get unique sources
-    const uniqueSources = Array.from(new Set(sources));
+    // Build citations: prefer filenames from file_search results; fall back to annotation IDs
+    const citations =
+      formatGPT52Citations(fileSearchResults.length > 0 ? fileSearchResults : null) ??
+      (annotationSources.length > 0
+        ? `_(🔍 Fuente: Documentos de Estudiante Elite → ${Array.from(new Set(annotationSources)).join(", ")})_`
+        : null);
 
-    console.log("📚 [GPT-5.2] Sources found:", uniqueSources.length);
-    if (uniqueSources.length > 0) {
-      console.log("📚 [GPT-5.2] Source filenames:", uniqueSources.join(", "));
-    }
-
-    // Format citations
-    let citations: string | null = null;
-    if (uniqueSources.length > 0) {
-      citations = `_(🔍 Fuente: Documentos de Estudiante Elite → ${uniqueSources.join(", ")})_`;
-    }
+    const uniqueCount = fileSearchResults.length || annotationSources.length;
+    logger.debug("[GPT-5.2] Sources found", { count: uniqueCount });
 
     return citations ? `${text}\n\n${citations}` : text;
-  } catch (error: any) {
-    console.error("❌ GPT-5.2 Error:", error?.message || error);
+  } catch (error: unknown) {
+    logger.error("GPT-5.2 Error", error instanceof Error ? error : new Error(String(error)));
 
     // Provide helpful error messages
-    if (error?.status === 400) {
+    if ((error as { status?: number })?.status === 400) {
       throw new Error(
         "GPT-5.2 configuración inválida. Verifica que OPENAI_VECTOR_STORE_ID esté configurado correctamente."
       );
     }
 
-    throw new Error(`GPT-5.2 Error: ${error?.message || "Unknown error"}`);
+    throw new Error(`GPT-5.2 Error: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

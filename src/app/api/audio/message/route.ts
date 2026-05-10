@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Database } from "@/types/database.types";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,16 +53,16 @@ export const POST = createApiHandler(
     };
 
     // 3. Download Audio
-    console.log(`[AudioAPI] Downloading: ${audioPath}`);
+    logger.info("audio/message: downloading", { audioPath });
     const { data: fileData, error: downloadError } = await adminSupabase.storage
       .from("audio-notes")
       .download(audioPath);
 
     if (downloadError || !fileData) {
-      console.error(`[AudioAPI] Download Error:`, downloadError);
+      logger.error("audio/message: download failed", downloadError);
       throw new Error(`Audio download failed: ${downloadError?.message}`);
     }
-    console.log(`[AudioAPI] Downloaded size: ${fileData.size} bytes`);
+    logger.info("audio/message: downloaded", { bytes: fileData.size });
 
     const arrayBuffer = await fileData.arrayBuffer();
     const base64Audio = Buffer.from(arrayBuffer).toString("base64");
@@ -72,15 +73,15 @@ export const POST = createApiHandler(
       .insert({
         chat_id: chatId,
         user_id: user.id,
-        role: "user",
+        role: "user" as const,
         content: "🎤 Procesando audio...", // Placeholder
         audio_path: audioPath,
-      } as any)
+      })
       .select()
       .single();
 
-    const userMsg = userMsgData as Database["public"]["Tables"]["messages"]["Row"] | null;
-    if (userMsgError) console.error("[AudioAPI] DB Insert Error:", userMsgError);
+    const userMsg = userMsgData;
+    if (userMsgError) logger.error("audio/message: db insert failed", userMsgError);
 
     // 5. Build System Prompt & Parsing Instruction
     // Fetch profile name for personalization
@@ -104,7 +105,7 @@ export const POST = createApiHandler(
     const prompt = `${system}\n\nÁREA SUGERIDA: ${effectiveSettings.area?.toUpperCase() || "GENERAL"}\nINSTRUCCIÓN TÉCNICA (IMPORTANTE): Primero, transcribe el audio del usuario literalmente comenzando con "TRANSCRIPT: " y terminando con "|||". Después, responde a la consulta del estudiante siguiendo tu personalidad.`;
 
     // 6. Generate Response via AI Service
-    console.log(`[AudioAPI] Sending to Gemini...`);
+    logger.info("audio/message: sending to Gemini");
     let responseText = "";
     try {
       responseText = await generateAudioResponse({
@@ -112,10 +113,10 @@ export const POST = createApiHandler(
         prompt,
       });
     } catch (aiErr) {
-      console.error("[AudioAPI] Gemini Error:", aiErr);
+      logger.error("audio/message: Gemini failed", aiErr);
       throw new Error("AI Processing Failed");
     }
-    console.log(`[AudioAPI] Gemini Responded (${responseText.length} chars)`);
+    logger.info("audio/message: Gemini responded", { chars: responseText.length });
 
     let transcript = "Audio recibido (Sin transcripción)";
     let assistantResponse = responseText;
@@ -136,21 +137,16 @@ export const POST = createApiHandler(
 
     // 8. Update User Message with Transcript
     if (userMsg && transcript) {
-      await supabase
-        .from("messages")
-        .update({
-          content: transcript,
-        } as unknown as never)
-        .eq("id", userMsg.id);
+      await supabase.from("messages").update({ content: transcript }).eq("id", userMsg.id);
     }
 
     // 9. Insert Assistant Message
     const { error: assistantError } = await supabase.from("messages").insert({
       chat_id: chatId,
       user_id: user.id,
-      role: "assistant",
+      role: "assistant" as const,
       content: assistantResponse,
-    } as any);
+    });
 
     if (assistantError) throw assistantError;
 
@@ -162,10 +158,15 @@ export const POST = createApiHandler(
         chat_id: chatId,
         area: effectiveSettings.area,
         kind: "answer_submitted",
-        payload: { settings: effectiveSettings, audio: true },
-      } as any);
+        payload: {
+          settings: effectiveSettings,
+          audio: true,
+        } as Database["public"]["Tables"]["student_events"]["Insert"]["payload"],
+      });
     } catch (logErr) {
-      console.warn("[AudioAPI] Failed to log event", logErr);
+      logger.warn("audio/message: event log failed", {
+        message: logErr instanceof Error ? logErr.message : String(logErr),
+      });
     }
 
     return {

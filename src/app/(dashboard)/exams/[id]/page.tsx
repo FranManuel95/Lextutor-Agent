@@ -23,10 +23,54 @@ import { getExamLevel, getLevelColor } from "@/lib/exams/level";
 import { Copyright } from "@/components/copyright";
 import { FlagQuestionButton } from "./FlagQuestionButton";
 
+interface QuizQuestion {
+  id?: string | number;
+  questionId?: string | number;
+  question: string;
+  isCorrect: boolean;
+  userAnswer: string;
+  correctAnswer: string;
+  explanation?: string;
+}
+
+interface OpenQuestion {
+  id?: string | number;
+  questionId?: string | number;
+  question: string;
+  userAnswer: string;
+  feedback: string;
+  perQuestionScore: number;
+  confidence?: number;
+  missingPoints?: string[];
+  improvementTips?: string[];
+  rubricScores?: Record<string, number>;
+}
+
+interface ExamPayload {
+  questions?: (QuizQuestion | OpenQuestion)[];
+  attempt?: {
+    overallFeedback?: string;
+    strengths?: string[];
+    weaknesses?: string[];
+  };
+  config?: { difficulty?: string; count?: number };
+  difficulty?: string;
+  count?: number;
+}
+
+interface ExamAttempt {
+  id: string;
+  attempt_type: "quiz" | "exam_test" | "exam_open";
+  score: number;
+  area: string;
+  created_at: string;
+  payload: ExamPayload;
+}
+
 export default function ExamReviewPage() {
   const params = useParams();
   const router = useRouter();
-  const [attempt, setAttempt] = useState<any>(null);
+  const [attempt, setAttempt] = useState<ExamAttempt | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,13 +126,13 @@ export default function ExamReviewPage() {
       </div>
     );
 
-  const { type, score, area, created_at, payload } = attempt;
+  const { attempt_type, score, area, created_at, payload } = attempt;
   const questions = payload?.questions || [];
   const feedback = payload?.attempt || {}; // For open exams
   const level = getExamLevel(score || 0);
 
   // Helper for Quiz Display
-  const renderQuizQuestion = (q: any, i: number) => {
+  const renderQuizQuestion = (q: QuizQuestion, i: number) => {
     return (
       <div
         key={i}
@@ -164,7 +208,7 @@ export default function ExamReviewPage() {
   };
 
   // Helper for Open Exam Display
-  const renderOpenQuestion = (q: any, i: number) => {
+  const renderOpenQuestion = (q: OpenQuestion, i: number) => {
     const scoreColor = q.perQuestionScore >= 5 ? "text-green-500" : "text-red-500";
     return (
       <div
@@ -227,13 +271,13 @@ export default function ExamReviewPage() {
               </div>
 
               {/* Missing Points */}
-              {q.missingPoints?.length > 0 && (
+              {(q.missingPoints?.length ?? 0) > 0 && (
                 <div className="space-y-3">
                   <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-red-500">
                     <XCircle className="h-4 w-4" /> Puntos Faltantes
                   </h4>
                   <ul className="space-y-2 pl-1">
-                    {q.missingPoints.map((p: string, idx: number) => (
+                    {q.missingPoints?.map((p: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-2 text-sm text-slate-400">
                         <span className="mt-1.5 h-[4px] min-w-[4px] rounded-full bg-red-500 text-red-500/50"></span>
                         <span className="leading-relaxed">{p}</span>
@@ -244,13 +288,13 @@ export default function ExamReviewPage() {
               )}
 
               {/* Improvement Tips */}
-              {q.improvementTips?.length > 0 && (
+              {(q.improvementTips?.length ?? 0) > 0 && (
                 <div className="space-y-3 pt-2">
                   <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-500">
                     <BookOpen className="h-4 w-4" /> Consejos de Mejora
                   </h4>
                   <ul className="space-y-2 pl-1">
-                    {q.improvementTips.map((p: string, idx: number) => (
+                    {q.improvementTips?.map((p: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-2 text-sm text-slate-400">
                         <span className="mt-1.5 h-[4px] min-w-[4px] rounded-full bg-amber-500 text-amber-500/50"></span>
                         <span className="leading-relaxed">{p}</span>
@@ -268,7 +312,7 @@ export default function ExamReviewPage() {
               </h4>
               <div className="space-y-5">
                 {q.rubricScores &&
-                  Object.entries(q.rubricScores).map(([key, val]: any) => {
+                  Object.entries(q.rubricScores).map(([key, val]) => {
                     const maxVal = key === "accuracy" ? 4 : key === "reasoning" ? 3 : 2; // Approximate weights
                     const percentage = (val / maxVal) * 100;
 
@@ -397,13 +441,13 @@ export default function ExamReviewPage() {
               </p>
 
               <div className="mt-8 grid grid-cols-1 gap-8 border-t border-indigo-500/20 pt-8 md:grid-cols-2">
-                {feedback.strengths?.length > 0 && (
+                {(feedback.strengths?.length ?? 0) > 0 && (
                   <div className="space-y-4">
                     <span className="text-xs font-bold uppercase tracking-widest text-green-400">
                       Fortalezas Identificadas
                     </span>
                     <ul className="space-y-2">
-                      {feedback.strengths.map((s: string, i: number) => (
+                      {feedback.strengths?.map((s: string, i: number) => (
                         <li key={i} className="flex gap-3 text-sm leading-relaxed text-slate-300">
                           <span className="mt-0.5 shrink-0 text-green-400">✓</span>
                           <span>{s}</span>
@@ -412,13 +456,13 @@ export default function ExamReviewPage() {
                     </ul>
                   </div>
                 )}
-                {feedback.weaknesses?.length > 0 && (
+                {(feedback.weaknesses?.length ?? 0) > 0 && (
                   <div className="space-y-4">
                     <span className="text-xs font-bold uppercase tracking-widest text-red-400">
                       Debilidades a Trabajar
                     </span>
                     <ul className="space-y-2">
-                      {feedback.weaknesses.map((s: string, i: number) => (
+                      {feedback.weaknesses?.map((s: string, i: number) => (
                         <li key={i} className="flex gap-3 text-sm leading-relaxed text-slate-300">
                           <span className="mt-1 shrink-0 text-red-400">•</span>
                           <span>{s}</span>
@@ -438,8 +482,10 @@ export default function ExamReviewPage() {
             Detalle de Preguntas
           </h3>
           <div className="space-y-12">
-            {questions.map((q: any, i: number) =>
-              attempt.attempt_type === "quiz" ? renderQuizQuestion(q, i) : renderOpenQuestion(q, i)
+            {questions.map((q, i) =>
+              attempt_type === "quiz"
+                ? renderQuizQuestion(q as QuizQuestion, i)
+                : renderOpenQuestion(q as OpenQuestion, i)
             )}
           </div>
         </div>

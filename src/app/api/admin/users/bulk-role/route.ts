@@ -46,11 +46,11 @@ export async function PATCH(request: NextRequest) {
       updated: count ?? safeIds.length,
       skippedSelf: ids.length - safeIds.length,
     });
-  } catch (e: any) {
+  } catch (e: unknown) {
     if (e instanceof z.ZodError) {
       return NextResponse.json({ error: "Validation Error", details: e.errors }, { status: 400 });
     }
-    const msg = e?.message ?? "Internal Server Error";
+    const msg = e instanceof Error ? e.message : "Internal Server Error";
     const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
     return NextResponse.json({ error: msg }, { status });
   }
